@@ -116,4 +116,6 @@ The backend is configured for deployment on [Render.com](https://render.com):
 
 ## 🤝 Contributing
 
-*Contributing guidelines to be added*
+Please read our [Branching Strategy](docs/branching-strategy.md) before contributing.
+
+*Additional contributing guidelines to be added*
