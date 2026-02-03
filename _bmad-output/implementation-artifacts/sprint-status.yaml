@@ -41,7 +41,7 @@ story_location: c:/Users/avish/OneDrive/Documents/Projects/voicemock-ai-intervie
 development_status:
   # Epic 1: Start & Configure an Interview Session
   epic-1: in-progress
-  1-1-bootstrap-projects-from-approved-starter-templates-android-first: review
+  1-1-bootstrap-projects-from-approved-starter-templates-android-first: done
   1-2-configure-interview-android-ui: backlog
   1-3-microphone-permission-request-graceful-denial-android: backlog
   1-4-backend-baseline-health-endpoint: backlog
