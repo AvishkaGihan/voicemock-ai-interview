@@ -21,11 +21,15 @@ class Settings(BaseSettings):
         app_name: The application name for display/logging
         version: Current API version string
         debug: Enable debug mode (more verbose logging, etc.)
+        secret_key: Secret key for session token signing (REQUIRED, no default)
+        session_ttl_minutes: Session time-to-live in minutes (default: 60)
     """
 
     app_name: str = "VoiceMock AI Interview Coach API"
     version: str = "0.1.0"
     debug: bool = False
+    secret_key: str  # REQUIRED - no default for security
+    session_ttl_minutes: int = 60
 
     model_config = {
         "env_file": ".env",

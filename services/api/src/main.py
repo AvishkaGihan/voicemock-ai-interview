@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
 from src.api.models import ApiEnvelope, ApiError
-from src.api.routes import health
+from src.api.routes import health, session
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -94,7 +94,9 @@ def create_app() -> FastAPI:
     from fastapi.exceptions import RequestValidationError
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ):
         """Handle validation errors with envelope."""
         request_id = getattr(request.state, "request_id", str(uuid.uuid4()))
 
@@ -153,10 +155,10 @@ def create_app() -> FastAPI:
 
     # Register routers
     app.include_router(health.router, tags=["Health"])
+    app.include_router(session.router, prefix="/session", tags=["Session Management"])
 
     return app
 
 
 # Create the app instance
 app = create_app()
-
