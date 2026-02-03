@@ -6,3 +6,6 @@
 /// - Response envelope parsing
 /// - Authentication headers
 library;
+
+export 'api_client.dart';
+export 'exceptions.dart';
