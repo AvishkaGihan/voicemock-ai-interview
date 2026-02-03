@@ -1,0 +1,1178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VoiceMock — UX Design Directions</title>
+    <style>
+      :root {
+        --primary: #2f6fed;
+        --secondary: #27b39b;
+        --bg: #f7f9fc;
+        --surface: #ffffff;
+        --text: #0f172a;
+        --muted: #5b6475;
+        --success: #1e9e6a;
+        --warning: #d99a00;
+        --error: #d64545;
+        --border: rgba(15, 23, 42, 0.12);
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        --radius: 16px;
+        --radius-sm: 12px;
+        --ring: 0 0 0 4px rgba(47, 111, 237, 0.18);
+
+        --font:
+          ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        --mono:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+
+        --space-1: 8px;
+        --space-2: 16px;
+        --space-3: 24px;
+        --space-4: 32px;
+
+        --h1: 700 22px/1.25 var(--font);
+        --h2: 700 18px/1.25 var(--font);
+        --h3: 650 16px/1.35 var(--font);
+        --body: 450 14px/1.55 var(--font);
+        --small: 450 12px/1.45 var(--font);
+        --micro: 650 11px/1.2 var(--font);
+      }
+
+      /* Dark direction token set */
+      [data-theme="midnight"] {
+        --primary: #8b5cf6;
+        --secondary: #22c55e;
+        --bg: #0b1020;
+        --surface: #111a33;
+        --text: #e5e7eb;
+        --muted: #a1a9b8;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --error: #f87171;
+        --border: rgba(229, 231, 235, 0.14);
+        --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+        --ring: 0 0 0 4px rgba(139, 92, 246, 0.22);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background:
+          linear-gradient(180deg, var(--bg) 0%, rgba(0, 0, 0, 0) 100%),
+          var(--bg);
+        color: var(--text);
+        font: var(--body);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        padding: var(--space-3);
+        border-right: 1px solid var(--border);
+        background: color-mix(in oklab, var(--bg) 92%, var(--surface) 8%);
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-bottom: var(--space-2);
+        margin-bottom: var(--space-2);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .brand .title {
+        font: var(--h1);
+      }
+      .brand .sub {
+        color: var(--muted);
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .control {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--surface);
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+      }
+
+      .control label {
+        font: var(--micro);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 10px;
+        font: var(--small);
+        background: color-mix(in oklab, var(--surface) 92%, var(--bg) 8%);
+        cursor: pointer;
+        user-select: none;
+        transition:
+          transform 0.06s ease,
+          border-color 0.12s ease,
+          box-shadow 0.12s ease;
+      }
+      .pill:hover {
+        transform: translateY(-1px);
+      }
+      .pill[aria-pressed="true"] {
+        border-color: color-mix(
+          in oklab,
+          var(--primary) 60%,
+          var(--border) 40%
+        );
+        box-shadow: var(--ring);
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .switch {
+        width: 44px;
+        height: 26px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--bg) 72%, var(--surface) 28%);
+        position: relative;
+        cursor: pointer;
+      }
+      .switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+        transition: left 0.14s ease;
+      }
+      .switch[data-on="true"] {
+        background: color-mix(in oklab, var(--primary) 22%, var(--bg) 78%);
+      }
+      .switch[data-on="true"]::after {
+        left: 21px;
+      }
+
+      .hint {
+        color: var(--muted);
+        font: var(--small);
+      }
+
+      .main {
+        padding: var(--space-3);
+        overflow: auto;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
+        margin-bottom: var(--space-2);
+      }
+
+      .topbar .note {
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--space-3);
+        align-items: start;
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card-header .name {
+        font: var(--h3);
+      }
+      .card-header .tag {
+        font: var(--micro);
+        color: color-mix(in oklab, var(--text) 40%, var(--muted) 60%);
+        background: color-mix(in oklab, var(--bg) 70%, var(--surface) 30%);
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+
+      .mock {
+        padding: 16px;
+        background: linear-gradient(
+          180deg,
+          color-mix(in oklab, var(--bg) 88%, var(--surface) 12%),
+          var(--bg)
+        );
+      }
+
+      .phone {
+        width: 320px;
+        margin: 0 auto;
+        border-radius: 34px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.16);
+        overflow: hidden;
+      }
+
+      .statusbar {
+        height: 14px;
+      }
+
+      .screen {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 620px;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: var(--surface);
+      }
+
+      .nav .left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: radial-gradient(
+          circle at 30% 30%,
+          color-mix(in oklab, var(--primary) 55%, white 45%),
+          var(--primary)
+        );
+        box-shadow: 0 10px 20px rgba(47, 111, 237, 0.25);
+      }
+
+      .nav .title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .nav .title .t {
+        font: var(--h3);
+      }
+      .nav .title .s {
+        font: var(--small);
+        color: var(--muted);
+      }
+
+      .chip {
+        font: var(--micro);
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--surface) 86%, var(--bg) 14%);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--primary);
+      }
+
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: var(--surface);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .question {
+        font: var(--h2);
+        letter-spacing: -0.01em;
+      }
+
+      .subtext {
+        color: var(--muted);
+      }
+
+      .progress {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .stage {
+        font: var(--micro);
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--surface) 88%, var(--bg) 12%);
+        color: color-mix(in oklab, var(--text) 62%, var(--muted) 38%);
+      }
+
+      .stage.active {
+        border-color: color-mix(
+          in oklab,
+          var(--primary) 60%,
+          var(--border) 40%
+        );
+        box-shadow: var(--ring);
+        color: var(--text);
+      }
+
+      .stage.ok {
+        border-color: color-mix(
+          in oklab,
+          var(--success) 40%,
+          var(--border) 60%
+        );
+      }
+
+      .stage.warn {
+        border-color: color-mix(
+          in oklab,
+          var(--warning) 45%,
+          var(--border) 55%
+        );
+      }
+
+      .stage.err {
+        border-color: color-mix(in oklab, var(--error) 45%, var(--border) 55%);
+      }
+
+      .transcript {
+        font: var(--small);
+        padding: 10px 12px;
+        border-radius: 16px;
+        border: 1px dashed
+          color-mix(in oklab, var(--border) 65%, var(--primary) 35%);
+        background: color-mix(in oklab, var(--bg) 75%, var(--surface) 25%);
+      }
+
+      .transcript strong {
+        font: var(--micro);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .footer {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .cta {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 12px 14px;
+        font: var(--h3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition:
+          transform 0.06s ease,
+          box-shadow 0.12s ease,
+          border-color 0.12s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn.primary {
+        background: linear-gradient(
+          180deg,
+          color-mix(in oklab, var(--primary) 86%, white 14%),
+          var(--primary)
+        );
+        color: white;
+        border-color: color-mix(
+          in oklab,
+          var(--primary) 65%,
+          var(--border) 35%
+        );
+        box-shadow: 0 16px 30px rgba(47, 111, 237, 0.22);
+      }
+
+      .btn.ghost {
+        background: color-mix(in oklab, var(--surface) 82%, var(--bg) 18%);
+      }
+
+      .hold {
+        height: 60px;
+        border-radius: 22px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hold::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            circle at 30% 30%,
+            rgba(255, 255, 255, 0.25),
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 60% 80%,
+            rgba(255, 255, 255, 0.16),
+            transparent 65%
+          );
+        pointer-events: none;
+      }
+
+      .mic {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.88);
+        position: relative;
+      }
+
+      .mic::after {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: -3px;
+        width: 6px;
+        height: 24px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.95);
+        opacity: 0.32;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .mini-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .mini {
+        font: var(--micro);
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--surface) 85%, var(--bg) 15%);
+        cursor: pointer;
+      }
+
+      .mini.primary {
+        border-color: color-mix(
+          in oklab,
+          var(--primary) 50%,
+          var(--border) 50%
+        );
+      }
+
+      .mini.destructive {
+        border-color: color-mix(in oklab, var(--error) 50%, var(--border) 50%);
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
+        margin-top: var(--space-3);
+      }
+
+      .compare.hidden {
+        display: none;
+      }
+
+      .compare .card {
+        box-shadow: none;
+      }
+
+      .kbd {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          height: auto;
+          position: relative;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="root">
+      <aside class="sidebar" aria-label="Controls">
+        <div class="brand">
+          <div class="title">VoiceMock — Design Directions</div>
+          <div class="sub">
+            Balanced density · Split layout · Includes one dark-mode direction
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <label>Direction</label>
+            <div
+              class="pill-row"
+              id="directionPills"
+              role="group"
+              aria-label="Choose design direction"
+            ></div>
+            <div class="hint">Tip: pick two and enable compare.</div>
+          </div>
+
+          <div class="control">
+            <label>State (Voice Loop)</label>
+            <div
+              class="pill-row"
+              id="statePills"
+              role="group"
+              aria-label="Choose session state"
+            ></div>
+            <div class="hint">
+              Applies to all mockups. Focus is state clarity.
+            </div>
+          </div>
+
+          <div class="control">
+            <label>Options</label>
+            <div class="toggle">
+              <div>
+                <div style="font: var(--h3)">Compare mode</div>
+                <div class="hint">Show 2 directions side-by-side.</div>
+              </div>
+              <div
+                class="switch"
+                id="compareSwitch"
+                role="switch"
+                aria-checked="false"
+                tabindex="0"
+                data-on="false"
+              ></div>
+            </div>
+            <div style="height: 10px"></div>
+            <div class="toggle">
+              <div>
+                <div style="font: var(--h3)">Show Debug snippet</div>
+                <div class="hint">Portfolio-friendly diagnostics panel.</div>
+              </div>
+              <div
+                class="switch"
+                id="debugSwitch"
+                role="switch"
+                aria-checked="false"
+                tabindex="0"
+                data-on="false"
+              ></div>
+            </div>
+          </div>
+
+          <div class="hint">
+            Keyboard: <span class="kbd">←/→</span> direction,
+            <span class="kbd">1–5</span> state
+          </div>
+        </div>
+      </aside>
+
+      <main class="main" aria-label="Mockups">
+        <div class="topbar">
+          <div class="note" id="summary"></div>
+          <div class="chip">
+            <span class="dot" id="themeDot"></span
+            ><span id="themeName">Calm Ocean tokens</span>
+          </div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="compare hidden" id="compare"></div>
+      </main>
+    </div>
+
+    <script>
+      const DIRECTIONS = [
+        {
+          id: "d1",
+          name: "Direction 1 — Calm Interview",
+          tag: "Stable / Coach-like",
+          theme: "default",
+          layout: "split",
+          notes:
+            "Centered question card, anchored hold-to-talk, minimal chrome.",
+        },
+        {
+          id: "d2",
+          name: "Direction 2 — Timeline Clarity",
+          tag: "State-first UI",
+          theme: "default",
+          layout: "split",
+          notes: "Prominent stage stepper; explicitly communicates progress.",
+        },
+        {
+          id: "d3",
+          name: "Direction 3 — Conversation + Panels",
+          tag: "Chat-adjacent",
+          theme: "default",
+          layout: "split-chat",
+          notes: "Chat bubbles for context, but still structured turn-taking.",
+        },
+        {
+          id: "d4",
+          name: "Direction 4 — Single Action Focus",
+          tag: "Minimal / one CTA",
+          theme: "default",
+          layout: "split",
+          notes: "Largest mic affordance; everything else secondary.",
+        },
+        {
+          id: "d5",
+          name: "Direction 5 — Coach Dashboard",
+          tag: "Feedback-forward",
+          theme: "default",
+          layout: "split",
+          notes: "Emphasizes feedback & transcript; good for anxious users.",
+        },
+        {
+          id: "d6",
+          name: "Direction 6 — Bottom Sheet Controls",
+          tag: "Controls tucked away",
+          theme: "default",
+          layout: "split-sheet",
+          notes: "Advanced actions (replay/re-record) live in a bottom sheet.",
+        },
+        {
+          id: "d7",
+          name: "Direction 7 — Dark: Midnight Focus",
+          tag: "Dark mode direction",
+          theme: "midnight",
+          layout: "split",
+          notes: "Night-friendly, focused, reduces glare for late practice.",
+        },
+        {
+          id: "d8",
+          name: "Direction 8 — Compact Professional",
+          tag: "Efficient / premium",
+          theme: "default",
+          layout: "split-compact",
+          notes: "Slightly denser hierarchy; still calm and readable.",
+        },
+      ];
+
+      const STATES = [
+        { id: "ready", label: "Ready", desc: "User turn — hold to talk." },
+        {
+          id: "recording",
+          label: "Recording",
+          desc: "Live mic state + timer.",
+        },
+        {
+          id: "processing",
+          label: "Processing",
+          desc: "Uploading → Transcribing → Thinking.",
+        },
+        {
+          id: "speaking",
+          label: "Speaking",
+          desc: "AI turn with playback controls.",
+        },
+        {
+          id: "error",
+          label: "Error",
+          desc: "Clear recovery actions + request ID.",
+        },
+      ];
+
+      let selectedDirection = "d1";
+      let selectedDirection2 = "d2";
+      let selectedState = "ready";
+      let compareOn = false;
+      let debugOn = false;
+
+      const grid = document.getElementById("grid");
+      const compare = document.getElementById("compare");
+      const summary = document.getElementById("summary");
+      const themeDot = document.getElementById("themeDot");
+      const themeName = document.getElementById("themeName");
+
+      function mkPill(text, pressed, onClick) {
+        const btn = document.createElement("button");
+        btn.className = "pill";
+        btn.type = "button";
+        btn.textContent = text;
+        btn.setAttribute("aria-pressed", pressed ? "true" : "false");
+        btn.addEventListener("click", onClick);
+        return btn;
+      }
+
+      function renderPills() {
+        const dp = document.getElementById("directionPills");
+        dp.innerHTML = "";
+        DIRECTIONS.forEach((d) => {
+          const pressed =
+            (!compareOn && d.id === selectedDirection) ||
+            (compareOn &&
+              (d.id === selectedDirection || d.id === selectedDirection2));
+          dp.appendChild(
+            mkPill(d.id.toUpperCase(), pressed, () => {
+              if (!compareOn) {
+                selectedDirection = d.id;
+              } else {
+                // Toggle between slot 1 and slot 2
+                if (d.id === selectedDirection) {
+                  selectedDirection = selectedDirection2;
+                  selectedDirection2 = d.id;
+                } else if (d.id === selectedDirection2) {
+                  selectedDirection2 = selectedDirection;
+                  selectedDirection = d.id;
+                } else {
+                  // Replace second
+                  selectedDirection2 = d.id;
+                }
+              }
+              rerender();
+            }),
+          );
+        });
+
+        const sp = document.getElementById("statePills");
+        sp.innerHTML = "";
+        STATES.forEach((s) => {
+          sp.appendChild(
+            mkPill(s.label, s.id === selectedState, () => {
+              selectedState = s.id;
+              rerender();
+            }),
+          );
+        });
+      }
+
+      function setSwitch(el, on) {
+        el.dataset.on = on ? "true" : "false";
+        el.setAttribute("aria-checked", on ? "true" : "false");
+      }
+
+      function initSwitches() {
+        const compareSwitch = document.getElementById("compareSwitch");
+        const debugSwitch = document.getElementById("debugSwitch");
+
+        setSwitch(compareSwitch, compareOn);
+        setSwitch(debugSwitch, debugOn);
+
+        function bindSwitch(el, getter, setter) {
+          el.addEventListener("click", () => {
+            setter(!getter());
+            rerender();
+          });
+          el.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setter(!getter());
+              rerender();
+            }
+          });
+        }
+
+        bindSwitch(
+          compareSwitch,
+          () => compareOn,
+          (v) => (compareOn = v),
+        );
+        bindSwitch(
+          debugSwitch,
+          () => debugOn,
+          (v) => (debugOn = v),
+        );
+      }
+
+      function stageMarkup(active) {
+        const order = ["Uploading", "Transcribing", "Thinking", "Speaking"];
+        return order
+          .map((label, idx) => {
+            const isActive = active === idx;
+            const cls = "stage" + (isActive ? " active" : "");
+            return `<span class="${cls}">${label}</span>`;
+          })
+          .join("");
+      }
+
+      function mockScreen(direction) {
+        const isDark = direction.theme === "midnight";
+        const rootAttrs = isDark ? ' data-theme="midnight"' : "";
+
+        const state = selectedState;
+        const stageActiveIndex = state === "processing" ? 2 : 0;
+
+        const statusChip = (() => {
+          if (state === "ready")
+            return `<span class="chip"><span class="dot" style="background:var(--primary)"></span>Your turn</span>`;
+          if (state === "recording")
+            return `<span class="chip"><span class="dot" style="background:var(--primary)"></span>Recording</span>`;
+          if (state === "processing")
+            return `<span class="chip"><span class="dot" style="background:var(--warning)"></span>Processing</span>`;
+          if (state === "speaking")
+            return `<span class="chip"><span class="dot" style="background:var(--secondary)"></span>AI speaking</span>`;
+          return `<span class="chip"><span class="dot" style="background:var(--error)"></span>Needs attention</span>`;
+        })();
+
+        const question = "Tell me about your experience with state management.";
+        const followup =
+          "Interesting. How do you choose between Riverpod and Provider in larger apps?";
+        const transcript =
+          "“I mostly use Riverpod because it keeps my logic testable and helps avoid context issues.”";
+
+        const mainPanel = (() => {
+          const base = `
+        <div class="panel">
+          <div class="row">
+            <div style="display:flex; flex-direction:column; gap:4px">
+              <div style="font:var(--micro); color:var(--muted); letter-spacing:.08em; text-transform:uppercase">Question 2 of 5</div>
+              <div class="question">${question}</div>
+              <div class="subtext">Keep answers ~30–60 seconds. It’s okay to pause.</div>
+            </div>
+            ${statusChip}
+          </div>
+          ${
+            direction.id === "d3"
+              ? `
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:4px">
+              <div class="transcript" style="border-style:solid; border-color:var(--border)">
+                <strong>Conversation</strong><br />
+                <span style="display:inline-block; margin-top:6px">AI: ${followup}</span>
+              </div>
+            </div>
+          `
+              : ""
+          }
+          <div class="progress" aria-label="Processing stages">
+            ${stageMarkup(stageActiveIndex)}
+          </div>
+          <div class="transcript" aria-label="Transcript">
+            <strong>What we heard</strong><br />
+            <span style="display:inline-block; margin-top:6px">${transcript}</span>
+          </div>
+          ${
+            state === "error"
+              ? `
+            <div class="transcript" style="border-style:solid; border-color: color-mix(in oklab, var(--error) 45%, var(--border) 55%); background: color-mix(in oklab, var(--surface) 80%, var(--bg) 20%)">
+              <strong>Upload failed</strong><br />
+              <span style="display:inline-block; margin-top:6px">Connection dropped. Try again. Request ID: <span style="font-family:var(--mono)">VM-4F2A</span></span>
+              <div class="mini-actions" style="margin-top:10px">
+                <button class="mini primary" type="button">Retry</button>
+                <button class="mini" type="button">Re-record</button>
+                <button class="mini destructive" type="button">Cancel</button>
+              </div>
+            </div>
+          `
+              : ""
+          }
+        </div>
+      `;
+
+          if (direction.id === "d2") {
+            return base.replace(
+              'class="progress"',
+              'class="progress" style="justify-content:space-between"',
+            );
+          }
+
+          if (direction.id === "d5") {
+            return (
+              base +
+              `
+          <div class="panel">
+            <div style="font:var(--h3)">Quick coaching</div>
+            <div class="subtext">One win + one improvement. Keep it kind.</div>
+            <div class="mini-actions">
+              <span class="chip"><span class="dot" style="background:var(--success)"></span>Win: Clear structure</span>
+              <span class="chip"><span class="dot" style="background:var(--warning)"></span>Next: Fewer filler words</span>
+            </div>
+          </div>
+        `
+            );
+          }
+
+          return base;
+        })();
+
+        const footerPanel = (() => {
+          const isRecording = state === "recording";
+          const isProcessing = state === "processing";
+          const isSpeaking = state === "speaking";
+
+          const mainButtonLabel = isRecording
+            ? "Release to Send"
+            : "Hold to Talk";
+          const mainButtonTone =
+            isProcessing || isSpeaking ? "ghost" : "primary";
+
+          const helper = (() => {
+            if (isProcessing) return "Working… you can cancel anytime.";
+            if (isSpeaking) return "Listening mode. Tap Stop if needed.";
+            if (isRecording) return "Speak naturally. Release to finish.";
+            return "Press and hold to answer.";
+          })();
+
+          const extraActions =
+            direction.id === "d6"
+              ? `
+          <div class="panel" style="padding:12px">
+            <div class="row">
+              <div style="font:var(--h3)">Controls</div>
+              <span class="chip"><span class="dot" style="background:var(--muted)"></span>Sheet</span>
+            </div>
+            <div class="mini-actions">
+              <button class="mini" type="button">Replay question</button>
+              <button class="mini" type="button">Re-record</button>
+              <button class="mini" type="button">View summary</button>
+            </div>
+          </div>
+        `
+              : `
+          <div class="mini-actions">
+            <button class="mini" type="button">Replay question</button>
+            <button class="mini" type="button">Re-record</button>
+            <button class="mini" type="button">End session</button>
+          </div>
+        `;
+
+          return `
+        <div class="footer">
+          ${direction.id === "d4" ? "" : extraActions}
+          <div class="panel" style="padding:12px">
+            <div class="row">
+              <div>
+                <div style="font:var(--h3)">${mainButtonLabel}</div>
+                <div class="subtext">${helper}</div>
+              </div>
+              <span class="chip"><span class="dot" style="background:var(--primary)"></span>PTT</span>
+            </div>
+            <div class="cta">
+              <button class="btn ${mainButtonTone} hold" type="button" style="flex:1; ${isProcessing || isSpeaking ? "" : ""}">
+                <span class="mic" aria-hidden="true"></span>
+                <span>${mainButtonLabel}</span>
+              </button>
+              ${direction.id === "d4" ? "" : `<button class="btn ghost" type="button" aria-label="Stop"><span style="font-family:var(--mono)">■</span></button>`}
+            </div>
+          </div>
+        </div>
+      `;
+        })();
+
+        const debugPanel = debugOn
+          ? `
+      <div class="panel" style="margin-top:12px">
+        <div class="row">
+          <div style="font:var(--h3)">Debug Info</div>
+          <span class="chip"><span class="dot" style="background:var(--secondary)"></span>Demo</span>
+        </div>
+        <div class="subtext">Request ID: <span style="font-family:var(--mono)">VM-4F2A</span> · STT 1.1s · LLM 0.6s · TTS 1.2s</div>
+        <div class="subtext">Providers: STT=Deepgram · LLM=Groq · TTS=Deepgram</div>
+      </div>
+    `
+          : "";
+
+        const layoutTight =
+          direction.layout === "split-compact" ? " gap:10px" : "";
+
+        return `
+      <div class="mock" ${rootAttrs}>
+        <div class="phone">
+          <div class="statusbar"></div>
+          <div class="screen" style="${layoutTight}">
+            <div class="nav">
+              <div class="left">
+                <div class="avatar" aria-hidden="true"></div>
+                <div class="title">
+                  <div class="t">VoiceMock</div>
+                  <div class="s">Flutter Developer · Technical · Medium</div>
+                </div>
+              </div>
+              <span class="chip"><span class="dot" style="background:var(--primary)"></span>Session</span>
+            </div>
+
+            ${mainPanel}
+
+            ${debugPanel}
+
+            ${footerPanel}
+          </div>
+        </div>
+      </div>
+    `;
+      }
+
+      function renderCards(target, directionIds) {
+        target.innerHTML = "";
+        directionIds.forEach((id) => {
+          const dir = DIRECTIONS.find((d) => d.id === id);
+          const card = document.createElement("section");
+          card.className = "card";
+          card.innerHTML = `
+        <div class="card-header">
+          <div>
+            <div class="name">${dir.name}</div>
+            <div class="hint">${dir.notes}</div>
+          </div>
+          <div class="tag">${dir.tag}</div>
+        </div>
+        ${mockScreen(dir)}
+      `;
+          target.appendChild(card);
+        });
+      }
+
+      function updateSummary() {
+        const s = STATES.find((x) => x.id === selectedState);
+        const activeDir = DIRECTIONS.find((d) => d.id === selectedDirection);
+        summary.textContent = compareOn
+          ? `Compare mode · State: ${s.label} — ${s.desc}`
+          : `${activeDir.name} · State: ${s.label} — ${s.desc}`;
+
+        const isDark = activeDir.theme === "midnight" && !compareOn;
+        themeDot.style.background = isDark
+          ? "var(--primary)"
+          : "var(--primary)";
+        themeName.textContent = compareOn
+          ? "Multiple directions"
+          : isDark
+            ? "Midnight Focus tokens"
+            : "Calm Ocean tokens";
+      }
+
+      function rerender() {
+        renderPills();
+        initSwitches();
+
+        const cs = document.getElementById("compareSwitch");
+        const ds = document.getElementById("debugSwitch");
+        setSwitch(cs, compareOn);
+        setSwitch(ds, debugOn);
+
+        if (!compareOn) {
+          compare.classList.add("hidden");
+          grid.style.display = "grid";
+          renderCards(grid, [selectedDirection]);
+        } else {
+          grid.style.display = "none";
+          compare.classList.remove("hidden");
+          renderCards(compare, [selectedDirection, selectedDirection2]);
+        }
+
+        updateSummary();
+      }
+
+      function clampIdx(idx) {
+        if (idx < 0) return DIRECTIONS.length - 1;
+        if (idx >= DIRECTIONS.length) return 0;
+        return idx;
+      }
+
+      window.addEventListener("keydown", (e) => {
+        const key = e.key;
+        if (key === "ArrowRight" || key === "ArrowLeft") {
+          const idx = DIRECTIONS.findIndex((d) => d.id === selectedDirection);
+          const next = clampIdx(idx + (key === "ArrowRight" ? 1 : -1));
+          selectedDirection = DIRECTIONS[next].id;
+          rerender();
+        }
+        if (["1", "2", "3", "4", "5"].includes(key)) {
+          selectedState = STATES[Number(key) - 1].id;
+          rerender();
+        }
+      });
+
+      // Initial render
+      rerender();
+    </script>
+  </body>
+</html>
