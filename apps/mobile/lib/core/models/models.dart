@@ -5,3 +5,6 @@
 /// - Session and turn data structures
 /// - Error types matching the API error taxonomy
 library;
+
+export 'api_envelope.dart';
+export 'session_models.dart';

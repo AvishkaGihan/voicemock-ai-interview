@@ -8,12 +8,15 @@ import 'package:voicemock/features/interview/presentation/cubit/configuration_cu
 import 'package:voicemock/features/interview/presentation/cubit/configuration_state.dart';
 import 'package:voicemock/features/interview/presentation/cubit/permission_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/permission_state.dart';
+import 'package:voicemock/features/interview/presentation/cubit/session_cubit.dart';
+import 'package:voicemock/features/interview/presentation/cubit/session_state.dart';
 import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
 import 'package:voicemock/features/interview/presentation/widgets/configuration_summary_card.dart';
 import 'package:voicemock/features/interview/presentation/widgets/difficulty_selector.dart';
 import 'package:voicemock/features/interview/presentation/widgets/permission_denied_banner.dart';
 import 'package:voicemock/features/interview/presentation/widgets/question_count_selector.dart';
 import 'package:voicemock/features/interview/presentation/widgets/role_selector.dart';
+import 'package:voicemock/features/interview/presentation/widgets/session_error_dialog.dart';
 import 'package:voicemock/features/interview/presentation/widgets/type_selector.dart';
 
 /// Main setup view for configuring interview parameters.
@@ -54,142 +57,190 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConfigurationCubit, ConfigurationState>(
-      builder: (context, configState) {
-        if (configState.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: VoiceMockColors.primary,
+    return BlocListener<SessionCubit, SessionState>(
+      listener: (context, sessionState) {
+        if (sessionState is SessionSuccess) {
+          // Navigate to interview screen with session
+          context.go('/interview', extra: sessionState.session);
+        } else if (sessionState is SessionFailure) {
+          // Show error dialog with retry/cancel
+          unawaited(
+            showDialog<void>(
+              context: context,
+              builder: (_) => SessionErrorDialog(
+                failure: sessionState.failure,
+                onRetry: () {
+                  Navigator.of(context).pop();
+                  final config = context
+                      .read<ConfigurationCubit>()
+                      .state
+                      .config;
+                  // Fire-and-forget session start on retry
+                  // ignore: discarded_futures
+                  context.read<SessionCubit>().startSession(config);
+                },
+                onCancel: () => Navigator.of(context).pop(),
+              ),
             ),
           );
         }
+      },
+      child: BlocBuilder<ConfigurationCubit, ConfigurationState>(
+        builder: (context, configState) {
+          if (configState.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: VoiceMockColors.primary,
+              ),
+            );
+          }
 
-        final configCubit = context.read<ConfigurationCubit>();
-        final config = configState.config;
+          final configCubit = context.read<ConfigurationCubit>();
+          final config = configState.config;
 
-        return Scaffold(
-          backgroundColor: VoiceMockColors.background,
-          appBar: AppBar(
+          return Scaffold(
             backgroundColor: VoiceMockColors.background,
-            elevation: 0,
-            title: const Text(
-              'Interview Setup',
-              style: VoiceMockTypography.h2,
+            appBar: AppBar(
+              backgroundColor: VoiceMockColors.background,
+              elevation: 0,
+              title: const Text(
+                'Interview Setup',
+                style: VoiceMockTypography.h2,
+              ),
+              centerTitle: false,
             ),
-            centerTitle: false,
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(VoiceMockSpacing.md),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Permission denied banner (shown when permission is
+                          // not granted)
+                          BlocBuilder<PermissionCubit, PermissionState>(
+                            builder: (context, permissionState) {
+                              final shouldShowBanner =
+                                  permissionState.hasChecked &&
+                                  !permissionState.isGranted &&
+                                  !_bannerDismissed;
+
+                              if (!shouldShowBanner) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: VoiceMockSpacing.lg,
+                                ),
+                                child: PermissionDeniedBanner(
+                                  status: permissionState.status,
+                                  onEnableTap: () {
+                                    _handleEnableMic(context, permissionState);
+                                  },
+                                  onDismissTap: () {
+                                    setState(() {
+                                      _bannerDismissed = true;
+                                    });
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+
+                          // Role selector
+                          RoleSelector(
+                            selectedRole: config.role,
+                            onRoleSelected: configCubit.updateRole,
+                          ),
+                          const SizedBox(height: VoiceMockSpacing.lg),
+
+                          // Interview type selector
+                          TypeSelector(
+                            selectedType: config.type,
+                            onTypeSelected: configCubit.updateType,
+                          ),
+                          const SizedBox(height: VoiceMockSpacing.lg),
+
+                          // Difficulty selector
+                          DifficultySelector(
+                            selectedDifficulty: config.difficulty,
+                            onDifficultySelected: configCubit.updateDifficulty,
+                          ),
+                          const SizedBox(height: VoiceMockSpacing.lg),
+
+                          // Question count selector
+                          QuestionCountSelector(
+                            questionCount: config.questionCount,
+                            onQuestionCountChanged:
+                                configCubit.updateQuestionCount,
+                          ),
+                          const SizedBox(height: VoiceMockSpacing.xl),
+
+                          // Configuration summary
+                          ConfigurationSummaryCard(config: config),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Start Interview button - anchored at bottom
+                  Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(VoiceMockSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Permission denied banner (shown when permission is
-                        // not granted)
-                        BlocBuilder<PermissionCubit, PermissionState>(
-                          builder: (context, permissionState) {
-                            final shouldShowBanner =
-                                permissionState.hasChecked &&
-                                !permissionState.isGranted &&
-                                !_bannerDismissed;
-
-                            if (!shouldShowBanner) {
-                              return const SizedBox.shrink();
-                            }
-
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: VoiceMockSpacing.lg,
-                              ),
-                              child: PermissionDeniedBanner(
-                                status: permissionState.status,
-                                onEnableTap: () {
-                                  _handleEnableMic(context, permissionState);
-                                },
-                                onDismissTap: () {
-                                  setState(() {
-                                    _bannerDismissed = true;
-                                  });
-                                },
-                              ),
-                            );
-                          },
+                    decoration: BoxDecoration(
+                      color: VoiceMockColors.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -4),
                         ),
-
-                        // Role selector
-                        RoleSelector(
-                          selectedRole: config.role,
-                          onRoleSelected: configCubit.updateRole,
-                        ),
-                        const SizedBox(height: VoiceMockSpacing.lg),
-
-                        // Interview type selector
-                        TypeSelector(
-                          selectedType: config.type,
-                          onTypeSelected: configCubit.updateType,
-                        ),
-                        const SizedBox(height: VoiceMockSpacing.lg),
-
-                        // Difficulty selector
-                        DifficultySelector(
-                          selectedDifficulty: config.difficulty,
-                          onDifficultySelected: configCubit.updateDifficulty,
-                        ),
-                        const SizedBox(height: VoiceMockSpacing.lg),
-
-                        // Question count selector
-                        QuestionCountSelector(
-                          questionCount: config.questionCount,
-                          onQuestionCountChanged:
-                              configCubit.updateQuestionCount,
-                        ),
-                        const SizedBox(height: VoiceMockSpacing.xl),
-
-                        // Configuration summary
-                        ConfigurationSummaryCard(config: config),
                       ],
                     ),
-                  ),
-                ),
+                    child: BlocBuilder<SessionCubit, SessionState>(
+                      builder: (context, sessionState) {
+                        final isLoading = sessionState is SessionLoading;
 
-                // Start Interview button - anchored at bottom
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(VoiceMockSpacing.md),
-                  decoration: BoxDecoration(
-                    color: VoiceMockColors.surface,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
-                  ),
-                  child: FilledButton(
-                    onPressed: () => _handleStartInterview(context),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: VoiceMockColors.primary,
-                      foregroundColor: VoiceMockColors.surface,
-                      minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-                      ),
-                      textStyle: VoiceMockTypography.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                        return FilledButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => _handleStartInterview(context),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: VoiceMockColors.primary,
+                            foregroundColor: VoiceMockColors.surface,
+                            minimumSize: const Size.fromHeight(56),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                VoiceMockRadius.md,
+                              ),
+                            ),
+                            textStyle: VoiceMockTypography.body.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: VoiceMockColors.surface,
+                                  ),
+                                )
+                              : const Text('Start Interview'),
+                        );
+                      },
                     ),
-                    child: const Text('Start Interview'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -204,8 +255,11 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
       return;
     }
 
-    // Permission is granted, proceed to interview
-    context.goNamed('interview');
+    // Permission is granted, start session
+    final config = context.read<ConfigurationCubit>().state.config;
+    // Fire-and-forget session start after permission granted
+    // ignore: discarded_futures
+    context.read<SessionCubit>().startSession(config);
   }
 
   void _handleEnableMic(BuildContext context, PermissionState state) {

@@ -5,6 +5,8 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:voicemock/core/http/http.dart';
+
 class AppBlocObserver extends BlocObserver {
   const AppBlocObserver();
 
@@ -22,8 +24,10 @@ class AppBlocObserver extends BlocObserver {
 }
 
 Future<void> bootstrap(
-  FutureOr<Widget> Function(SharedPreferences prefs) builder,
-) async {
+  FutureOr<Widget> Function(SharedPreferences prefs, ApiClient apiClient)
+  builder, {
+  required String baseUrl,
+}) async {
   FlutterError.onError = (details) {
     log(details.exceptionAsString(), stackTrace: details.stack);
   };
@@ -34,5 +38,8 @@ Future<void> bootstrap(
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
 
-  runApp(await builder(prefs));
+  // Create singleton ApiClient
+  final apiClient = ApiClient(baseUrl: baseUrl);
+
+  runApp(await builder(prefs, apiClient));
 }

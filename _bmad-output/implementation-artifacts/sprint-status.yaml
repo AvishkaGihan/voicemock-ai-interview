@@ -46,7 +46,7 @@ development_status:
   1-3-microphone-permission-request-graceful-denial-android: done
   1-4-backend-baseline-health-endpoint: done
   1-5-implement-post-session-start-token-in-memory-session: done
-  1-6-start-session-from-android-app-show-opening-prompt-text-only: backlog
+  1-6-start-session-from-android-app-show-opening-prompt-text-only: done
   1-7-block-starting-without-internet-android-first-mvp: backlog
   epic-1-retrospective: optional
 

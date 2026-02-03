@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:voicemock/features/interview/domain/session.dart';
+import 'package:voicemock/features/interview/presentation/view/interview_page.dart';
 import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
 import 'package:voicemock/features/interview/presentation/view/setup_page.dart';
 
@@ -18,15 +20,20 @@ final GoRouter appRouter = GoRouter(
       name: 'permission',
       builder: (context, state) => const PermissionRationalePage(),
     ),
-    // Placeholder for future interview route
     GoRoute(
       path: '/interview',
       name: 'interview',
-      builder: (context, state) => const Scaffold(
-        body: Center(
-          child: Text('Interview Screen - Coming in Story 2.1'),
-        ),
-      ),
+      builder: (context, state) {
+        final session = state.extra as Session?;
+        if (session == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text('Error: No session provided'),
+            ),
+          );
+        }
+        return InterviewPage(session: session);
+      },
     ),
   ],
   errorBuilder: (context, state) => Scaffold(
