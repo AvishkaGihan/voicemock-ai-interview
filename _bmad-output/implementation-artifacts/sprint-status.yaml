@@ -43,7 +43,7 @@ development_status:
   epic-1: in-progress
   1-1-bootstrap-projects-from-approved-starter-templates-android-first: done
   1-2-configure-interview-android-ui: done
-  1-3-microphone-permission-request-graceful-denial-android: backlog
+  1-3-microphone-permission-request-graceful-denial-android: done
   1-4-backend-baseline-health-endpoint: backlog
   1-5-implement-post-session-start-token-in-memory-session: backlog
   1-6-start-session-from-android-app-show-opening-prompt-text-only: backlog

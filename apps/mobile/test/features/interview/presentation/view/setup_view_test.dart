@@ -4,23 +4,35 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:voicemock/core/permissions/permission_service.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_state.dart';
+import 'package:voicemock/features/interview/presentation/cubit/permission_cubit.dart';
+import 'package:voicemock/features/interview/presentation/cubit/permission_state.dart';
 import 'package:voicemock/features/interview/presentation/view/setup_view.dart';
 
 class MockConfigurationCubit extends MockCubit<ConfigurationState>
     implements ConfigurationCubit {}
 
+class MockPermissionCubit extends MockCubit<PermissionState>
+    implements PermissionCubit {}
+
 extension on WidgetTester {
-  Future<void> pumpSetupView(ConfigurationCubit cubit) async {
+  Future<void> pumpSetupView(
+    ConfigurationCubit configCubit,
+    PermissionCubit permissionCubit,
+  ) async {
     final router = GoRouter(
       initialLocation: '/',
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => BlocProvider<ConfigurationCubit>.value(
-            value: cubit,
+          builder: (context, state) => MultiBlocProvider(
+            providers: [
+              BlocProvider<ConfigurationCubit>.value(value: configCubit),
+              BlocProvider<PermissionCubit>.value(value: permissionCubit),
+            ],
             child: const SetupView(),
           ),
         ),
@@ -29,6 +41,13 @@ extension on WidgetTester {
           name: 'interview',
           builder: (context, state) => const Scaffold(
             body: Text('Interview Screen'),
+          ),
+        ),
+        GoRoute(
+          path: '/permission',
+          name: 'permission',
+          builder: (context, state) => const Scaffold(
+            body: Text('Permission Screen'),
           ),
         ),
       ],
@@ -43,24 +62,35 @@ extension on WidgetTester {
 }
 
 void main() {
-  late MockConfigurationCubit mockCubit;
+  late MockConfigurationCubit mockConfigCubit;
+  late MockPermissionCubit mockPermissionCubit;
 
   setUpAll(() {
     // Register fallback values for mocktail
     registerFallbackValue(InterviewRole.softwareEngineer);
     registerFallbackValue(InterviewType.behavioral);
     registerFallbackValue(DifficultyLevel.medium);
+    registerFallbackValue(MicrophonePermissionStatus.granted);
   });
 
   setUp(() {
-    mockCubit = MockConfigurationCubit();
+    mockConfigCubit = MockConfigurationCubit();
+    mockPermissionCubit = MockPermissionCubit();
+
+    // Default permission state (granted)
+    when(() => mockPermissionCubit.state).thenReturn(
+      const PermissionState(
+        status: MicrophonePermissionStatus.granted,
+        hasChecked: true,
+      ),
+    );
   });
 
   group('SetupView', () {
     testWidgets('shows loading indicator when isLoading is true', (
       tester,
     ) async {
-      when(() => mockCubit.state).thenReturn(
+      when(() => mockConfigCubit.state).thenReturn(
         const ConfigurationState(
           config: InterviewConfig(
             role: InterviewRole.softwareEngineer,
@@ -72,15 +102,17 @@ void main() {
         ),
       );
 
-      await tester.pumpSetupView(mockCubit);
+      await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('renders all selectors when loaded', (tester) async {
-      when(() => mockCubit.state).thenReturn(ConfigurationState.initial());
+      when(
+        () => mockConfigCubit.state,
+      ).thenReturn(ConfigurationState.initial());
 
-      await tester.pumpSetupView(mockCubit);
+      await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
       // Check for role selector card
       expect(find.text('Target Role'), findsOneWidget);
@@ -111,7 +143,7 @@ void main() {
     testWidgets('displays configuration summary with current selections', (
       tester,
     ) async {
-      when(() => mockCubit.state).thenReturn(
+      when(() => mockConfigCubit.state).thenReturn(
         const ConfigurationState(
           config: InterviewConfig(
             role: InterviewRole.productManager,
@@ -122,7 +154,7 @@ void main() {
         ),
       );
 
-      await tester.pumpSetupView(mockCubit);
+      await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
       // Summary should show the selected values
       expect(find.text('Product Manager'), findsWidgets);
@@ -134,67 +166,111 @@ void main() {
     testWidgets('calls updateType when type selector is tapped', (
       tester,
     ) async {
-      when(() => mockCubit.state).thenReturn(ConfigurationState.initial());
       when(
-        () => mockCubit.updateType(InterviewType.technical),
+        () => mockConfigCubit.state,
+      ).thenReturn(ConfigurationState.initial());
+      when(
+        () => mockConfigCubit.updateType(InterviewType.technical),
       ).thenReturn(null);
 
-      await tester.pumpSetupView(mockCubit);
+      await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
       // Tap on Technical option in type selector
       await tester.tap(find.text('Technical'));
       await tester.pump();
 
-      verify(() => mockCubit.updateType(InterviewType.technical)).called(1);
+      verify(
+        () => mockConfigCubit.updateType(InterviewType.technical),
+      ).called(1);
     });
 
     testWidgets('calls updateDifficulty when difficulty selector is tapped', (
       tester,
     ) async {
-      when(() => mockCubit.state).thenReturn(ConfigurationState.initial());
       when(
-        () => mockCubit.updateDifficulty(DifficultyLevel.hard),
+        () => mockConfigCubit.state,
+      ).thenReturn(ConfigurationState.initial());
+      when(
+        () => mockConfigCubit.updateDifficulty(DifficultyLevel.hard),
       ).thenReturn(null);
 
-      await tester.pumpSetupView(mockCubit);
+      await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
       // Tap on Hard option in difficulty selector
       await tester.tap(find.text('Hard'));
       await tester.pump();
 
-      verify(() => mockCubit.updateDifficulty(DifficultyLevel.hard)).called(1);
+      verify(
+        () => mockConfigCubit.updateDifficulty(DifficultyLevel.hard),
+      ).called(1);
     });
 
-    testWidgets('Start Interview button navigates to interview screen', (
-      tester,
-    ) async {
-      when(() => mockCubit.state).thenReturn(ConfigurationState.initial());
+    testWidgets(
+      'Start Interview button navigates to interview when mic granted',
+      (tester) async {
+        when(() => mockConfigCubit.state).thenReturn(
+          ConfigurationState.initial(),
+        );
+        when(() => mockPermissionCubit.state).thenReturn(
+          const PermissionState(
+            status: MicrophonePermissionStatus.granted,
+            hasChecked: true,
+          ),
+        );
 
-      await tester.pumpSetupView(mockCubit);
+        await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
-      // Tap Start Interview button
-      await tester.tap(find.text('Start Interview'));
-      await tester.pumpAndSettle();
+        // Tap Start Interview button
+        await tester.tap(find.text('Start Interview'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Interview Screen'), findsOneWidget);
-    });
+        expect(find.text('Interview Screen'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Start Interview button navigates to permission when mic not granted',
+      (tester) async {
+        when(() => mockConfigCubit.state).thenReturn(
+          ConfigurationState.initial(),
+        );
+        when(() => mockPermissionCubit.state).thenReturn(
+          const PermissionState(
+            status: MicrophonePermissionStatus.denied,
+            hasChecked: true,
+          ),
+        );
+
+        await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
+
+        // Tap Start Interview button
+        await tester.tap(find.text('Start Interview'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Permission Screen'), findsOneWidget);
+      },
+    );
 
     testWidgets('Start Interview button is always enabled', (tester) async {
-      when(() => mockCubit.state).thenReturn(ConfigurationState.initial());
+      when(
+        () => mockConfigCubit.state,
+      ).thenReturn(ConfigurationState.initial());
 
-      await tester.pumpSetupView(mockCubit);
+      await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
       final button = tester.widget<FilledButton>(find.byType(FilledButton));
       expect(button.onPressed, isNotNull);
     });
 
     testWidgets('calls updateRole when role is selected', (tester) async {
-      when(() => mockCubit.state).thenReturn(ConfigurationState.initial());
       when(
-        () => mockCubit.updateRole(InterviewRole.dataScientist),
+        () => mockConfigCubit.state,
+      ).thenReturn(ConfigurationState.initial());
+      when(
+        () => mockConfigCubit.updateRole(InterviewRole.dataScientist),
       ).thenReturn(null);
 
-      await tester.pumpSetupView(mockCubit);
+      await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
 
       // Open role picker using first instance (the selector card)
       await tester.tap(find.text('Software Engineer').first);
@@ -204,7 +280,74 @@ void main() {
       await tester.tap(find.text('Data Scientist'));
       await tester.pumpAndSettle();
 
-      verify(() => mockCubit.updateRole(InterviewRole.dataScientist)).called(1);
+      verify(
+        () => mockConfigCubit.updateRole(InterviewRole.dataScientist),
+      ).called(1);
     });
+
+    testWidgets(
+      'shows permission denied banner when permission is denied',
+      (tester) async {
+        when(() => mockConfigCubit.state).thenReturn(
+          ConfigurationState.initial(),
+        );
+        when(() => mockPermissionCubit.state).thenReturn(
+          const PermissionState(
+            status: MicrophonePermissionStatus.denied,
+            hasChecked: true,
+          ),
+        );
+
+        await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
+
+        expect(
+          find.text('Microphone access is required for voice practice'),
+          findsOneWidget,
+        );
+        expect(find.text('Enable Microphone'), findsOneWidget);
+        expect(find.text('Not now'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows Open Settings button when permanently denied',
+      (tester) async {
+        when(() => mockConfigCubit.state).thenReturn(
+          ConfigurationState.initial(),
+        );
+        when(() => mockPermissionCubit.state).thenReturn(
+          const PermissionState(
+            status: MicrophonePermissionStatus.permanentlyDenied,
+            hasChecked: true,
+          ),
+        );
+
+        await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
+
+        expect(find.text('Open Settings'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not show banner when permission is granted',
+      (tester) async {
+        when(() => mockConfigCubit.state).thenReturn(
+          ConfigurationState.initial(),
+        );
+        when(() => mockPermissionCubit.state).thenReturn(
+          const PermissionState(
+            status: MicrophonePermissionStatus.granted,
+            hasChecked: true,
+          ),
+        );
+
+        await tester.pumpSetupView(mockConfigCubit, mockPermissionCubit);
+
+        expect(
+          find.text('Microphone access is required for voice practice'),
+          findsNothing,
+        );
+      },
+    );
   });
 }

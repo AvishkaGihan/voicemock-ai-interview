@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_state.dart';
+import 'package:voicemock/features/interview/presentation/cubit/permission_cubit.dart';
+import 'package:voicemock/features/interview/presentation/cubit/permission_state.dart';
+import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
 import 'package:voicemock/features/interview/presentation/widgets/configuration_summary_card.dart';
 import 'package:voicemock/features/interview/presentation/widgets/difficulty_selector.dart';
+import 'package:voicemock/features/interview/presentation/widgets/permission_denied_banner.dart';
 import 'package:voicemock/features/interview/presentation/widgets/question_count_selector.dart';
 import 'package:voicemock/features/interview/presentation/widgets/role_selector.dart';
 import 'package:voicemock/features/interview/presentation/widgets/type_selector.dart';
@@ -14,14 +20,43 @@ import 'package:voicemock/features/interview/presentation/widgets/type_selector.
 ///
 /// Provides selectors for role, type, difficulty, and question count.
 /// Shows a summary of selections and a Start Interview button.
-class SetupView extends StatelessWidget {
+/// Handles permission checking and shows banner when permission is denied.
+class SetupView extends StatefulWidget {
   const SetupView({super.key});
+
+  @override
+  State<SetupView> createState() => _SetupViewState();
+}
+
+class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
+  bool _bannerDismissed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Check permission status when app comes to foreground
+      // This handles the case where user enabled permission in settings
+      unawaited(context.read<PermissionCubit>().checkPermission());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ConfigurationCubit, ConfigurationState>(
-      builder: (context, state) {
-        if (state.isLoading) {
+      builder: (context, configState) {
+        if (configState.isLoading) {
           return const Center(
             child: CircularProgressIndicator(
               color: VoiceMockColors.primary,
@@ -29,8 +64,8 @@ class SetupView extends StatelessWidget {
           );
         }
 
-        final cubit = context.read<ConfigurationCubit>();
-        final config = state.config;
+        final configCubit = context.read<ConfigurationCubit>();
+        final config = configState.config;
 
         return Scaffold(
           backgroundColor: VoiceMockColors.background,
@@ -52,31 +87,64 @@ class SetupView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Permission denied banner (shown when permission is
+                        // not granted)
+                        BlocBuilder<PermissionCubit, PermissionState>(
+                          builder: (context, permissionState) {
+                            final shouldShowBanner =
+                                permissionState.hasChecked &&
+                                !permissionState.isGranted &&
+                                !_bannerDismissed;
+
+                            if (!shouldShowBanner) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: VoiceMockSpacing.lg,
+                              ),
+                              child: PermissionDeniedBanner(
+                                status: permissionState.status,
+                                onEnableTap: () {
+                                  _handleEnableMic(context, permissionState);
+                                },
+                                onDismissTap: () {
+                                  setState(() {
+                                    _bannerDismissed = true;
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                        ),
+
                         // Role selector
                         RoleSelector(
                           selectedRole: config.role,
-                          onRoleSelected: cubit.updateRole,
+                          onRoleSelected: configCubit.updateRole,
                         ),
                         const SizedBox(height: VoiceMockSpacing.lg),
 
                         // Interview type selector
                         TypeSelector(
                           selectedType: config.type,
-                          onTypeSelected: cubit.updateType,
+                          onTypeSelected: configCubit.updateType,
                         ),
                         const SizedBox(height: VoiceMockSpacing.lg),
 
                         // Difficulty selector
                         DifficultySelector(
                           selectedDifficulty: config.difficulty,
-                          onDifficultySelected: cubit.updateDifficulty,
+                          onDifficultySelected: configCubit.updateDifficulty,
                         ),
                         const SizedBox(height: VoiceMockSpacing.lg),
 
                         // Question count selector
                         QuestionCountSelector(
                           questionCount: config.questionCount,
-                          onQuestionCountChanged: cubit.updateQuestionCount,
+                          onQuestionCountChanged:
+                              configCubit.updateQuestionCount,
                         ),
                         const SizedBox(height: VoiceMockSpacing.xl),
 
@@ -102,9 +170,7 @@ class SetupView extends StatelessWidget {
                     ],
                   ),
                   child: FilledButton(
-                    onPressed: () {
-                      context.goNamed('interview');
-                    },
+                    onPressed: () => _handleStartInterview(context),
                     style: FilledButton.styleFrom(
                       backgroundColor: VoiceMockColors.primary,
                       foregroundColor: VoiceMockColors.surface,
@@ -125,5 +191,32 @@ class SetupView extends StatelessWidget {
         );
       },
     );
+  }
+
+  void _handleStartInterview(BuildContext context) {
+    final permissionState = context.read<PermissionCubit>().state;
+
+    // If permission is not granted, navigate to permission rationale page
+    if (!permissionState.isGranted) {
+      unawaited(
+        context.pushNamed(PermissionRationalePage.routeName.substring(1)),
+      );
+      return;
+    }
+
+    // Permission is granted, proceed to interview
+    context.goNamed('interview');
+  }
+
+  void _handleEnableMic(BuildContext context, PermissionState state) {
+    if (state.isPermanentlyDenied) {
+      // Open app settings for permanently denied
+      unawaited(context.read<PermissionCubit>().openSettings());
+    } else {
+      // Navigate to permission rationale page
+      unawaited(
+        context.pushNamed(PermissionRationalePage.routeName.substring(1)),
+      );
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
 import 'package:voicemock/features/interview/presentation/view/setup_page.dart';
 
 /// App router configuration using go_router.
@@ -11,6 +12,11 @@ final GoRouter appRouter = GoRouter(
       path: '/',
       name: 'home',
       builder: (context, state) => const SetupPage(),
+    ),
+    GoRoute(
+      path: PermissionRationalePage.routeName,
+      name: 'permission',
+      builder: (context, state) => const PermissionRationalePage(),
     ),
     // Placeholder for future interview route
     GoRoute(

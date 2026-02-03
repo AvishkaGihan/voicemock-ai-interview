@@ -19,6 +19,7 @@ dependencies:
   go_router: ^17.0.1
   intl: ^0.20.2
   just_audio: ^0.10.5
+  permission_handler: ^11.3.1
   record: ^6.1.2
   shared_preferences: ^2.5.3
 
