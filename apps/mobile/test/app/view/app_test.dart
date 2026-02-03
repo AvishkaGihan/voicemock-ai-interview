@@ -2,7 +2,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:voicemock/app/app.dart';
+import 'package:voicemock/app/view/app.dart';
 import 'package:voicemock/features/interview/presentation/view/setup_page.dart';
 
 void main() {
