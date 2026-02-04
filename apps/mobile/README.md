@@ -35,6 +35,36 @@ _\*Voicemock works on iOS, Android, Web, and Windows._
 
 ---
 
+## Features 🎯
+
+### Connectivity Detection
+
+The app automatically detects network connectivity and prevents starting an interview session without internet access.
+
+**Requirements:**
+
+- **Android:** `ACCESS_NETWORK_STATE` permission (automatically granted, declared in `AndroidManifest.xml`)
+- **iOS:** No permissions required
+
+**Dependency:** `connectivity_plus: ^7.0.0`
+
+**Behavior:**
+
+- Displays an orange warning banner when offline
+- Disables "Start Interview" button when no internet connection detected
+- Provides "Retry" button to recheck connectivity
+- Automatically updates UI when connectivity is restored
+
+**Troubleshooting:**
+
+- If connectivity detection is not working on Android emulator:
+  1. Open Extended Controls (⋯ button)
+  2. Go to Cellular → Data status
+  3. Toggle between "Full" and "Denied" to test offline/online states
+- On physical devices, toggle Airplane Mode to test connectivity handling
+
+---
+
 ## Running Tests 🧪
 
 To run all unit and widget tests use the following command:

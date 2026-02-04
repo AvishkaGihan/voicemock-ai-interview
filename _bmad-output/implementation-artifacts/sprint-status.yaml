@@ -47,7 +47,7 @@ development_status:
   1-4-backend-baseline-health-endpoint: done
   1-5-implement-post-session-start-token-in-memory-session: done
   1-6-start-session-from-android-app-show-opening-prompt-text-only: done
-  1-7-block-starting-without-internet-android-first-mvp: backlog
+  1-7-block-starting-without-internet-android-first-mvp: done
   epic-1-retrospective: optional
 
   # Epic 2: Complete the Core Voice Turn Loop (Record → Transcribe → Next Question)

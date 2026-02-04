@@ -3,6 +3,8 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Required for API communication with backend -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required for connectivity detection -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:label="${appName}"
