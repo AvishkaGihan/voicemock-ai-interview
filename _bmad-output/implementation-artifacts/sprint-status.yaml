@@ -40,7 +40,7 @@ story_location: c:/Users/avish/OneDrive/Documents/Projects/voicemock-ai-intervie
 
 development_status:
   # Epic 1: Start & Configure an Interview Session
-  epic-1: in-progress
+  epic-1: done
   1-1-bootstrap-projects-from-approved-starter-templates-android-first: done
   1-2-configure-interview-android-ui: done
   1-3-microphone-permission-request-graceful-denial-android: done
@@ -48,10 +48,10 @@ development_status:
   1-5-implement-post-session-start-token-in-memory-session: done
   1-6-start-session-from-android-app-show-opening-prompt-text-only: done
   1-7-block-starting-without-internet-android-first-mvp: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Complete the Core Voice Turn Loop (Record → Transcribe → Next Question)
-  epic-2: backlog
+  epic-2: in-progress
   2-1-interview-state-machine-android-ui: backlog
   2-2-push-to-talk-recording-capture-android: backlog
   2-3-post-turn-contract-multipart-transcript-response: backlog
