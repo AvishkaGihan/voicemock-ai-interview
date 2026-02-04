@@ -10,6 +10,7 @@ environment:
 dependencies:
   audio_session: ^0.2.2
   bloc: ^9.0.1
+  connectivity_plus: ^7.0.0
   dartz: ^0.10.1
   dio: ^5.7.0
   equatable: ^2.0.7

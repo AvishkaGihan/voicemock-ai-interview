@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:voicemock/core/connectivity/connectivity.dart';
 import 'package:voicemock/core/http/http.dart';
 import 'package:voicemock/core/permissions/permissions.dart';
 import 'package:voicemock/features/interview/data/data.dart';
@@ -58,6 +60,14 @@ class SetupPage extends StatelessWidget {
             create: (context) => SessionCubit(
               repository: context.read<SessionRepository>(),
             ),
+          ),
+          BlocProvider(
+            create: (context) {
+              final cubit = ConnectivityCubit(connectivity: Connectivity())
+                ..startListening();
+              unawaited(cubit.checkConnectivity());
+              return cubit;
+            },
           ),
         ],
         child: const SetupView(),

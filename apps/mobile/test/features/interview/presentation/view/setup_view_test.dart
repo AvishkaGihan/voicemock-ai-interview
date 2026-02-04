@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:voicemock/core/connectivity/connectivity.dart';
 import 'package:voicemock/core/permissions/permission_service.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_cubit.dart';
@@ -13,6 +14,14 @@ import 'package:voicemock/features/interview/presentation/cubit/permission_state
 import 'package:voicemock/features/interview/presentation/cubit/session_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/session_state.dart';
 import 'package:voicemock/features/interview/presentation/view/setup_view.dart';
+import 'package:voicemock/features/interview/presentation/widgets/connectivity_banner.dart';
+import 'package:voicemock/l10n/l10n.dart';
+
+class MockConnectivityCubit extends MockCubit<ConnectivityState>
+    implements ConnectivityCubit {}
+
+class MockSessionCubit extends MockCubit<SessionState>
+    implements SessionCubit {}
 
 class MockConfigurationCubit extends MockCubit<ConfigurationState>
     implements ConfigurationCubit {}
@@ -20,52 +29,103 @@ class MockConfigurationCubit extends MockCubit<ConfigurationState>
 class MockPermissionCubit extends MockCubit<PermissionState>
     implements PermissionCubit {}
 
-class MockSessionCubit extends MockCubit<SessionState>
-    implements SessionCubit {}
+Future<void> pumpVoicemockApp(
+  WidgetTester tester,
+  Widget widget, {
+  ConnectivityCubit? connectivityCubit,
+  SessionCubit? sessionCubit,
+  ConfigurationCubit? configurationCubit,
+  PermissionCubit? permissionCubit,
+  GoRouter? router,
+}) {
+  // Set up default mocks if not provided
+  final mockConnectivityCubit = connectivityCubit ?? MockConnectivityCubit();
+  final mockSessionCubit = sessionCubit ?? MockSessionCubit();
+  final mockConfigurationCubit = configurationCubit ?? MockConfigurationCubit();
+  final mockPermissionCubit = permissionCubit ?? MockPermissionCubit();
 
-extension on WidgetTester {
-  Future<void> pumpSetupView(
-    ConfigurationCubit configCubit,
-    PermissionCubit permissionCubit,
-    SessionCubit sessionCubit,
-  ) async {
-    final router = GoRouter(
-      initialLocation: '/',
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => MultiBlocProvider(
-            providers: [
-              BlocProvider<ConfigurationCubit>.value(value: configCubit),
-              BlocProvider<PermissionCubit>.value(value: permissionCubit),
-              BlocProvider<SessionCubit>.value(value: sessionCubit),
-            ],
-            child: const SetupView(),
-          ),
-        ),
-        GoRoute(
-          path: '/interview',
-          name: 'interview',
-          builder: (context, state) => const Scaffold(
-            body: Text('Interview Screen'),
-          ),
-        ),
-        GoRoute(
-          path: '/permission',
-          name: 'permission',
-          builder: (context, state) => const Scaffold(
-            body: Text('Permission Screen'),
-          ),
-        ),
-      ],
+  // Set default states
+  if (connectivityCubit == null) {
+    when(
+      () => mockConnectivityCubit.state,
+    ).thenReturn(const ConnectivityOnline());
+    when(mockConnectivityCubit.checkConnectivity).thenAnswer((_) async {});
+  }
+
+  if (sessionCubit == null) {
+    when(() => mockSessionCubit.state).thenReturn(SessionInitial());
+  }
+
+  if (configurationCubit == null) {
+    when(() => mockConfigurationCubit.state).thenReturn(
+      ConfigurationState.initial(),
     );
+  }
 
-    await pumpWidget(
-      MaterialApp.router(
-        routerConfig: router,
+  if (permissionCubit == null) {
+    when(() => mockPermissionCubit.state).thenReturn(
+      PermissionState.initial().copyWith(
+        status: MicrophonePermissionStatus.granted,
+        hasChecked: true,
       ),
     );
   }
+
+  return tester.pumpWidget(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider<ConnectivityCubit>.value(
+          value: mockConnectivityCubit,
+        ),
+        BlocProvider<SessionCubit>.value(
+          value: mockSessionCubit,
+        ),
+        BlocProvider<ConfigurationCubit>.value(
+          value: mockConfigurationCubit,
+        ),
+        BlocProvider<PermissionCubit>.value(
+          value: mockPermissionCubit,
+        ),
+      ],
+      child: router != null
+          ? MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            )
+          : MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: widget,
+            ),
+    ),
+  );
+}
+
+GoRouter _createRouter() {
+  return GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const SetupView(),
+      ),
+      GoRoute(
+        path: '/interview',
+        name: 'interview',
+        builder: (context, state) => const Scaffold(
+          body: Text('Interview Screen'),
+        ),
+      ),
+      GoRoute(
+        path: '/permission',
+        name: 'permission',
+        builder: (context, state) => const Scaffold(
+          body: Text('Permission Screen'),
+        ),
+      ),
+    ],
+  );
 }
 
 void main() {
@@ -122,10 +182,13 @@ void main() {
         ),
       );
 
-      await tester.pumpSetupView(
-        mockConfigCubit,
-        mockPermissionCubit,
-        mockSessionCubit,
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -136,10 +199,13 @@ void main() {
         () => mockConfigCubit.state,
       ).thenReturn(ConfigurationState.initial());
 
-      await tester.pumpSetupView(
-        mockConfigCubit,
-        mockPermissionCubit,
-        mockSessionCubit,
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
       );
 
       // Check for role selector card
@@ -182,10 +248,13 @@ void main() {
         ),
       );
 
-      await tester.pumpSetupView(
-        mockConfigCubit,
-        mockPermissionCubit,
-        mockSessionCubit,
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
       );
 
       // Summary should show the selected values
@@ -205,10 +274,13 @@ void main() {
         () => mockConfigCubit.updateType(InterviewType.technical),
       ).thenReturn(null);
 
-      await tester.pumpSetupView(
-        mockConfigCubit,
-        mockPermissionCubit,
-        mockSessionCubit,
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
       );
 
       // Tap on Technical option in type selector
@@ -230,10 +302,13 @@ void main() {
         () => mockConfigCubit.updateDifficulty(DifficultyLevel.hard),
       ).thenReturn(null);
 
-      await tester.pumpSetupView(
-        mockConfigCubit,
-        mockPermissionCubit,
-        mockSessionCubit,
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
       );
 
       // Tap on Hard option in difficulty selector
@@ -262,10 +337,13 @@ void main() {
           (_) async {},
         );
 
-        await tester.pumpSetupView(
-          mockConfigCubit,
-          mockPermissionCubit,
-          mockSessionCubit,
+        await pumpVoicemockApp(
+          tester,
+          const SetupView(),
+          router: _createRouter(),
+          configurationCubit: mockConfigCubit,
+          permissionCubit: mockPermissionCubit,
+          sessionCubit: mockSessionCubit,
         );
 
         // Tap Start Interview button
@@ -289,10 +367,13 @@ void main() {
           ),
         );
 
-        await tester.pumpSetupView(
-          mockConfigCubit,
-          mockPermissionCubit,
-          mockSessionCubit,
+        await pumpVoicemockApp(
+          tester,
+          const SetupView(),
+          router: _createRouter(),
+          configurationCubit: mockConfigCubit,
+          permissionCubit: mockPermissionCubit,
+          sessionCubit: mockSessionCubit,
         );
 
         // Tap Start Interview button
@@ -308,10 +389,13 @@ void main() {
         () => mockConfigCubit.state,
       ).thenReturn(ConfigurationState.initial());
 
-      await tester.pumpSetupView(
-        mockConfigCubit,
-        mockPermissionCubit,
-        mockSessionCubit,
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
       );
 
       final button = tester.widget<FilledButton>(find.byType(FilledButton));
@@ -326,10 +410,13 @@ void main() {
         () => mockConfigCubit.updateRole(InterviewRole.dataScientist),
       ).thenReturn(null);
 
-      await tester.pumpSetupView(
-        mockConfigCubit,
-        mockPermissionCubit,
-        mockSessionCubit,
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
       );
 
       // Open role picker using first instance (the selector card)
@@ -358,10 +445,13 @@ void main() {
           ),
         );
 
-        await tester.pumpSetupView(
-          mockConfigCubit,
-          mockPermissionCubit,
-          mockSessionCubit,
+        await pumpVoicemockApp(
+          tester,
+          const SetupView(),
+          router: _createRouter(),
+          configurationCubit: mockConfigCubit,
+          permissionCubit: mockPermissionCubit,
+          sessionCubit: mockSessionCubit,
         );
 
         expect(
@@ -386,10 +476,13 @@ void main() {
           ),
         );
 
-        await tester.pumpSetupView(
-          mockConfigCubit,
-          mockPermissionCubit,
-          mockSessionCubit,
+        await pumpVoicemockApp(
+          tester,
+          const SetupView(),
+          router: _createRouter(),
+          configurationCubit: mockConfigCubit,
+          permissionCubit: mockPermissionCubit,
+          sessionCubit: mockSessionCubit,
         );
 
         expect(find.text('Open Settings'), findsOneWidget);
@@ -409,10 +502,13 @@ void main() {
           ),
         );
 
-        await tester.pumpSetupView(
-          mockConfigCubit,
-          mockPermissionCubit,
-          mockSessionCubit,
+        await pumpVoicemockApp(
+          tester,
+          const SetupView(),
+          router: _createRouter(),
+          configurationCubit: mockConfigCubit,
+          permissionCubit: mockPermissionCubit,
+          sessionCubit: mockSessionCubit,
         );
 
         expect(
@@ -421,5 +517,208 @@ void main() {
         );
       },
     );
+  });
+  group('connectivity integration', () {
+    testWidgets('shows ConnectivityBanner when offline', (tester) async {
+      final mockConnectivityCubit = MockConnectivityCubit();
+      when(
+        () => mockConnectivityCubit.state,
+      ).thenReturn(const ConnectivityOffline());
+      when(mockConnectivityCubit.checkConnectivity).thenAnswer((_) async {});
+
+      when(() => mockConfigCubit.state).thenReturn(
+        ConfigurationState.initial(),
+      );
+
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
+        connectivityCubit: mockConnectivityCubit,
+      );
+
+      expect(find.byType(ConnectivityBanner), findsOneWidget);
+      expect(
+        find.text('Internet connection required to start interview'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides ConnectivityBanner when online', (tester) async {
+      final mockConnectivityCubit = MockConnectivityCubit();
+      when(
+        () => mockConnectivityCubit.state,
+      ).thenReturn(const ConnectivityOnline());
+
+      when(() => mockConfigCubit.state).thenReturn(
+        ConfigurationState.initial(),
+      );
+
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
+        connectivityCubit: mockConnectivityCubit,
+      );
+
+      expect(find.byType(ConnectivityBanner), findsNothing);
+    });
+
+    testWidgets('disables Start Interview button when offline', (
+      tester,
+    ) async {
+      final mockConnectivityCubit = MockConnectivityCubit();
+      when(
+        () => mockConnectivityCubit.state,
+      ).thenReturn(const ConnectivityOffline());
+      when(mockConnectivityCubit.checkConnectivity).thenAnswer((_) async {});
+
+      when(() => mockConfigCubit.state).thenReturn(
+        ConfigurationState.initial(),
+      );
+
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
+        connectivityCubit: mockConnectivityCubit,
+      );
+
+      final button = tester.widget<FilledButton>(
+        find.byType(FilledButton),
+      );
+      expect(button.onPressed, isNull);
+      expect(find.text('No Internet Connection'), findsOneWidget);
+    });
+
+    testWidgets('enables Start Interview button when online', (tester) async {
+      final mockConnectivityCubit = MockConnectivityCubit();
+      when(
+        () => mockConnectivityCubit.state,
+      ).thenReturn(const ConnectivityOnline());
+      when(mockConnectivityCubit.checkConnectivity).thenAnswer((_) async {});
+
+      when(() => mockConfigCubit.state).thenReturn(
+        ConfigurationState.initial(),
+      );
+
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
+        connectivityCubit: mockConnectivityCubit,
+      );
+
+      final button = tester.widget<FilledButton>(
+        find.byType(FilledButton),
+      );
+      expect(button.onPressed, isNotNull);
+      expect(find.text('Start Interview'), findsOneWidget);
+    });
+
+    testWidgets('checks connectivity before starting session', (tester) async {
+      final mockConnectivityCubit = MockConnectivityCubit();
+      when(
+        () => mockConnectivityCubit.state,
+      ).thenReturn(const ConnectivityOnline());
+      when(mockConnectivityCubit.checkConnectivity).thenAnswer((_) async {});
+
+      when(() => mockConfigCubit.state).thenReturn(
+        ConfigurationState.initial(),
+      );
+      when(() => mockSessionCubit.startSession(any())).thenAnswer((_) async {});
+
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
+        connectivityCubit: mockConnectivityCubit,
+      );
+
+      await tester.tap(find.text('Start Interview'));
+      await tester.pump();
+
+      verify(mockConnectivityCubit.checkConnectivity).called(1);
+    });
+
+    testWidgets(
+      'does not start session when connectivity check shows offline',
+      (tester) async {
+        final mockConnectivityCubit = MockConnectivityCubit();
+        when(
+          () => mockConnectivityCubit.state,
+        ).thenReturn(const ConnectivityOnline());
+        when(mockConnectivityCubit.checkConnectivity).thenAnswer((_) {
+          when(
+            () => mockConnectivityCubit.state,
+          ).thenReturn(const ConnectivityOffline());
+          return Future<void>.value();
+        });
+
+        when(() => mockConfigCubit.state).thenReturn(
+          ConfigurationState.initial(),
+        );
+        when(
+          () => mockSessionCubit.startSession(any()),
+        ).thenAnswer((_) async {});
+
+        await pumpVoicemockApp(
+          tester,
+          const SetupView(),
+          router: _createRouter(),
+          configurationCubit: mockConfigCubit,
+          permissionCubit: mockPermissionCubit,
+          sessionCubit: mockSessionCubit,
+          connectivityCubit: mockConnectivityCubit,
+        );
+
+        await tester.tap(find.text('Start Interview'));
+        await tester.pump();
+
+        verifyNever(() => mockSessionCubit.startSession(any()));
+      },
+    );
+
+    testWidgets('Retry button triggers connectivity check', (tester) async {
+      final mockConnectivityCubit = MockConnectivityCubit();
+      when(
+        () => mockConnectivityCubit.state,
+      ).thenReturn(const ConnectivityOffline());
+      when(mockConnectivityCubit.checkConnectivity).thenAnswer((_) async {});
+
+      when(() => mockConfigCubit.state).thenReturn(
+        ConfigurationState.initial(),
+      );
+
+      await pumpVoicemockApp(
+        tester,
+        const SetupView(),
+        router: _createRouter(),
+        configurationCubit: mockConfigCubit,
+        permissionCubit: mockPermissionCubit,
+        sessionCubit: mockSessionCubit,
+        connectivityCubit: mockConnectivityCubit,
+      );
+
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+
+      verify(mockConnectivityCubit.checkConnectivity).called(1);
+    });
   });
 }
