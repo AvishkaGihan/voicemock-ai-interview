@@ -1,0 +1,27 @@
+{
+    "@@locale": "en",
+    "counterAppBarTitle": "Counter",
+    "@counterAppBarTitle": {
+        "description": "Text shown in the AppBar of the Counter Page"
+    },
+    "interviewSetupTitle": "Interview Setup",
+    "@interviewSetupTitle": {
+        "description": "Title of the interview setup page"
+    },
+    "internetConnectionRequired": "Internet connection required to start interview",
+    "@internetConnectionRequired": {
+        "description": "Message shown in the connectivity banner when offline"
+    },
+    "retry": "Retry",
+    "@retry": {
+        "description": "Label for retry button"
+    },
+    "startInterview": "Start Interview",
+    "@startInterview": {
+        "description": "Label for start interview button"
+    },
+    "noInternetConnection": "No Internet Connection",
+    "@noInternetConnection": {
+        "description": "Label for start interview button when offline"
+    }
+}

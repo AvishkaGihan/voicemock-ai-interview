@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for recording audio during interview sessions -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Required for API communication with backend -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required for connectivity detection -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:label="${appName}"
         android:name="${applicationName}"
@@ -19,7 +26,7 @@
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
-              />            
+              />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

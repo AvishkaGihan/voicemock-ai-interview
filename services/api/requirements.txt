@@ -9,6 +9,9 @@ uvicorn[standard]==0.40.0
 pydantic==2.12.5
 pydantic-settings==2.12.0
 
+# Security
+itsdangerous==2.2.0
+
 # Utilities
 python-multipart==0.0.20
 

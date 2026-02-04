@@ -1,15 +1,20 @@
 // Ignore for testing purposes
-// ignore_for_file: prefer_const_constructors
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:voicemock/app/app.dart';
-import 'package:voicemock/counter/counter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:voicemock/app/view/app.dart';
+import 'package:voicemock/core/config/environment.dart';
+import 'package:voicemock/core/http/http.dart';
+import 'package:voicemock/features/interview/presentation/view/setup_page.dart';
 
 void main() {
   group('App', () {
-    testWidgets('renders CounterPage', (tester) async {
-      await tester.pumpWidget(App());
-      expect(find.byType(CounterPage), findsOneWidget);
+    testWidgets('renders SetupPage', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final apiClient = ApiClient(baseUrl: Environment.development);
+      await tester.pumpWidget(App(prefs: prefs, apiClient: apiClient));
+      expect(find.byType(SetupPage), findsOneWidget);
     });
   });
 }
