@@ -52,7 +52,7 @@ development_status:
 
   # Epic 2: Complete the Core Voice Turn Loop (Record → Transcribe → Next Question)
   epic-2: in-progress
-  2-1-interview-state-machine-android-ui: backlog
+  2-1-interview-state-machine-android-ui: done
   2-2-push-to-talk-recording-capture-android: backlog
   2-3-post-turn-contract-multipart-transcript-response: backlog
   2-4-transcript-trust-layer-re-record-flow: backlog
