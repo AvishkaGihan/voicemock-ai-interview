@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_view.dart';
-import 'package:voicemock/features/interview/domain/domain.dart';
 
 class MockInterviewCubit extends MockCubit<InterviewState>
     implements InterviewCubit {}
@@ -58,8 +57,7 @@ void main() {
       when(() => mockCubit.state).thenReturn(
         InterviewUploading(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
         ),
@@ -83,8 +81,7 @@ void main() {
       when(() => mockCubit.state).thenReturn(
         const InterviewSpeaking(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
           ttsAudioUrl: 'url',
@@ -123,28 +120,6 @@ void main() {
 
       expect(find.text('Question 2 of 5'), findsOneWidget);
       expect(find.text('What motivates you?'), findsOneWidget);
-    });
-
-    testWidgets('shows ErrorRecoverySheet on error', (tester) async {
-      when(() => mockCubit.state).thenReturn(
-        const InterviewError(
-          failure: UnknownFailure(message: 'Something went wrong'),
-          previousState: InterviewIdle(),
-        ),
-      );
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BlocProvider<InterviewCubit>.value(
-            value: mockCubit,
-            child: const InterviewView(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Something went wrong'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
     });
   });
 }

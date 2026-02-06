@@ -33,6 +33,7 @@ void main() {
         expect: () => [
           isA<InterviewRecording>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Test question')
               .having(
                 (s) => s.recordingStartTime,
                 'recordingStartTime',
@@ -46,8 +47,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewRecording(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         ),
         act: (cubit) => cubit.startRecording(),
@@ -59,8 +59,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewUploading(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
         ),
@@ -73,8 +72,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           transcript: 'transcript',
           responseText: 'response',
           ttsAudioUrl: 'url',
@@ -90,14 +88,14 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewRecording(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         ),
         act: (cubit) => cubit.stopRecording('/path/to/audio.m4a'),
         expect: () => [
           isA<InterviewUploading>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Q1')
               .having((s) => s.audioPath, 'audioPath', '/path/to/audio.m4a')
               .having((s) => s.startTime, 'startTime', isA<DateTime>()),
         ],
@@ -122,8 +120,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewUploading(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
         ),
@@ -131,6 +128,7 @@ void main() {
         expect: () => [
           isA<InterviewTranscribing>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Q1')
               .having((s) => s.startTime, 'startTime', isA<DateTime>()),
         ],
       );
@@ -140,8 +138,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewRecording(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         ),
         act: (cubit) => cubit.onUploadComplete(),
@@ -155,14 +152,14 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewTranscribing(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           startTime: DateTime.now(),
         ),
         act: (cubit) => cubit.onTranscriptReceived('User transcript'),
         expect: () => [
           isA<InterviewThinking>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Q1')
               .having((s) => s.transcript, 'transcript', 'User transcript')
               .having((s) => s.startTime, 'startTime', isA<DateTime>()),
         ],
@@ -187,8 +184,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewThinking(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           transcript: 'User transcript',
           startTime: DateTime.now(),
         ),
@@ -199,6 +195,7 @@ void main() {
         expect: () => [
           isA<InterviewSpeaking>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Q1')
               .having((s) => s.transcript, 'transcript', 'User transcript')
               .having((s) => s.responseText, 'responseText', 'Coach response')
               .having(
@@ -231,8 +228,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           transcript: 'User transcript',
           responseText: 'Coach response',
           ttsAudioUrl: 'url',
@@ -302,8 +298,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewUploading(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
         ),
@@ -382,8 +377,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewRecording(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         ),
         act: (cubit) => cubit.cancel(),
@@ -395,8 +389,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Q1',
           transcript: 'User transcript',
           responseText: 'Coach response',
           ttsAudioUrl: 'url',
@@ -443,8 +436,7 @@ void main() {
         build: InterviewCubit.new,
         seed: () => InterviewThinking(
           questionNumber: 2,
-          totalQuestions: 5,
-          questionText: 'Test question',
+          questionText: 'Question 2',
           transcript: 'My answer to question 2',
           startTime: DateTime.now(),
         ),

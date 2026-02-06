@@ -37,7 +37,6 @@ class InterviewCubit extends Cubit<InterviewState> {
     emit(
       InterviewRecording(
         questionNumber: current.questionNumber,
-        totalQuestions: current.totalQuestions,
         questionText: current.questionText,
         recordingStartTime: DateTime.now(),
       ),
@@ -56,7 +55,6 @@ class InterviewCubit extends Cubit<InterviewState> {
     emit(
       InterviewUploading(
         questionNumber: current.questionNumber,
-        totalQuestions: current.totalQuestions,
         questionText: current.questionText,
         audioPath: audioPath,
         startTime: DateTime.now(),
@@ -76,7 +74,6 @@ class InterviewCubit extends Cubit<InterviewState> {
     emit(
       InterviewTranscribing(
         questionNumber: current.questionNumber,
-        totalQuestions: current.totalQuestions,
         questionText: current.questionText,
         startTime: DateTime.now(),
       ),
@@ -95,7 +92,6 @@ class InterviewCubit extends Cubit<InterviewState> {
     emit(
       InterviewThinking(
         questionNumber: current.questionNumber,
-        totalQuestions: current.totalQuestions,
         questionText: current.questionText,
         transcript: transcript,
         startTime: DateTime.now(),
@@ -118,7 +114,6 @@ class InterviewCubit extends Cubit<InterviewState> {
     emit(
       InterviewSpeaking(
         questionNumber: current.questionNumber,
-        totalQuestions: current.totalQuestions,
         questionText: current.questionText,
         transcript: current.transcript,
         responseText: responseText,

@@ -23,44 +23,28 @@ class InterviewView extends StatelessWidget {
       ),
       body: BlocBuilder<InterviewCubit, InterviewState>(
         builder: (context, state) {
-          // Show error sheet if we are in error state
-          if (state is InterviewError) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ErrorRecoverySheet.show(
-                context,
-                failure: state.failure,
-                onRetry: context.read<InterviewCubit>().retry,
-                // TODO(dev): Implement re-record logic (reset to Ready)
-                onReRecord: () {},
-                onCancel: context.read<InterviewCubit>().cancel,
-              );
-            });
-          }
-
           return SafeArea(
             child: Column(
               children: [
                 // Voice Pipeline Stepper (shown during processing)
-                if (state is! InterviewError)
-                  VoicePipelineStepper(
-                    currentStage: state.stage,
-                    stageStartTime: _getStageStartTime(state),
-                  ),
+                VoicePipelineStepper(
+                  currentStage: state.stage,
+                  stageStartTime: _getStageStartTime(state),
+                ),
 
                 // Turn Card (question, transcript, response)
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildTurnCard(state),
+                    child: _buildTurnCard(context, state),
                   ),
                 ),
 
                 // Hold-to-Talk Button (anchored at bottom)
-                if (state is! InterviewError)
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: _buildHoldToTalkButton(context, state),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _buildHoldToTalkButton(context, state),
+                ),
               ],
             ),
           );
@@ -69,7 +53,7 @@ class InterviewView extends StatelessWidget {
     );
   }
 
-  Widget _buildTurnCard(InterviewState state) {
+  Widget _buildTurnCard(BuildContext context, InterviewState state) {
     return switch (state) {
       InterviewIdle() => const Center(
         child: Text('Initializing interview...'),
@@ -86,72 +70,59 @@ class InterviewView extends StatelessWidget {
           questionText: questionText,
           transcript: previousTranscript,
         ),
-      InterviewRecording(
-        :final questionNumber,
-        :final totalQuestions,
-        :final questionText,
-      ) =>
+      InterviewRecording(:final questionNumber, :final questionText) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
+          totalQuestions: 5, // TODO(dev): Get from session
           questionText: questionText,
         ),
-      InterviewUploading(
-        :final questionNumber,
-        :final totalQuestions,
-        :final questionText,
-      ) =>
+      InterviewUploading(:final questionNumber, :final questionText) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
+          totalQuestions: 5,
           questionText: questionText,
         ),
-      InterviewTranscribing(
-        :final questionNumber,
-        :final totalQuestions,
-        :final questionText,
-      ) =>
+      InterviewTranscribing(:final questionNumber, :final questionText) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
+          totalQuestions: 5,
           questionText: questionText,
         ),
       InterviewThinking(
         :final questionNumber,
-        :final totalQuestions,
         :final questionText,
         :final transcript,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
+          totalQuestions: 5,
           questionText: questionText,
           transcript: transcript,
         ),
       InterviewSpeaking(
         :final questionNumber,
-        :final totalQuestions,
         :final questionText,
         :final transcript,
         :final responseText,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
+          totalQuestions: 5,
           questionText: questionText,
           transcript: transcript,
           responseText: responseText,
         ),
-      // Error state keeps showing the last valid state content if possible,
-      // but for now we'll show a placeholder since the sheet handles the error details.
-      // In a real app, we'd pull context from previousState.
-      InterviewError(:final previousState) => _buildTurnCard(previousState),
+      InterviewError(:final failure) => ErrorRecoverySheet(
+        failure: failure,
+        onRetry: () => context.read<InterviewCubit>().retry(),
+        onCancel: () => context.read<InterviewCubit>().cancel(),
+      ),
     };
   }
 
   Widget _buildHoldToTalkButton(BuildContext context, InterviewState state) {
     final cubit = context.read<InterviewCubit>();
-    final isEnabled = state is InterviewReady;
+    final isEnabled = state is InterviewReady || state is InterviewRecording;
     final isRecording = state is InterviewRecording;
     final recordingDuration = state is InterviewRecording
         ? DateTime.now().difference(state.recordingStartTime)
