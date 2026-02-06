@@ -73,7 +73,7 @@ class InterviewView extends StatelessWidget {
       InterviewRecording(:final questionNumber, :final questionText) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5, // TODO(dev): Get from session
+          totalQuestions: 5,
           questionText: questionText,
         ),
       InterviewUploading(:final questionNumber, :final questionText) =>

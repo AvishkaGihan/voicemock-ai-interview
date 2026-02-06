@@ -219,15 +219,15 @@ So that I'm never confused about whether I should speak or wait.
   - [x] Test Turn Card displays correct content per state
   - [x] Test Error Recovery Sheet shows on Error state
 
-- [ ] **Task 17: Manual testing checklist** (AC: #1-5)
-  - [ ] Verify visual state transitions are clear and unambiguous
-  - [ ] Verify layout stability (no jumping between states)
-  - [ ] Verify Hold-to-Talk responds correctly to press/release
-  - [ ] Verify stepper animates smoothly between stages
-  - [ ] Verify disabled states prevent invalid actions
-  - [ ] Verify error recovery flow works correctly
-  - [ ] Verify back button shows confirmation dialog
-  - [ ] Test with TalkBack for accessibility
+- [x] **Task 17: Manual testing checklist** (AC: #1-5)
+  - [x] Verify visual state transitions are clear and unambiguous
+  - [x] Verify layout stability (no jumping between states)
+  - [x] Verify Hold-to-Talk responds correctly to press/release
+  - [x] Verify stepper animates smoothly between stages
+  - [x] Verify disabled states prevent invalid actions
+  - [x] Verify error recovery flow works correctly
+  - [x] Verify back button shows confirmation dialog
+  - [x] Test with TalkBack for accessibility
 
 ## Dev Notes
 
