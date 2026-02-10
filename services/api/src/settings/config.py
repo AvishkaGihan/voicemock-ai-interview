@@ -6,6 +6,7 @@ allowing settings to be loaded from environment variables and .env files.
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     app_name: str = "VoiceMock AI Interview Coach API"
     version: str = "0.1.0"
     debug: bool = False
-    secret_key: str  # REQUIRED - no default for security
+    secret_key: str = Field(default="", min_length=1)  # REQUIRED - must be non-empty
     session_ttl_minutes: int = 60
 
     model_config = {
