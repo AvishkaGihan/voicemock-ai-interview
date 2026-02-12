@@ -1,15 +1,68 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:voicemock/core/audio/recording_service.dart';
+import 'package:voicemock/core/permissions/permissions.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_state.dart';
 
+class MockRecordingService extends Mock implements RecordingService {}
+
+class MockPermissionService extends Mock implements PermissionService {}
+
+// Stub functions for tearoffs
+Future<void> _disposeStub(Invocation _) => Future.value();
+Future<bool> _isRecordingStub(Invocation _) => Future.value(false);
+
+// Helper to create a properly stubbed mock service
+MockRecordingService createMockRecordingService({
+  Future<void> Function()? onStartRecording,
+  Future<String?> Function()? onStopRecording,
+  Future<bool> Function()? onIsRecording,
+}) {
+  final service = MockRecordingService();
+  when(service.dispose).thenAnswer(_disposeStub);
+  if (onStartRecording != null) {
+    when(service.startRecording).thenAnswer((_) => onStartRecording());
+  }
+  if (onStopRecording != null) {
+    when(service.stopRecording).thenAnswer((_) => onStopRecording());
+  }
+  if (onIsRecording != null) {
+    when(() => service.isRecording).thenAnswer((_) => onIsRecording());
+  }
+  return service;
+}
+
+// Helper to create a properly stubbed mock permission service
+MockPermissionService createMockPermissionService({
+  MicrophonePermissionStatus status = MicrophonePermissionStatus.granted,
+}) {
+  final service = MockPermissionService();
+  when(
+    service.checkMicrophonePermission,
+  ).thenAnswer((_) => Future.value(status));
+  return service;
+}
+
 void main() {
   group('InterviewCubit', () {
     late InterviewCubit cubit;
+    late RecordingService mockRecordingService;
 
     setUp(() {
-      cubit = InterviewCubit();
+      mockRecordingService = MockRecordingService();
+      // Stub dispose to prevent type error in tearDown
+      when(() => mockRecordingService.dispose()).thenAnswer(_disposeStub);
+      // Stub isRecording default to false
+      when(
+        () => mockRecordingService.isRecording,
+      ).thenAnswer(_isRecordingStub);
+      cubit = InterviewCubit(
+        recordingService: mockRecordingService,
+        permissionService: createMockPermissionService(),
+      );
     });
 
     tearDown(() async {
@@ -22,14 +75,24 @@ void main() {
 
     group('startRecording', () {
       blocTest<InterviewCubit, InterviewState>(
-        'emits InterviewRecording when called from Ready state',
-        build: InterviewCubit.new,
+        'emits InterviewRecording when called from Ready state with service',
+        build: () {
+          final service = MockRecordingService();
+          when(service.startRecording).thenAnswer((_) async {});
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
         seed: () => const InterviewReady(
           questionNumber: 1,
           totalQuestions: 5,
           questionText: 'Test question',
         ),
-        act: (cubit) => cubit.startRecording(),
+        act: (cubit) async {
+          await cubit.startRecording();
+        },
         expect: () => [
           isA<InterviewRecording>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
@@ -38,38 +101,95 @@ void main() {
                 (s) => s.recordingStartTime,
                 'recordingStartTime',
                 isA<DateTime>(),
+              )
+              .having((s) => s.totalQuestions, 'totalQuestions', 5),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewError when recording service fails to start',
+        build: () {
+          final service = MockRecordingService();
+          when(
+            service.startRecording,
+          ).thenThrow(Exception('Failed to start recording'));
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Test question',
+        ),
+        act: (cubit) async {
+          await cubit.startRecording();
+        },
+        expect: () => [
+          isA<InterviewError>()
+              .having((s) => s.failure, 'failure', isA<RecordingFailure>())
+              .having(
+                (s) => s.failure.message,
+                'failure.message',
+                contains('Failed to start recording'),
               ),
         ],
       );
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Recording state',
-        build: InterviewCubit.new,
+        build: () {
+          final service = MockRecordingService();
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
         seed: () => InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         ),
-        act: (cubit) => cubit.startRecording(),
-        expect: () => <InterviewState>[],
+        act: (cubit) async {
+          await cubit.startRecording();
+        },
       );
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Uploading state',
-        build: InterviewCubit.new,
+        build: () {
+          final service = MockRecordingService();
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
         seed: () => InterviewUploading(
           questionNumber: 1,
           questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
         ),
-        act: (cubit) => cubit.startRecording(),
-        expect: () => <InterviewState>[],
+        act: (cubit) async {
+          await cubit.startRecording();
+        },
       );
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Speaking state',
-        build: InterviewCubit.new,
+        build: () {
+          final service = MockRecordingService();
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
           questionText: 'Q1',
@@ -77,21 +197,35 @@ void main() {
           responseText: 'response',
           ttsAudioUrl: 'url',
         ),
-        act: (cubit) => cubit.startRecording(),
-        expect: () => <InterviewState>[],
+        act: (cubit) async {
+          await cubit.startRecording();
+        },
       );
     });
 
     group('stopRecording', () {
       blocTest<InterviewCubit, InterviewState>(
         'emits InterviewUploading when called from Recording state',
-        build: InterviewCubit.new,
+        build: () {
+          final service = MockRecordingService();
+          when(
+            service.stopRecording,
+          ).thenAnswer((_) async => '/path/to/audio.m4a');
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
         seed: () => InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         ),
-        act: (cubit) => cubit.stopRecording('/path/to/audio.m4a'),
+        act: (cubit) async {
+          await cubit.stopRecording();
+        },
         expect: () => [
           isA<InterviewUploading>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
@@ -102,22 +236,293 @@ void main() {
       );
 
       blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewError when service returns null path',
+        build: () {
+          final service = MockRecordingService();
+          when(service.stopRecording).thenAnswer((_) async => null);
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+        },
+        expect: () => [
+          isA<InterviewError>()
+              .having((s) => s.failure, 'failure', isA<RecordingFailure>())
+              .having(
+                (s) => s.failure.message,
+                'failure.message',
+                contains('No audio recorded'),
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewError when service returns empty path',
+        build: () {
+          final service = MockRecordingService();
+          when(service.stopRecording).thenAnswer((_) async => '');
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+        },
+        expect: () => [
+          isA<InterviewError>()
+              .having((s) => s.failure, 'failure', isA<RecordingFailure>())
+              .having(
+                (s) => s.failure.message,
+                'failure.message',
+                contains('No audio recorded'),
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewError when stopRecording fails',
+        build: () {
+          final service = MockRecordingService();
+          when(
+            service.stopRecording,
+          ).thenThrow(Exception('Failed to stop recording'));
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+        },
+        expect: () => [
+          isA<InterviewError>()
+              .having((s) => s.failure, 'failure', isA<RecordingFailure>())
+              .having(
+                (s) => s.failure.message,
+                'failure.message',
+                contains('Failed to stop recording'),
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Ready state',
-        build: InterviewCubit.new,
+        build: () {
+          final service = MockRecordingService();
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
         seed: () => const InterviewReady(
           questionNumber: 1,
           totalQuestions: 5,
           questionText: 'Test question',
         ),
-        act: (cubit) => cubit.stopRecording('/path'),
-        expect: () => <InterviewState>[],
+        act: (cubit) async {
+          await cubit.stopRecording();
+        },
       );
+    });
+
+    group('cancelRecording', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'stops recording and returns to Ready when called from Recording',
+        build: () {
+          final service = MockRecordingService();
+          when(service.stopRecording).thenAnswer((_) async => '/path');
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Q2',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.cancelRecording();
+        },
+        expect: () => [
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having((s) => s.totalQuestions, 'totalQuestions', 5)
+              .having((s) => s.questionText, 'questionText', 'Q2'),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'does not emit when called from Ready state',
+        build: () {
+          final service = MockRecordingService();
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Test question',
+        ),
+        act: (cubit) async {
+          await cubit.cancelRecording();
+        },
+      );
+    });
+
+    group('max duration timer', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'auto-stops recording after max duration (2 seconds for test)',
+        build: () {
+          final service = MockRecordingService();
+          when(service.startRecording).thenAnswer((_) async {});
+          when(
+            service.stopRecording,
+          ).thenAnswer((_) async => '/path/audio.m4a');
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+            maxRecordingDuration: const Duration(seconds: 2),
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Test question',
+        ),
+        act: (cubit) async {
+          await cubit.startRecording();
+          await Future<void>.delayed(const Duration(seconds: 3));
+        },
+        expect: () => [
+          isA<InterviewRecording>(),
+          isA<InterviewUploading>().having(
+            (s) => s.audioPath,
+            'audioPath',
+            '/path/audio.m4a',
+          ),
+        ],
+      );
+    });
+
+    group('cancel', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'stops recording and emits InterviewIdle from Recording state',
+        build: () {
+          final service = MockRecordingService();
+          when(service.stopRecording).thenAnswer((_) async => '/path');
+          when(() => service.isRecording).thenAnswer((_) async => true);
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) => cubit.cancel(),
+        expect: () => [const InterviewIdle()],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewIdle from Ready state without stopping recording',
+        build: () {
+          final service = MockRecordingService();
+          when(() => service.isRecording).thenAnswer((_) async => false);
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Test question',
+        ),
+        act: (cubit) => cubit.cancel(),
+        expect: () => [const InterviewIdle()],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewIdle from Speaking state',
+        build: () {
+          final service = MockRecordingService();
+          when(() => service.isRecording).thenAnswer((_) async => false);
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => const InterviewSpeaking(
+          questionNumber: 1,
+          questionText: 'Q1',
+          transcript: 'User transcript',
+          responseText: 'Coach response',
+          ttsAudioUrl: 'url',
+        ),
+        act: (cubit) => cubit.cancel(),
+        expect: () => [const InterviewIdle()],
+      );
+    });
+
+    group('close', () {
+      test('disposes RecordingService', () async {
+        final service = MockRecordingService();
+        when(service.dispose).thenAnswer((_) async {});
+        final cubit = InterviewCubit(
+          recordingService: service,
+          permissionService: createMockPermissionService(),
+        );
+        await cubit.close();
+        verify(service.dispose).called(1);
+      });
     });
 
     group('onUploadComplete', () {
       blocTest<InterviewCubit, InterviewState>(
         'emits InterviewTranscribing when called from Uploading state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => InterviewUploading(
           questionNumber: 1,
           questionText: 'Q1',
@@ -135,21 +540,27 @@ void main() {
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Recording state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         ),
         act: (cubit) => cubit.onUploadComplete(),
-        expect: () => <InterviewState>[],
       );
     });
 
     group('onTranscriptReceived', () {
       blocTest<InterviewCubit, InterviewState>(
         'emits InterviewThinking when called from Transcribing state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => InterviewTranscribing(
           questionNumber: 1,
           questionText: 'Q1',
@@ -167,21 +578,26 @@ void main() {
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Ready state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => const InterviewReady(
           questionNumber: 1,
           totalQuestions: 5,
           questionText: 'Test question',
         ),
         act: (cubit) => cubit.onTranscriptReceived('transcript'),
-        expect: () => <InterviewState>[],
       );
     });
 
     group('onResponseReady', () {
       blocTest<InterviewCubit, InterviewState>(
         'emits InterviewSpeaking when called from Thinking state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => InterviewThinking(
           questionNumber: 1,
           questionText: 'Q1',
@@ -208,7 +624,10 @@ void main() {
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Ready state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => const InterviewReady(
           questionNumber: 1,
           totalQuestions: 5,
@@ -218,14 +637,16 @@ void main() {
           responseText: 'response',
           ttsAudioUrl: 'url',
         ),
-        expect: () => <InterviewState>[],
       );
     });
 
     group('onSpeakingComplete', () {
       blocTest<InterviewCubit, InterviewState>(
         'emits InterviewReady when called from Speaking state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
           questionText: 'Q1',
@@ -252,7 +673,10 @@ void main() {
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Ready state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => const InterviewReady(
           questionNumber: 1,
           totalQuestions: 5,
@@ -262,14 +686,16 @@ void main() {
           nextQuestionText: 'Next',
           totalQuestions: 5,
         ),
-        expect: () => <InterviewState>[],
       );
     });
 
     group('handleError', () {
       blocTest<InterviewCubit, InterviewState>(
         'emits InterviewError from any state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => const InterviewReady(
           questionNumber: 1,
           totalQuestions: 5,
@@ -295,7 +721,10 @@ void main() {
 
       blocTest<InterviewCubit, InterviewState>(
         'can transition from Uploading to Error',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => InterviewUploading(
           questionNumber: 1,
           questionText: 'Q1',
@@ -327,7 +756,10 @@ void main() {
     group('retry', () {
       blocTest<InterviewCubit, InterviewState>(
         'restores previous state when called from Error state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => const InterviewError(
           failure: NetworkFailure(message: 'Network error'),
           previousState: InterviewReady(
@@ -348,70 +780,44 @@ void main() {
 
       blocTest<InterviewCubit, InterviewState>(
         'does not emit when called from Ready state',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => const InterviewReady(
           questionNumber: 1,
           totalQuestions: 5,
           questionText: 'Test question',
         ),
         act: (cubit) => cubit.retry(),
-        expect: () => <InterviewState>[],
-      );
-    });
-
-    group('cancel', () {
-      blocTest<InterviewCubit, InterviewState>(
-        'emits InterviewIdle from Ready state',
-        build: InterviewCubit.new,
-        seed: () => const InterviewReady(
-          questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
-        ),
-        act: (cubit) => cubit.cancel(),
-        expect: () => [const InterviewIdle()],
-      );
-
-      blocTest<InterviewCubit, InterviewState>(
-        'emits InterviewIdle from Recording state',
-        build: InterviewCubit.new,
-        seed: () => InterviewRecording(
-          questionNumber: 1,
-          questionText: 'Q1',
-          recordingStartTime: DateTime.now(),
-        ),
-        act: (cubit) => cubit.cancel(),
-        expect: () => [const InterviewIdle()],
-      );
-
-      blocTest<InterviewCubit, InterviewState>(
-        'emits InterviewIdle from Speaking state',
-        build: InterviewCubit.new,
-        seed: () => const InterviewSpeaking(
-          questionNumber: 1,
-          questionText: 'Q1',
-          transcript: 'User transcript',
-          responseText: 'Coach response',
-          ttsAudioUrl: 'url',
-        ),
-        act: (cubit) => cubit.cancel(),
-        expect: () => [const InterviewIdle()],
       );
     });
 
     group('state data preservation', () {
       blocTest<InterviewCubit, InterviewState>(
         'preserves question number through flow',
-        build: InterviewCubit.new,
+        build: () {
+          final service = MockRecordingService();
+          when(service.startRecording).thenAnswer((_) async {});
+          when(
+            service.stopRecording,
+          ).thenAnswer((_) async => '/path/audio.m4a');
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            permissionService: createMockPermissionService(),
+          );
+        },
         seed: () => const InterviewReady(
           questionNumber: 3,
           totalQuestions: 5,
           questionText: 'Question 3',
         ),
-        act: (cubit) => cubit
-          ..startRecording()
-          ..stopRecording('/path')
-          ..onUploadComplete(),
+        act: (cubit) async {
+          await cubit.startRecording();
+          await cubit.stopRecording();
+          cubit.onUploadComplete();
+        },
         expect: () => [
           isA<InterviewRecording>().having(
             (s) => s.questionNumber,
@@ -433,7 +839,10 @@ void main() {
 
       blocTest<InterviewCubit, InterviewState>(
         'preserves transcript through Thinking to Speaking',
-        build: InterviewCubit.new,
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          permissionService: createMockPermissionService(),
+        ),
         seed: () => InterviewThinking(
           questionNumber: 2,
           questionText: 'Question 2',

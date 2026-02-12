@@ -53,11 +53,13 @@ class InterviewReady extends InterviewState {
 class InterviewRecording extends InterviewState {
   const InterviewRecording({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.recordingStartTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final DateTime recordingStartTime;
 
@@ -65,7 +67,12 @@ class InterviewRecording extends InterviewState {
   InterviewStage get stage => InterviewStage.recording;
 
   @override
-  List<Object?> get props => [questionNumber, questionText, recordingStartTime];
+  List<Object?> get props => [
+    questionNumber,
+    totalQuestions,
+    questionText,
+    recordingStartTime,
+  ];
 }
 
 /// Uploading state - audio file is being uploaded to backend.
