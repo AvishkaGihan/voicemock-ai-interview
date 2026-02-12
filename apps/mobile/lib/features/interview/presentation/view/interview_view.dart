@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/widgets/widgets.dart';
@@ -123,17 +125,27 @@ class InterviewView extends StatelessWidget {
   Widget _buildHoldToTalkButton(BuildContext context, InterviewState state) {
     final cubit = context.read<InterviewCubit>();
     final isEnabled = state is InterviewReady || state is InterviewRecording;
-    final isRecording = state is InterviewRecording;
-    final recordingDuration = state is InterviewRecording
-        ? DateTime.now().difference(state.recordingStartTime)
-        : null;
+
+    if (state is InterviewRecording) {
+      return _RecordingTimer(
+        startTime: state.recordingStartTime,
+        builder: (context, duration) {
+          return HoldToTalkButton(
+            isEnabled: isEnabled,
+            isRecording: true,
+            recordingDuration: duration,
+            onPressStart: cubit.startRecording,
+            onPressEnd: cubit.stopRecording,
+          );
+        },
+      );
+    }
 
     return HoldToTalkButton(
       isEnabled: isEnabled,
-      isRecording: isRecording,
-      recordingDuration: recordingDuration,
+      isRecording: false,
       onPressStart: cubit.startRecording,
-      onPressEnd: () => cubit.stopRecording('/mock/path/audio.m4a'),
+      onPressEnd: cubit.stopRecording,
     );
   }
 
@@ -168,8 +180,51 @@ class InterviewView extends StatelessWidget {
     );
 
     if ((confirmed ?? false) && context.mounted) {
-      context.read<InterviewCubit>().cancel();
-      Navigator.pop(context);
+      await context.read<InterviewCubit>().cancel();
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
     }
+  }
+}
+
+class _RecordingTimer extends StatefulWidget {
+  const _RecordingTimer({required this.startTime, required this.builder});
+
+  final DateTime startTime;
+  final Widget Function(BuildContext, Duration) builder;
+
+  @override
+  State<_RecordingTimer> createState() => _RecordingTimerState();
+}
+
+class _RecordingTimerState extends State<_RecordingTimer>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  Duration _duration = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((_) {
+      final newDuration = DateTime.now().difference(widget.startTime);
+      if (newDuration.inSeconds != _duration.inSeconds) {
+        setState(() {
+          _duration = newDuration;
+        });
+      }
+    });
+    unawaited(_ticker.start());
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(context, _duration);
   }
 }

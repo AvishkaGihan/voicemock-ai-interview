@@ -60,3 +60,17 @@ class UnknownFailure extends InterviewFailure {
     super.retryable = false,
   });
 }
+
+/// Recording failure (microphone capture errors).
+class RecordingFailure extends InterviewFailure {
+  const RecordingFailure({
+    required super.message,
+    super.requestId,
+    super.retryable = true,
+  });
+
+  String get stage => 'recording';
+
+  @override
+  List<Object?> get props => [...super.props, stage];
+}

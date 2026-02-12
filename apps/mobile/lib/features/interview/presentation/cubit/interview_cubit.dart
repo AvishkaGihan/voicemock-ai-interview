@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voicemock/core/audio/recording_service.dart';
+import 'package:voicemock/core/permissions/permissions.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_state.dart';
 
@@ -13,10 +16,17 @@ import 'package:voicemock/features/interview/presentation/cubit/interview_state.
 /// State transitions are guarded to prevent invalid combinations.
 class InterviewCubit extends Cubit<InterviewState> {
   InterviewCubit({
+    required RecordingService recordingService,
+    PermissionService? permissionService,
     int questionNumber = 1,
     int totalQuestions = 5,
     String? initialQuestionText,
-  }) : super(
+    Duration maxRecordingDuration = const Duration(seconds: 120),
+  }) : _recordingService = recordingService,
+       _permissionService =
+           permissionService ?? const MicrophonePermissionService(),
+       _maxRecordingDuration = maxRecordingDuration,
+       super(
          initialQuestionText != null
              ? InterviewReady(
                  questionNumber: questionNumber,
@@ -26,41 +36,135 @@ class InterviewCubit extends Cubit<InterviewState> {
              : const InterviewIdle(),
        );
 
+  final RecordingService _recordingService;
+  final PermissionService _permissionService;
+  final Duration _maxRecordingDuration;
+  Timer? _maxDurationTimer;
+
   /// Start recording - only valid from Ready state.
-  void startRecording() {
+  ///
+  /// Checks microphone permission before starting recording.
+  /// If permission is not granted, emits an error state.
+  Future<void> startRecording() async {
     final current = state;
     if (current is! InterviewReady) {
       _logInvalidTransition('startRecording', current);
       return;
     }
 
-    emit(
-      InterviewRecording(
-        questionNumber: current.questionNumber,
-        questionText: current.questionText,
-        recordingStartTime: DateTime.now(),
-      ),
-    );
-    _logTransition('Recording');
+    try {
+      // Check microphone permission before recording
+      final permissionStatus = await _permissionService
+          .checkMicrophonePermission();
+      if (permissionStatus != MicrophonePermissionStatus.granted) {
+        handleError(
+          const RecordingFailure(
+            message: 'Microphone permission is required to record audio',
+          ),
+        );
+        return;
+      }
+
+      await _recordingService.startRecording();
+      emit(
+        InterviewRecording(
+          questionNumber: current.questionNumber,
+          totalQuestions: current.totalQuestions,
+          questionText: current.questionText,
+          recordingStartTime: DateTime.now(),
+        ),
+      );
+      _logTransition('Recording');
+      _startMaxDurationTimer();
+    } on Object catch (e) {
+      handleError(
+        RecordingFailure(message: 'Failed to start recording: $e'),
+      );
+    }
   }
 
   /// Stop recording - only valid from Recording state.
-  void stopRecording(String audioPath) {
+  Future<void> stopRecording() async {
     final current = state;
     if (current is! InterviewRecording) {
       _logInvalidTransition('stopRecording', current);
       return;
     }
 
-    emit(
-      InterviewUploading(
-        questionNumber: current.questionNumber,
-        questionText: current.questionText,
-        audioPath: audioPath,
-        startTime: DateTime.now(),
-      ),
-    );
-    _logTransition('Uploading');
+    _maxDurationTimer?.cancel();
+
+    try {
+      final audioPath = await _recordingService.stopRecording();
+      if (audioPath == null || audioPath.isEmpty) {
+        handleError(const RecordingFailure(message: 'No audio recorded'));
+        return;
+      }
+      emit(
+        InterviewUploading(
+          questionNumber: current.questionNumber,
+          questionText: current.questionText,
+          audioPath: audioPath,
+          startTime: DateTime.now(),
+        ),
+      );
+      _logTransition('Uploading');
+    } on Object catch (e) {
+      handleError(
+        RecordingFailure(message: 'Failed to stop recording: $e'),
+      );
+    }
+  }
+
+  /// Cancel recording - only valid from Recording state.
+  Future<void> cancelRecording() async {
+    final current = state;
+    if (current is! InterviewRecording) {
+      _logInvalidTransition('cancelRecording', current);
+      return;
+    }
+
+    _maxDurationTimer?.cancel();
+
+    try {
+      // stopRecording returns the path, which we then delete
+      final path = await _recordingService.stopRecording();
+      if (path != null && path.isNotEmpty) {
+        await _recordingService.deleteRecording(path);
+      }
+
+      emit(
+        InterviewReady(
+          questionNumber: current.questionNumber,
+          totalQuestions: current.totalQuestions,
+          questionText: current.questionText,
+        ),
+      );
+      _logTransition('Ready (cancelled)');
+    } on Object catch (e) {
+      developer.log(
+        'InterviewCubit: Error cancelling recording: $e',
+        name: 'InterviewCubit',
+        level: 900,
+      );
+      // Still transition to Ready even if stop/delete fails
+      emit(
+        InterviewReady(
+          questionNumber: current.questionNumber,
+          totalQuestions: current.totalQuestions,
+          questionText: current.questionText,
+        ),
+      );
+    }
+  }
+
+  void _startMaxDurationTimer() {
+    _maxDurationTimer = Timer(_maxRecordingDuration, () {
+      developer.log(
+        'InterviewCubit: Max recording duration reached, auto-stopping',
+        name: 'InterviewCubit',
+      );
+      unawaited(stopRecording());
+    });
   }
 
   /// Upload complete - transition to Transcribing.
@@ -169,9 +273,29 @@ class InterviewCubit extends Cubit<InterviewState> {
   }
 
   /// Cancel interview - return to idle.
-  void cancel() {
+  Future<void> cancel() async {
+    // Stop recording if currently recording
+    if (await _recordingService.isRecording) {
+      try {
+        await _recordingService.stopRecording();
+      } on Object catch (e) {
+        developer.log(
+          'InterviewCubit: Error stopping recording during cancel: $e',
+          name: 'InterviewCubit',
+          level: 900,
+        );
+      }
+    }
+    _maxDurationTimer?.cancel();
     emit(const InterviewIdle());
     _logTransition('Cancelled → Idle');
+  }
+
+  @override
+  Future<void> close() async {
+    _maxDurationTimer?.cancel();
+    await _recordingService.dispose();
+    return super.close();
   }
 
   void _logTransition(String to) {

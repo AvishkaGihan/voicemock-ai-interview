@@ -6,3 +6,5 @@
 /// - Playback controls (pause, resume, stop)
 /// - Audio level monitoring
 library;
+
+export 'recording_service.dart';

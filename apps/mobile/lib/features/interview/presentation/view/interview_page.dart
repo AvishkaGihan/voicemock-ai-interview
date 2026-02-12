@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voicemock/core/audio/audio.dart';
 import 'package:voicemock/features/interview/domain/session.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_view.dart';
@@ -20,6 +21,7 @@ class InterviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => InterviewCubit(
+        recordingService: RecordingService(),
         initialQuestionText: session.openingPrompt,
       ),
       child: const InterviewView(),

@@ -105,6 +105,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         );
@@ -114,6 +115,7 @@ void main() {
       test('stage should return recording', () {
         final state = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         );
@@ -124,11 +126,13 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: time,
         );
         final state2 = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: time,
         );
@@ -139,10 +143,11 @@ void main() {
         final time = DateTime.now();
         final state = InterviewRecording(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Q2',
           recordingStartTime: time,
         );
-        expect(state.props, containsAll([2, 'Q2', time]));
+        expect(state.props, containsAll([2, 5, 'Q2', time]));
       });
     });
 
