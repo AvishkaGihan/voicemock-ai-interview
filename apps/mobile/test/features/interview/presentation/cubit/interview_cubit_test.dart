@@ -76,7 +76,7 @@ MockTurnRemoteDataSource createMockTurnRemoteDataSource({
       (_) => Future.value(
         response ??
             const TurnResponseData(
-              transcript: 'Test transcript',
+              transcript: 'Test transcript here',
               timings: {},
             ),
       ),
@@ -264,7 +264,7 @@ void main() {
 
     group('stopRecording', () {
       blocTest<InterviewCubit, InterviewState>(
-        'emits Uploading → Transcribing → Thinking flow',
+        'emits Uploading → Transcribing → TranscriptReview flow',
         build: () {
           final service = MockRecordingService();
           when(
@@ -299,10 +299,12 @@ void main() {
           isA<InterviewTranscribing>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
               .having((s) => s.questionText, 'questionText', 'Q1'),
-          isA<InterviewThinking>()
+          isA<InterviewTranscriptReview>()
               .having((s) => s.questionNumber, 'questionNumber', 1)
               .having((s) => s.questionText, 'questionText', 'Q1')
-              .having((s) => s.transcript, 'transcript', 'Test transcript'),
+              .having((s) => s.transcript, 'transcript', 'Test transcript here')
+              .having((s) => s.audioPath, 'audioPath', '/path/to/audio.m4a')
+              .having((s) => s.isLowConfidence, 'isLowConfidence', false),
         ],
       );
 
@@ -526,10 +528,10 @@ void main() {
             '/path/audio.m4a',
           ),
           isA<InterviewTranscribing>(),
-          isA<InterviewThinking>().having(
+          isA<InterviewTranscriptReview>().having(
             (s) => s.transcript,
             'transcript',
-            'Test transcript',
+            'Test transcript here',
           ),
         ],
       );
@@ -897,7 +899,7 @@ void main() {
             'questionNumber',
             3,
           ),
-          isA<InterviewThinking>().having(
+          isA<InterviewTranscriptReview>().having(
             (s) => s.questionNumber,
             'questionNumber',
             3,
@@ -932,6 +934,437 @@ void main() {
                 'My answer to question 2',
               )
               .having((s) => s.questionNumber, 'questionNumber', 2),
+        ],
+      );
+    });
+
+    group('acceptTranscript', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewThinking when called from TranscriptReview',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 1,
+          questionText: 'Question 1',
+          transcript: 'User transcript',
+          audioPath: '/path/audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+        expect: () => [
+          isA<InterviewThinking>()
+              .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Question 1')
+              .having((s) => s.transcript, 'transcript', 'User transcript')
+              .having((s) => s.startTime, 'startTime', isA<DateTime>()),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'does not emit when called from Ready state',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewReady(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Question 1',
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'does not emit when called from Recording state',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Question 1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'cleans up audio file when accepting transcript',
+        build: () {
+          final service = createMockRecordingService();
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 1,
+          questionText: 'Question 1',
+          transcript: 'User transcript',
+          audioPath: '/path/audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+        expect: () => [
+          isA<InterviewThinking>(),
+        ],
+      );
+    });
+
+    group('reRecord', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewReady with same question when called from '
+        'TranscriptReview',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 2,
+          questionText: 'Question 2',
+          transcript: 'Bad transcript',
+          audioPath: '/path/audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.reRecord();
+        },
+        expect: () => [
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having((s) => s.totalQuestions, 'totalQuestions', 5)
+              .having((s) => s.questionText, 'questionText', 'Question 2'),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'does not emit when called from Ready state',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewReady(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Question 1',
+        ),
+        act: (cubit) async {
+          await cubit.reRecord();
+        },
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'does not emit when called from Thinking state',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => InterviewThinking(
+          questionNumber: 1,
+          questionText: 'Question 1',
+          transcript: 'transcript',
+          startTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.reRecord();
+        },
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'cleans up audio file when re-recording',
+        build: () {
+          final service = createMockRecordingService();
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 1,
+          questionText: 'Question 1',
+          transcript: 'User transcript',
+          audioPath: '/path/audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.reRecord();
+        },
+        expect: () => [
+          isA<InterviewReady>(),
+        ],
+      );
+    });
+
+    group('low-confidence detection', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'sets isLowConfidence to true for transcript with < 3 words',
+        build: () {
+          final service = createMockRecordingService(
+            onStopRecording: () => Future.value('/path/audio.m4a'),
+          );
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: 'yes',
+                timings: {},
+              ),
+            ),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        skip: 2, // Skip Uploading and Transcribing
+        expect: () => [
+          isA<InterviewTranscriptReview>()
+              .having((s) => s.transcript, 'transcript', 'yes')
+              .having((s) => s.isLowConfidence, 'isLowConfidence', true),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'sets isLowConfidence to true for empty transcript',
+        build: () {
+          final service = createMockRecordingService(
+            onStopRecording: () => Future.value('/path/audio.m4a'),
+          );
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: '',
+                timings: {},
+              ),
+            ),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        skip: 2,
+        expect: () => [
+          isA<InterviewTranscriptReview>()
+              .having((s) => s.transcript, 'transcript', '')
+              .having((s) => s.isLowConfidence, 'isLowConfidence', true),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'sets isLowConfidence to false for transcript with ≥ 3 words',
+        build: () {
+          final service = createMockRecordingService(
+            onStopRecording: () => Future.value('/path/audio.m4a'),
+          );
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: 'I am a software engineer',
+                timings: {},
+              ),
+            ),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        skip: 2,
+        expect: () => [
+          isA<InterviewTranscriptReview>()
+              .having(
+                (s) => s.transcript,
+                'transcript',
+                'I am a software engineer',
+              )
+              .having((s) => s.isLowConfidence, 'isLowConfidence', false),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'sets isLowConfidence to false for exactly 3 words',
+        build: () {
+          final service = createMockRecordingService(
+            onStopRecording: () => Future.value('/path/audio.m4a'),
+          );
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: 'I am ready',
+                timings: {},
+              ),
+            ),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        skip: 2,
+        expect: () => [
+          isA<InterviewTranscriptReview>()
+              .having((s) => s.transcript, 'transcript', 'I am ready')
+              .having((s) => s.isLowConfidence, 'isLowConfidence', false),
+        ],
+      );
+    });
+
+    group('re-record cycle', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'full re-record cycle: Review → Ready → Recording → Review',
+        build: () {
+          final service = createMockRecordingService(
+            onStartRecording: Future.value,
+            onStopRecording: () => Future.value('/path/new-audio.m4a'),
+          );
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: 'New transcript',
+                timings: {},
+              ),
+            ),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 1,
+          questionText: 'Question 1',
+          transcript: 'Bad transcript',
+          audioPath: '/path/audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.reRecord();
+          await cubit.startRecording();
+          await cubit.stopRecording();
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        expect: () => [
+          // Re-record → Ready
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Question 1'),
+          // Start recording
+          isA<InterviewRecording>().having(
+            (s) => s.questionNumber,
+            'questionNumber',
+            1,
+          ),
+          // Stop recording → Uploading
+          isA<InterviewUploading>()
+              .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.audioPath, 'audioPath', '/path/new-audio.m4a'),
+          // Transcribing
+          isA<InterviewTranscribing>().having(
+            (s) => s.questionNumber,
+            'questionNumber',
+            1,
+          ),
+          // New TranscriptReview
+          isA<InterviewTranscriptReview>()
+              .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.transcript, 'transcript', 'New transcript'),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'question context preserved through re-record cycle',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+          totalQuestions: 10,
+        ),
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 7,
+          questionText: 'Question 7 text',
+          transcript: 'Old transcript',
+          audioPath: '/path/audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.reRecord();
+        },
+        expect: () => [
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 7)
+              .having((s) => s.totalQuestions, 'totalQuestions', 10)
+              .having((s) => s.questionText, 'questionText', 'Question 7 text'),
         ],
       );
     });

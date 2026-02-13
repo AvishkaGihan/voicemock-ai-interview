@@ -90,6 +90,21 @@ class InterviewView extends StatelessWidget {
           totalQuestions: 5,
           questionText: questionText,
         ),
+      InterviewTranscriptReview(
+        :final questionNumber,
+        :final questionText,
+        :final transcript,
+        :final isLowConfidence,
+      ) =>
+        TranscriptReviewCard(
+          questionNumber: questionNumber,
+          totalQuestions: 5,
+          questionText: questionText,
+          transcript: transcript,
+          isLowConfidence: isLowConfidence,
+          onAccept: () => context.read<InterviewCubit>().acceptTranscript(),
+          onReRecord: () => context.read<InterviewCubit>().reRecord(),
+        ),
       InterviewThinking(
         :final questionNumber,
         :final questionText,

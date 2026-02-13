@@ -10,10 +10,11 @@ void main() {
       expect(stages, contains(InterviewStage.recording));
       expect(stages, contains(InterviewStage.uploading));
       expect(stages, contains(InterviewStage.transcribing));
+      expect(stages, contains(InterviewStage.transcriptReview));
       expect(stages, contains(InterviewStage.thinking));
       expect(stages, contains(InterviewStage.speaking));
       expect(stages, contains(InterviewStage.error));
-      expect(stages.length, 7);
+      expect(stages.length, 8);
     });
 
     test('toString should return stage name for logging', () {
@@ -21,6 +22,10 @@ void main() {
       expect(InterviewStage.recording.toString(), contains('recording'));
       expect(InterviewStage.uploading.toString(), contains('uploading'));
       expect(InterviewStage.transcribing.toString(), contains('transcribing'));
+      expect(
+        InterviewStage.transcriptReview.toString(),
+        contains('transcriptReview'),
+      );
       expect(InterviewStage.thinking.toString(), contains('thinking'));
       expect(InterviewStage.speaking.toString(), contains('speaking'));
       expect(InterviewStage.error.toString(), contains('error'));
@@ -36,6 +41,7 @@ void main() {
       test('should return false for non-processing stages', () {
         expect(InterviewStage.ready.isProcessing, false);
         expect(InterviewStage.recording.isProcessing, false);
+        expect(InterviewStage.transcriptReview.isProcessing, false);
         expect(InterviewStage.speaking.isProcessing, false);
         expect(InterviewStage.error.isProcessing, false);
       });
@@ -50,6 +56,7 @@ void main() {
       test('should return false when user cannot interact', () {
         expect(InterviewStage.uploading.isUserTurn, false);
         expect(InterviewStage.transcribing.isUserTurn, false);
+        expect(InterviewStage.transcriptReview.isUserTurn, false);
         expect(InterviewStage.thinking.isUserTurn, false);
         expect(InterviewStage.speaking.isUserTurn, false);
         expect(InterviewStage.error.isUserTurn, false);
@@ -66,6 +73,7 @@ void main() {
         expect(InterviewStage.recording.isCoachTurn, false);
         expect(InterviewStage.uploading.isCoachTurn, false);
         expect(InterviewStage.transcribing.isCoachTurn, false);
+        expect(InterviewStage.transcriptReview.isCoachTurn, false);
         expect(InterviewStage.thinking.isCoachTurn, false);
         expect(InterviewStage.error.isCoachTurn, false);
       });

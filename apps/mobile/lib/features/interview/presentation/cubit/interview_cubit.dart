@@ -34,6 +34,7 @@ class InterviewCubit extends Cubit<InterviewState> {
        _permissionService =
            permissionService ?? const MicrophonePermissionService(),
        _maxRecordingDuration = maxRecordingDuration,
+       _totalQuestions = totalQuestions,
        super(
          initialQuestionText != null
              ? InterviewReady(
@@ -50,6 +51,7 @@ class InterviewCubit extends Cubit<InterviewState> {
   final String _sessionToken;
   final PermissionService _permissionService;
   final Duration _maxRecordingDuration;
+  final int _totalQuestions;
   Timer? _maxDurationTimer;
 
   /// Start recording - only valid from Ready state.
@@ -132,7 +134,7 @@ class InterviewCubit extends Cubit<InterviewState> {
   /// Submit the recorded turn for processing.
   ///
   /// Uploads the audio file and processes the transcript.
-  /// Transitions: Uploading → Transcribing → Thinking
+  /// Transitions: Uploading → Transcribing → TranscriptReview
   Future<void> submitTurn() async {
     final current = state;
     if (current is! InterviewUploading) {
@@ -158,17 +160,31 @@ class InterviewCubit extends Cubit<InterviewState> {
       );
       _logTransition('Transcribing');
 
-      // Transition to Thinking with transcript
+      // Detect low-confidence transcript (< 3 words)
+      final wordCount = turnResponse.transcript
+          .trim()
+          .split(RegExp(r'\s+'))
+          .where((word) => word.isNotEmpty)
+          .length;
+      final isLowConfidence = wordCount < 3;
+
+      // Transition to TranscriptReview instead of Thinking
       emit(
-        InterviewThinking(
+        InterviewTranscriptReview(
           questionNumber: current.questionNumber,
           questionText: current.questionText,
           transcript: turnResponse.transcript,
-          startTime: DateTime.now(),
+          audioPath: current.audioPath,
+          isLowConfidence: isLowConfidence,
         ),
       );
-      _logTransition('Thinking (transcript: ${turnResponse.transcript})');
+      _logTransition(
+        'TranscriptReview (transcript: ${turnResponse.transcript}, '
+        'lowConfidence: $isLowConfidence)',
+      );
     } on ServerException catch (e) {
+      // Clean up audio on error
+      await _cleanupAudioFile(current.audioPath);
       handleError(
         ServerFailure(
           message: e.message,
@@ -179,8 +195,12 @@ class InterviewCubit extends Cubit<InterviewState> {
         ),
       );
     } on NetworkException catch (e) {
+      // Clean up audio on error
+      await _cleanupAudioFile(current.audioPath);
       handleError(NetworkFailure(message: e.message));
     } on Object catch (e) {
+      // Clean up audio on error
+      await _cleanupAudioFile(current.audioPath);
       handleError(
         ServerFailure(
           message: 'Failed to process turn: $e',
@@ -188,17 +208,72 @@ class InterviewCubit extends Cubit<InterviewState> {
           retryable: true,
         ),
       );
-    } finally {
-      // Clean up the audio file
-      try {
-        await _recordingService.deleteRecording(current.audioPath);
-      } on Object catch (e) {
-        developer.log(
-          'InterviewCubit: Failed to delete audio file: $e',
-          name: 'InterviewCubit',
-          level: 900,
-        );
-      }
+    }
+  }
+
+  /// Accept the transcript and continue to thinking stage.
+  /// Only valid from InterviewTranscriptReview state.
+  Future<void> acceptTranscript() async {
+    final current = state;
+    if (current is! InterviewTranscriptReview) {
+      _logInvalidTransition('acceptTranscript', current);
+      return;
+    }
+
+    // Clean up audio file — no longer needed after acceptance
+    await _cleanupAudioFile(current.audioPath);
+
+    emit(
+      InterviewThinking(
+        questionNumber: current.questionNumber,
+        questionText: current.questionText,
+        transcript: current.transcript,
+        startTime: DateTime.now(),
+      ),
+    );
+
+    _logTransition('Transcript accepted → Thinking');
+  }
+
+  /// Re-record the answer — return to Ready with same question.
+  /// Only valid from InterviewTranscriptReview state.
+  Future<void> reRecord() async {
+    final current = state;
+    if (current is! InterviewTranscriptReview) {
+      _logInvalidTransition('reRecord', current);
+      return;
+    }
+
+    // Clean up previous audio file
+    await _cleanupAudioFile(current.audioPath);
+
+    emit(
+      InterviewReady(
+        questionNumber: current.questionNumber,
+        totalQuestions: _totalQuestions,
+        questionText: current.questionText,
+      ),
+    );
+
+    _logTransition('Re-record requested → Ready');
+  }
+
+  /// Clean up temporary audio file from disk.
+  /// Non-blocking — does not throw on failure.
+  Future<void> _cleanupAudioFile(String path) async {
+    try {
+      await _recordingService.deleteRecording(path);
+      developer.log(
+        'Audio cleanup: deleted $path',
+        name: 'InterviewCubit',
+      );
+    } on Object catch (e) {
+      developer.log(
+        'Audio cleanup failed: $e',
+        name: 'InterviewCubit',
+        level: 900, // warning
+      );
+      // Non-blocking — continue even if cleanup fails
     }
   }
 
