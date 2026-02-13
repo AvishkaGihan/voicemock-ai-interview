@@ -26,6 +26,10 @@ class ApiClient {
       _LoggingInterceptor(),
     ]);
   }
+
+  /// Factory constructor for testing with custom Dio instance.
+  ApiClient.withDio(this._dio);
+
   final Dio _dio;
   final Uuid _uuid = const Uuid();
 
@@ -40,6 +44,74 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.post<dynamic>(path, data: data);
+      final responseData = response.data;
+      if (responseData is! Map<String, dynamic>) {
+        throw ServerException(
+          message: 'Invalid response format',
+          code: 'invalid_format',
+          requestId: response.headers.value('x-request-id'),
+        );
+      }
+
+      final envelope = ApiEnvelope<T>.fromJson(
+        responseData,
+        (json) => fromJson(json! as Map<String, dynamic>),
+      );
+
+      // Check for API-level errors in envelope
+      if (envelope.isError) {
+        throw ServerException(
+          message: envelope.error!.messageSafe,
+          code: envelope.error!.code,
+          stage: envelope.error!.stage,
+          retryable: envelope.error!.retryable,
+          requestId: envelope.requestId,
+        );
+      }
+
+      return envelope;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    } on ServerException {
+      rethrow;
+    } on Exception catch (e) {
+      throw NetworkException(message: 'Unexpected error: $e');
+    }
+  }
+
+  /// Makes multipart POST request with file upload.
+  ///
+  /// Used for uploading audio files to `/turn` endpoint.
+  /// Throws [NetworkException] on connectivity issues.
+  /// Throws [ServerException] on API error responses.
+  Future<ApiEnvelope<T>> postMultipart<T>(
+    String path, {
+    required String filePath,
+    required String fileFieldName,
+    required Map<String, String> fields,
+    required T Function(Map<String, dynamic>) fromJson,
+    String? bearerToken,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        fileFieldName: await MultipartFile.fromFile(filePath),
+        ...fields,
+      });
+
+      final options = Options(
+        headers: {
+          if (bearerToken != null) 'Authorization': 'Bearer $bearerToken',
+        },
+        receiveTimeout: const Duration(seconds: 60),
+        // Longer timeout for uploads
+      );
+
+      final response = await _dio.post<dynamic>(
+        path,
+        data: formData,
+        options: options,
+      );
+
       final responseData = response.data;
       if (responseData is! Map<String, dynamic>) {
         throw ServerException(

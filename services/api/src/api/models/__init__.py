@@ -8,6 +8,10 @@ from src.api.models.session_models import (
     SessionData,
     SessionStartResponse,
 )
+from src.api.models.turn_models import (
+    TurnResponseData,
+    TurnResponse,
+)
 
 __all__ = [
     "ApiEnvelope",
@@ -17,4 +21,6 @@ __all__ = [
     "SessionStartRequest",
     "SessionData",
     "SessionStartResponse",
+    "TurnResponseData",
+    "TurnResponse",
 ]

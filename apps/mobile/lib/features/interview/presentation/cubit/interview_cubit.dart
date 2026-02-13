@@ -3,7 +3,9 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
+import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/permissions/permissions.dart';
+import 'package:voicemock/features/interview/data/data.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_state.dart';
 
@@ -17,12 +19,18 @@ import 'package:voicemock/features/interview/presentation/cubit/interview_state.
 class InterviewCubit extends Cubit<InterviewState> {
   InterviewCubit({
     required RecordingService recordingService,
+    required TurnRemoteDataSource turnRemoteDataSource,
+    required String sessionId,
+    required String sessionToken,
     PermissionService? permissionService,
     int questionNumber = 1,
     int totalQuestions = 5,
     String? initialQuestionText,
     Duration maxRecordingDuration = const Duration(seconds: 120),
   }) : _recordingService = recordingService,
+       _turnRemoteDataSource = turnRemoteDataSource,
+       _sessionId = sessionId,
+       _sessionToken = sessionToken,
        _permissionService =
            permissionService ?? const MicrophonePermissionService(),
        _maxRecordingDuration = maxRecordingDuration,
@@ -37,6 +45,9 @@ class InterviewCubit extends Cubit<InterviewState> {
        );
 
   final RecordingService _recordingService;
+  final TurnRemoteDataSource _turnRemoteDataSource;
+  final String _sessionId;
+  final String _sessionToken;
   final PermissionService _permissionService;
   final Duration _maxRecordingDuration;
   Timer? _maxDurationTimer;
@@ -108,10 +119,86 @@ class InterviewCubit extends Cubit<InterviewState> {
         ),
       );
       _logTransition('Uploading');
+
+      // Automatically trigger turn submission
+      unawaited(submitTurn());
     } on Object catch (e) {
       handleError(
         RecordingFailure(message: 'Failed to stop recording: $e'),
       );
+    }
+  }
+
+  /// Submit the recorded turn for processing.
+  ///
+  /// Uploads the audio file and processes the transcript.
+  /// Transitions: Uploading → Transcribing → Thinking
+  Future<void> submitTurn() async {
+    final current = state;
+    if (current is! InterviewUploading) {
+      _logInvalidTransition('submitTurn', current);
+      return;
+    }
+
+    try {
+      // Call backend to process the turn
+      final turnResponse = await _turnRemoteDataSource.submitTurn(
+        audioPath: current.audioPath,
+        sessionId: _sessionId,
+        sessionToken: _sessionToken,
+      );
+
+      // Brief transition to Transcribing state
+      emit(
+        InterviewTranscribing(
+          questionNumber: current.questionNumber,
+          questionText: current.questionText,
+          startTime: DateTime.now(),
+        ),
+      );
+      _logTransition('Transcribing');
+
+      // Transition to Thinking with transcript
+      emit(
+        InterviewThinking(
+          questionNumber: current.questionNumber,
+          questionText: current.questionText,
+          transcript: turnResponse.transcript,
+          startTime: DateTime.now(),
+        ),
+      );
+      _logTransition('Thinking (transcript: ${turnResponse.transcript})');
+    } on ServerException catch (e) {
+      handleError(
+        ServerFailure(
+          message: e.message,
+          code: e.code,
+          stage: e.stage,
+          retryable: e.retryable ?? false,
+          requestId: e.requestId,
+        ),
+      );
+    } on NetworkException catch (e) {
+      handleError(NetworkFailure(message: e.message));
+    } on Object catch (e) {
+      handleError(
+        ServerFailure(
+          message: 'Failed to process turn: $e',
+          code: 'unknown_error',
+          retryable: true,
+        ),
+      );
+    } finally {
+      // Clean up the audio file
+      try {
+        await _recordingService.deleteRecording(current.audioPath);
+      } on Object catch (e) {
+        developer.log(
+          'InterviewCubit: Failed to delete audio file: $e',
+          name: 'InterviewCubit',
+          level: 900,
+        );
+      }
     }
   }
 
@@ -165,43 +252,6 @@ class InterviewCubit extends Cubit<InterviewState> {
       );
       unawaited(stopRecording());
     });
-  }
-
-  /// Upload complete - transition to Transcribing.
-  void onUploadComplete() {
-    final current = state;
-    if (current is! InterviewUploading) {
-      _logInvalidTransition('onUploadComplete', current);
-      return;
-    }
-
-    emit(
-      InterviewTranscribing(
-        questionNumber: current.questionNumber,
-        questionText: current.questionText,
-        startTime: DateTime.now(),
-      ),
-    );
-    _logTransition('Transcribing');
-  }
-
-  /// Transcript received - transition to Thinking.
-  void onTranscriptReceived(String transcript) {
-    final current = state;
-    if (current is! InterviewTranscribing) {
-      _logInvalidTransition('onTranscriptReceived', current);
-      return;
-    }
-
-    emit(
-      InterviewThinking(
-        questionNumber: current.questionNumber,
-        questionText: current.questionText,
-        transcript: transcript,
-        startTime: DateTime.now(),
-      ),
-    );
-    _logTransition('Thinking');
   }
 
   /// Response ready - transition to Speaking.

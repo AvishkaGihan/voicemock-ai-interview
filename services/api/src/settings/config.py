@@ -24,6 +24,8 @@ class Settings(BaseSettings):
         debug: Enable debug mode (more verbose logging, etc.)
         secret_key: Secret key for session token signing (REQUIRED, no default)
         session_ttl_minutes: Session time-to-live in minutes (default: 60)
+        deepgram_api_key: Deepgram API key for STT (REQUIRED at runtime for /turn)
+        stt_timeout_seconds: Timeout for STT requests in seconds (default: 30)
     """
 
     app_name: str = "VoiceMock AI Interview Coach API"
@@ -31,6 +33,8 @@ class Settings(BaseSettings):
     debug: bool = False
     secret_key: str = Field(default="", min_length=1)  # REQUIRED - must be non-empty
     session_ttl_minutes: int = 60
+    deepgram_api_key: str = Field(default="")  # REQUIRED at runtime for /turn endpoint
+    stt_timeout_seconds: int = 30
 
     model_config = {
         "env_file": ".env",
