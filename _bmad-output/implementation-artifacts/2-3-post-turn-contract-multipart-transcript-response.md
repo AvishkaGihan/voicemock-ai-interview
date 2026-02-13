@@ -779,11 +779,13 @@ STT_TIMEOUT_SECONDS=30                        # Optional, default 30
 - **Task 2**: Created `DeepgramSTTProvider` with `transcribe_audio()` method using httpx client. Implemented error classes for auth, bad request, provider error, timeout, and empty transcript. Added `DEEPGRAM_API_KEY` and `STT_TIMEOUT_SECONDS` to Settings. All 7 unit tests pass.
 - **Task 3**: Created turn orchestrator with `process_turn()` function and `TurnResult` dataclass. Captures STT and total timings using `time.perf_counter()`. Updates session state (turn_count, last_activity_at). Wraps STT errors into `TurnProcessingError`. All 7 unit tests pass.
 - **Task 4**: Created `POST /turn` route with multipart upload support. Validates Bearer token, session ID, and audio file. Calls orchestrator and returns ApiEnvelope response. Handles all error cases with stage-aware errors. Registered in main.py. All 5 route tests pass. **Total backend tests: 49/49 passing.**
+- **Bug Fix**: Fixed critical issue where `POST /turn` returned "Session not found" because `session.py` and `turn.py` were using different `SessionStore` instances. Created `services/api/src/api/dependencies/shared_services.py` to hold the singletons and updated both routes to use it.
 
 ### Change Log
 
 | Date | Change | Author |
 | ---- | ------ | ------ |
+| 2026-02-13 | Fixed session store singleton issue | User |
 
 ### File List
 
@@ -797,7 +799,11 @@ STT_TIMEOUT_SECONDS=30                        # Optional, default 30
 - `services/api/src/services/orchestrator.py` (NEW)
 - `services/api/src/services/__init__.py` (MODIFIED)
 - `services/api/tests/unit/test_orchestrator.py` (NEW)
+- `services/api/src/api/routes/session.py` (MODIFIED)
 - `services/api/src/api/routes/turn.py` (NEW)
+- `services/api/src/api/dependencies/shared_services.py` (NEW)
+- `services/api/src/api/dependencies/__init__.py` (MODIFIED)
+- `services/api/tests/unit/test_turn_route.py` (NEW)
 - `apps/mobile/lib/core/http/api_client.dart` (MODIFIED)
 - `apps/mobile/lib/core/models/turn_models.dart` (NEW)
 - `apps/mobile/lib/core/models/turn_models.g.dart` (NEW)
