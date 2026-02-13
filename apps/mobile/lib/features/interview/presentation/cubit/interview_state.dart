@@ -120,6 +120,35 @@ class InterviewTranscribing extends InterviewState {
   List<Object?> get props => [questionNumber, questionText, startTime];
 }
 
+/// Transcript review state - user reviews STT output before proceeding.
+class InterviewTranscriptReview extends InterviewState {
+  const InterviewTranscriptReview({
+    required this.questionNumber,
+    required this.questionText,
+    required this.transcript,
+    required this.audioPath,
+    this.isLowConfidence = false,
+  });
+
+  final int questionNumber;
+  final String questionText;
+  final String transcript;
+  final String audioPath;
+  final bool isLowConfidence;
+
+  @override
+  InterviewStage get stage => InterviewStage.transcriptReview;
+
+  @override
+  List<Object?> get props => [
+    questionNumber,
+    questionText,
+    transcript,
+    audioPath,
+    isLowConfidence,
+  ];
+}
+
 /// Thinking state - LLM is generating the next response.
 class InterviewThinking extends InterviewState {
   const InterviewThinking({

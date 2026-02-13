@@ -55,7 +55,7 @@ development_status:
   2-1-interview-state-machine-android-ui: done
   2-2-push-to-talk-recording-capture-android: done
   2-3-post-turn-contract-multipart-transcript-response: done
-  2-4-transcript-trust-layer-re-record-flow: backlog
+  2-4-transcript-trust-layer-re-record-flow: done
   2-5-question-progression-avoid-repeats-end-cancel: backlog
   2-6-stage-aware-recoverable-errors-with-request-ids: backlog
   2-7-latency-timings-captured-and-surfaced-basic: backlog

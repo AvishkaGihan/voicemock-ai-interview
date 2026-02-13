@@ -7,6 +7,7 @@ import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/'
     'interview_view.dart';
 import 'package:voicemock/features/interview/presentation/widgets/hold_to_talk_button.dart';
+import 'package:voicemock/features/interview/presentation/widgets/transcript_review_card.dart';
 
 class MockInterviewCubit extends MockCubit<InterviewState>
     implements InterviewCubit {}
@@ -270,6 +271,174 @@ void main() {
         // Note: Actual duration text format depends on HoldToTalkButton
         // implementation which uses recordingDuration parameter to format
         // the time display
+      });
+    });
+
+    group('Transcript Review', () {
+      testWidgets('shows TranscriptReviewCard when in TranscriptReview state', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewTranscriptReview(
+            questionNumber: 1,
+            questionText: 'What is your greatest strength?',
+            transcript: 'My greatest strength is problem solving',
+            audioPath: '/path/audio.m4a',
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        expect(find.byType(TranscriptReviewCard), findsOneWidget);
+        expect(find.text('What we heard:'), findsOneWidget);
+        expect(
+          find.text('My greatest strength is problem solving'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('Hold-to-Talk button disabled during transcript review', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewTranscriptReview(
+            questionNumber: 1,
+            questionText: 'Question 1',
+            transcript: 'Answer',
+            audioPath: '/path/audio.m4a',
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        expect(find.text('Waiting...'), findsOneWidget);
+      });
+
+      testWidgets('Accept button calls cubit.acceptTranscript()', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewTranscriptReview(
+            questionNumber: 1,
+            questionText: 'Question 1',
+            transcript: 'Answer',
+            audioPath: '/path/audio.m4a',
+          ),
+        );
+        when(() => mockCubit.acceptTranscript()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        final acceptButton = find.widgetWithText(
+          FilledButton,
+          'Accept & Continue',
+        );
+        await tester.tap(acceptButton);
+        await tester.pump();
+
+        verify(() => mockCubit.acceptTranscript()).called(1);
+      });
+
+      testWidgets('Re-record button calls cubit.reRecord()', (tester) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewTranscriptReview(
+            questionNumber: 1,
+            questionText: 'Question 1',
+            transcript: 'Answer',
+            audioPath: '/path/audio.m4a',
+          ),
+        );
+        when(() => mockCubit.reRecord()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        final reRecordButton = find.widgetWithText(OutlinedButton, 'Re-record');
+        await tester.tap(reRecordButton);
+        await tester.pump();
+
+        verify(() => mockCubit.reRecord()).called(1);
+      });
+
+      testWidgets('Voice Pipeline Stepper shows Review stage', (tester) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewTranscriptReview(
+            questionNumber: 1,
+            questionText: 'Question 1',
+            transcript: 'Answer',
+            audioPath: '/path/audio.m4a',
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        expect(find.text('Review'), findsOneWidget);
+        expect(find.text('Uploading'), findsOneWidget);
+        expect(find.text('Transcribing'), findsOneWidget);
+        expect(find.text('Thinking'), findsOneWidget);
+        expect(find.text('Speaking'), findsOneWidget);
+      });
+
+      testWidgets('shows low-confidence hint when isLowConfidence is true', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewTranscriptReview(
+            questionNumber: 1,
+            questionText: 'Question 1',
+            transcript: 'um',
+            audioPath: '/path/audio.m4a',
+            isLowConfidence: true,
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        expect(
+          find.text("If this isn't right, re-record."),
+          findsOneWidget,
+        );
       });
     });
   });
