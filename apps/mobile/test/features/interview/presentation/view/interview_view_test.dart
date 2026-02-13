@@ -77,6 +77,57 @@ void main() {
       expect(find.text('Uploading'), findsOneWidget);
     });
 
+    testWidgets('shows stepper during Transcribing state', (tester) async {
+      when(() => mockCubit.state).thenReturn(
+        InterviewTranscribing(
+          questionNumber: 1,
+          questionText: 'Q1',
+          startTime: DateTime.now(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<InterviewCubit>.value(
+            value: mockCubit,
+            child: const InterviewView(),
+          ),
+        ),
+      );
+
+      expect(find.text('Transcribing'), findsOneWidget);
+      expect(find.text('Uploading'), findsOneWidget);
+      expect(find.text('Thinking'), findsOneWidget);
+      expect(find.text('Speaking'), findsOneWidget);
+    });
+
+    testWidgets('shows transcript in Thinking state', (tester) async {
+      when(() => mockCubit.state).thenReturn(
+        InterviewThinking(
+          questionNumber: 1,
+          questionText: 'Tell me about a challenge you faced',
+          transcript: 'I faced a bug in production and fixed it quickly',
+          startTime: DateTime.now(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<InterviewCubit>.value(
+            value: mockCubit,
+            child: const InterviewView(),
+          ),
+        ),
+      );
+
+      expect(find.text('You said:'), findsOneWidget);
+      expect(
+        find.text('I faced a bug in production and fixed it quickly'),
+        findsOneWidget,
+      );
+      expect(find.text('Thinking'), findsOneWidget);
+    });
+
     testWidgets('Hold-to-Talk button is disabled during Speaking', (
       tester,
     ) async {

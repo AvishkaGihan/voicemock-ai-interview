@@ -2,7 +2,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
+import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/core/permissions/permissions.dart';
+import 'package:voicemock/features/interview/data/data.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_state.dart';
@@ -10,6 +12,8 @@ import 'package:voicemock/features/interview/presentation/cubit/interview_state.
 class MockRecordingService extends Mock implements RecordingService {}
 
 class MockPermissionService extends Mock implements PermissionService {}
+
+class MockTurnRemoteDataSource extends Mock implements TurnRemoteDataSource {}
 
 // Stub functions for tearoffs
 Future<void> _disposeStub(Invocation _) => Future.value();
@@ -32,6 +36,7 @@ MockRecordingService createMockRecordingService({
   if (onIsRecording != null) {
     when(() => service.isRecording).thenAnswer((_) => onIsRecording());
   }
+  when(() => service.deleteRecording(any())).thenAnswer((_) async {});
   return service;
 }
 
@@ -46,10 +51,45 @@ MockPermissionService createMockPermissionService({
   return service;
 }
 
+// Helper to create a properly stubbed mock turn remote data source
+MockTurnRemoteDataSource createMockTurnRemoteDataSource({
+  TurnResponseData? response,
+  Exception? throwsException,
+}) {
+  final dataSource = MockTurnRemoteDataSource();
+  if (throwsException != null) {
+    when(
+      () => dataSource.submitTurn(
+        audioPath: any(named: 'audioPath'),
+        sessionId: any(named: 'sessionId'),
+        sessionToken: any(named: 'sessionToken'),
+      ),
+    ).thenThrow(throwsException);
+  } else {
+    when(
+      () => dataSource.submitTurn(
+        audioPath: any(named: 'audioPath'),
+        sessionId: any(named: 'sessionId'),
+        sessionToken: any(named: 'sessionToken'),
+      ),
+    ).thenAnswer(
+      (_) => Future.value(
+        response ??
+            const TurnResponseData(
+              transcript: 'Test transcript',
+              timings: {},
+            ),
+      ),
+    );
+  }
+  return dataSource;
+}
+
 void main() {
   group('InterviewCubit', () {
     late InterviewCubit cubit;
     late RecordingService mockRecordingService;
+    late TurnRemoteDataSource mockTurnRemoteDataSource;
 
     setUp(() {
       mockRecordingService = MockRecordingService();
@@ -59,8 +99,12 @@ void main() {
       when(
         () => mockRecordingService.isRecording,
       ).thenAnswer(_isRecordingStub);
+      mockTurnRemoteDataSource = createMockTurnRemoteDataSource();
       cubit = InterviewCubit(
         recordingService: mockRecordingService,
+        turnRemoteDataSource: mockTurnRemoteDataSource,
+        sessionId: 'test-session-123',
+        sessionToken: 'test-token',
         permissionService: createMockPermissionService(),
       );
     });
@@ -82,6 +126,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -116,6 +163,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -145,6 +195,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -166,6 +219,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -187,6 +243,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -205,7 +264,7 @@ void main() {
 
     group('stopRecording', () {
       blocTest<InterviewCubit, InterviewState>(
-        'emits InterviewUploading when called from Recording state',
+        'emits Uploading → Transcribing → Thinking flow',
         build: () {
           final service = MockRecordingService();
           when(
@@ -214,6 +273,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -225,6 +287,8 @@ void main() {
         ),
         act: (cubit) async {
           await cubit.stopRecording();
+          // Give async submitTurn time to complete
+          await Future<void>.delayed(const Duration(milliseconds: 100));
         },
         expect: () => [
           isA<InterviewUploading>()
@@ -232,6 +296,13 @@ void main() {
               .having((s) => s.questionText, 'questionText', 'Q1')
               .having((s) => s.audioPath, 'audioPath', '/path/to/audio.m4a')
               .having((s) => s.startTime, 'startTime', isA<DateTime>()),
+          isA<InterviewTranscribing>()
+              .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Q1'),
+          isA<InterviewThinking>()
+              .having((s) => s.questionNumber, 'questionNumber', 1)
+              .having((s) => s.questionText, 'questionText', 'Q1')
+              .having((s) => s.transcript, 'transcript', 'Test transcript'),
         ],
       );
 
@@ -243,6 +314,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -274,6 +348,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -307,6 +384,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -337,6 +417,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -360,6 +443,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -387,6 +473,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -413,6 +502,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
             maxRecordingDuration: const Duration(seconds: 2),
           );
@@ -433,6 +525,12 @@ void main() {
             'audioPath',
             '/path/audio.m4a',
           ),
+          isA<InterviewTranscribing>(),
+          isA<InterviewThinking>().having(
+            (s) => s.transcript,
+            'transcript',
+            'Test transcript',
+          ),
         ],
       );
     });
@@ -447,6 +545,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -468,6 +569,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -488,6 +592,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -509,6 +616,9 @@ void main() {
         when(service.dispose).thenAnswer((_) async {});
         final cubit = InterviewCubit(
           recordingService: service,
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         );
         await cubit.close();
@@ -516,86 +626,14 @@ void main() {
       });
     });
 
-    group('onUploadComplete', () {
-      blocTest<InterviewCubit, InterviewState>(
-        'emits InterviewTranscribing when called from Uploading state',
-        build: () => InterviewCubit(
-          recordingService: createMockRecordingService(),
-          permissionService: createMockPermissionService(),
-        ),
-        seed: () => InterviewUploading(
-          questionNumber: 1,
-          questionText: 'Q1',
-          audioPath: '/path',
-          startTime: DateTime.now(),
-        ),
-        act: (cubit) => cubit.onUploadComplete(),
-        expect: () => [
-          isA<InterviewTranscribing>()
-              .having((s) => s.questionNumber, 'questionNumber', 1)
-              .having((s) => s.questionText, 'questionText', 'Q1')
-              .having((s) => s.startTime, 'startTime', isA<DateTime>()),
-        ],
-      );
-
-      blocTest<InterviewCubit, InterviewState>(
-        'does not emit when called from Recording state',
-        build: () => InterviewCubit(
-          recordingService: createMockRecordingService(),
-          permissionService: createMockPermissionService(),
-        ),
-        seed: () => InterviewRecording(
-          questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Q1',
-          recordingStartTime: DateTime.now(),
-        ),
-        act: (cubit) => cubit.onUploadComplete(),
-      );
-    });
-
-    group('onTranscriptReceived', () {
-      blocTest<InterviewCubit, InterviewState>(
-        'emits InterviewThinking when called from Transcribing state',
-        build: () => InterviewCubit(
-          recordingService: createMockRecordingService(),
-          permissionService: createMockPermissionService(),
-        ),
-        seed: () => InterviewTranscribing(
-          questionNumber: 1,
-          questionText: 'Q1',
-          startTime: DateTime.now(),
-        ),
-        act: (cubit) => cubit.onTranscriptReceived('User transcript'),
-        expect: () => [
-          isA<InterviewThinking>()
-              .having((s) => s.questionNumber, 'questionNumber', 1)
-              .having((s) => s.questionText, 'questionText', 'Q1')
-              .having((s) => s.transcript, 'transcript', 'User transcript')
-              .having((s) => s.startTime, 'startTime', isA<DateTime>()),
-        ],
-      );
-
-      blocTest<InterviewCubit, InterviewState>(
-        'does not emit when called from Ready state',
-        build: () => InterviewCubit(
-          recordingService: createMockRecordingService(),
-          permissionService: createMockPermissionService(),
-        ),
-        seed: () => const InterviewReady(
-          questionNumber: 1,
-          totalQuestions: 5,
-          questionText: 'Test question',
-        ),
-        act: (cubit) => cubit.onTranscriptReceived('transcript'),
-      );
-    });
-
     group('onResponseReady', () {
       blocTest<InterviewCubit, InterviewState>(
         'emits InterviewSpeaking when called from Thinking state',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewThinking(
@@ -626,6 +664,9 @@ void main() {
         'does not emit when called from Ready state',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -645,6 +686,9 @@ void main() {
         'emits InterviewReady when called from Speaking state',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewSpeaking(
@@ -675,6 +719,9 @@ void main() {
         'does not emit when called from Ready state',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -694,6 +741,9 @@ void main() {
         'emits InterviewError from any state',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -723,6 +773,9 @@ void main() {
         'can transition from Uploading to Error',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewUploading(
@@ -758,6 +811,9 @@ void main() {
         'restores previous state when called from Error state',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewError(
@@ -782,6 +838,9 @@ void main() {
         'does not emit when called from Ready state',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -805,6 +864,9 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
           );
         },
@@ -816,7 +878,8 @@ void main() {
         act: (cubit) async {
           await cubit.startRecording();
           await cubit.stopRecording();
-          cubit.onUploadComplete();
+          // Give async submitTurn time to complete
+          await Future<void>.delayed(const Duration(milliseconds: 100));
         },
         expect: () => [
           isA<InterviewRecording>().having(
@@ -834,6 +897,11 @@ void main() {
             'questionNumber',
             3,
           ),
+          isA<InterviewThinking>().having(
+            (s) => s.questionNumber,
+            'questionNumber',
+            3,
+          ),
         ],
       );
 
@@ -841,6 +909,9 @@ void main() {
         'preserves transcript through Thinking to Speaking',
         build: () => InterviewCubit(
           recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewThinking(
