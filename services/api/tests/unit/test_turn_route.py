@@ -58,7 +58,7 @@ def mock_turn_result():
 
 def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
     """Test successful turn submission with multipart upload."""
-    from src.api.routes.turn import get_session_store, get_token_service
+    from src.api.dependencies.shared_services import get_session_store, get_token_service
 
     mock_store = Mock()
     mock_store.get_session.return_value = mock_session
@@ -103,7 +103,7 @@ def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
 
 def test_submit_turn_invalid_token(client, mock_app):
     """Test error when session token is invalid."""
-    from src.api.routes.turn import get_token_service
+    from src.api.dependencies.shared_services import get_token_service
 
     mock_token_service = Mock()
     mock_token_service.verify_token.return_value = None
@@ -128,7 +128,7 @@ def test_submit_turn_invalid_token(client, mock_app):
 
 def test_submit_turn_session_not_found(client, mock_app):
     """Test error when session doesn't exist in store."""
-    from src.api.routes.turn import get_session_store, get_token_service
+    from src.api.dependencies.shared_services import get_session_store, get_token_service
 
     mock_store = Mock()
     mock_store.get_session.return_value = None
@@ -154,7 +154,7 @@ def test_submit_turn_session_not_found(client, mock_app):
 
 def test_submit_turn_empty_audio_file(client, mock_session, mock_app):
     """Test error when audio file is empty."""
-    from src.api.routes.turn import get_session_store, get_token_service
+    from src.api.dependencies.shared_services import get_session_store, get_token_service
 
     mock_store = Mock()
     mock_store.get_session.return_value = mock_session
@@ -180,7 +180,7 @@ def test_submit_turn_empty_audio_file(client, mock_session, mock_app):
 
 def test_submit_turn_stt_error(client, mock_session, mock_app):
     """Test error propagation from STT provider."""
-    from src.api.routes.turn import get_session_store, get_token_service
+    from src.api.dependencies.shared_services import get_session_store, get_token_service
 
     mock_store = Mock()
     mock_store.get_session.return_value = mock_session
