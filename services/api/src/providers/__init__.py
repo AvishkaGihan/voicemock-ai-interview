@@ -9,6 +9,7 @@ from src.providers.stt_deepgram import (
     STTTimeoutError,
     STTError,
 )
+from src.providers.llm_groq import GroqLLMProvider, LLMError
 
 __all__ = [
     "DeepgramSTTProvider",
@@ -18,4 +19,6 @@ __all__ = [
     "STTProviderError",
     "STTTimeoutError",
     "STTError",
+    "GroqLLMProvider",
+    "LLMError",
 ]

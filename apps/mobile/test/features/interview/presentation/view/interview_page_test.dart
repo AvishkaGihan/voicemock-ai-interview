@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:voicemock/core/http/api_client.dart';
 import 'package:voicemock/features/interview/domain/session.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_page.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_view.dart';
+
+class MockApiClient extends Mock implements ApiClient {}
 
 void main() {
   group('InterviewPage', () {
@@ -14,11 +18,19 @@ void main() {
       openingPrompt: 'This is the opening question.',
       createdAt: DateTime(2025),
     );
+    late MockApiClient mockApiClient;
+
+    setUp(() {
+      mockApiClient = MockApiClient();
+    });
 
     testWidgets('provides InterviewCubit to descendants', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: InterviewPage(session: mockSession),
+          home: RepositoryProvider<ApiClient>.value(
+            value: mockApiClient,
+            child: InterviewPage(session: mockSession),
+          ),
         ),
       );
 
@@ -27,6 +39,7 @@ void main() {
 
       // Access cubit from InterviewView's context
       final context = tester.element(find.byType(InterviewView));
+      // Using context.read from flutter_bloc/provider extension
       final cubit = context.read<InterviewCubit>();
       expect(cubit, isNotNull);
     });
@@ -36,7 +49,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: InterviewPage(session: mockSession),
+          home: RepositoryProvider<ApiClient>.value(
+            value: mockApiClient,
+            child: InterviewPage(session: mockSession),
+          ),
         ),
       );
 

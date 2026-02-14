@@ -441,5 +441,186 @@ void main() {
         );
       });
     });
+
+    group('Session Complete', () {
+      testWidgets('shows SessionCompleteCard during SessionComplete state', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewSessionComplete(
+            totalQuestions: 5,
+            lastTranscript: 'My final answer',
+            lastResponseText: 'Great job! Session complete.',
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        expect(find.text('Session Complete'), findsOneWidget);
+        expect(
+          find.text('Great job! You completed all 5 questions.'),
+          findsOneWidget,
+        );
+        expect(find.text('Back to Home'), findsOneWidget);
+        expect(find.text('Start New Session'), findsOneWidget);
+      });
+
+      testWidgets('hides Hold-to-Talk button during SessionComplete', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewSessionComplete(
+            totalQuestions: 5,
+            lastTranscript: 'My final answer',
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        expect(find.byType(HoldToTalkButton), findsNothing);
+      });
+
+      testWidgets('hides stepper during SessionComplete', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewSessionComplete(
+            totalQuestions: 5,
+            lastTranscript: 'My final answer',
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        expect(find.text('Uploading'), findsNothing);
+        expect(find.text('Transcribing'), findsNothing);
+        expect(find.text('Thinking'), findsNothing);
+        expect(find.text('Speaking'), findsNothing);
+      });
+    });
+
+    group('Cancel Session', () {
+      testWidgets('shows end session dialog when close button tapped', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewReady(
+            questionNumber: 1,
+            totalQuestions: 5,
+            questionText: 'Tell me about yourself',
+          ),
+        );
+        when(() => mockCubit.cancel()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        // Tap the close button in the app bar
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+
+        // Dialog should be shown
+        expect(find.text('End session?'), findsOneWidget);
+        expect(
+          find.text('Are you sure you want to end this interview session?'),
+          findsOneWidget,
+        );
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('End'), findsOneWidget);
+      });
+
+      testWidgets('cancels session when dialog confirmed', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewReady(
+            questionNumber: 1,
+            totalQuestions: 5,
+            questionText: 'Tell me about yourself',
+          ),
+        );
+        when(() => mockCubit.cancel()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        // Tap the close button
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+
+        // Confirm end session
+        await tester.tap(find.text('End'));
+        await tester.pumpAndSettle();
+
+        // Verify cubit.cancel() was called
+        verify(() => mockCubit.cancel()).called(1);
+      });
+
+      testWidgets('does not cancel when dialog dismissed', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InterviewReady(
+            questionNumber: 1,
+            totalQuestions: 5,
+            questionText: 'Tell me about yourself',
+          ),
+        );
+        when(() => mockCubit.cancel()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider<InterviewCubit>.value(
+              value: mockCubit,
+              child: const InterviewView(),
+            ),
+          ),
+        );
+
+        // Tap the close button
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+
+        // Cancel the dialog
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        // Verify cubit.cancel() was NOT called
+        verifyNever(() => mockCubit.cancel());
+      });
+    });
   });
 }

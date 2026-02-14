@@ -129,6 +129,21 @@ class InterviewView extends StatelessWidget {
           transcript: transcript,
           responseText: responseText,
         ),
+      InterviewSessionComplete(
+        :final totalQuestions,
+        :final lastTranscript,
+        :final lastResponseText,
+      ) =>
+        SessionCompleteCard(
+          totalQuestions: totalQuestions,
+          lastTranscript: lastTranscript,
+          lastResponseText: lastResponseText,
+          onBackToHome: () => Navigator.pop(context),
+          onStartNew: () {
+            // Navigate to home then to setup (or directly to setup)
+            Navigator.pop(context);
+          },
+        ),
       InterviewError(:final failure) => ErrorRecoverySheet(
         failure: failure,
         onRetry: () => context.read<InterviewCubit>().retry(),
@@ -140,6 +155,11 @@ class InterviewView extends StatelessWidget {
   Widget _buildHoldToTalkButton(BuildContext context, InterviewState state) {
     final cubit = context.read<InterviewCubit>();
     final isEnabled = state is InterviewReady || state is InterviewRecording;
+
+    // Hide button during session complete
+    if (state is InterviewSessionComplete) {
+      return const SizedBox.shrink();
+    }
 
     if (state is InterviewRecording) {
       return _RecordingTimer(

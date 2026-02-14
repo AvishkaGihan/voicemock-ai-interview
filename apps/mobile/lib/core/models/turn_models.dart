@@ -9,8 +9,11 @@ class TurnResponseData {
   const TurnResponseData({
     required this.transcript,
     required this.timings,
+    required this.questionNumber,
+    required this.totalQuestions,
     this.assistantText,
     this.ttsAudioUrl,
+    this.isComplete = false,
   });
 
   /// Creates a [TurnResponseData] from JSON.
@@ -20,7 +23,7 @@ class TurnResponseData {
   /// The transcribed text from the user's audio.
   final String transcript;
 
-  /// The assistant's text response (null until LLM is integrated).
+  /// The assistant's text response (LLM-generated follow-up question).
   @JsonKey(name: 'assistant_text')
   final String? assistantText;
 
@@ -30,6 +33,18 @@ class TurnResponseData {
 
   /// Timing information for each processing stage in milliseconds.
   final Map<String, double> timings;
+
+  /// Whether this was the final turn (session complete).
+  @JsonKey(name: 'is_complete')
+  final bool isComplete;
+
+  /// Current question number (1-indexed).
+  @JsonKey(name: 'question_number')
+  final int questionNumber;
+
+  /// Total configured questions for the session.
+  @JsonKey(name: 'total_questions')
+  final int totalQuestions;
 
   /// Converts this [TurnResponseData] to JSON.
   Map<String, dynamic> toJson() => _$TurnResponseDataToJson(this);

@@ -128,6 +128,8 @@ class InterviewTranscriptReview extends InterviewState {
     required this.transcript,
     required this.audioPath,
     this.isLowConfidence = false,
+    this.assistantText,
+    this.isComplete = false,
   });
 
   final int questionNumber;
@@ -135,6 +137,8 @@ class InterviewTranscriptReview extends InterviewState {
   final String transcript;
   final String audioPath;
   final bool isLowConfidence;
+  final String? assistantText;
+  final bool isComplete;
 
   @override
   InterviewStage get stage => InterviewStage.transcriptReview;
@@ -146,6 +150,8 @@ class InterviewTranscriptReview extends InterviewState {
     transcript,
     audioPath,
     isLowConfidence,
+    assistantText,
+    isComplete,
   ];
 }
 
@@ -201,6 +207,29 @@ class InterviewSpeaking extends InterviewState {
     transcript,
     responseText,
     ttsAudioUrl,
+  ];
+}
+
+/// Session complete state - all questions answered.
+class InterviewSessionComplete extends InterviewState {
+  const InterviewSessionComplete({
+    required this.totalQuestions,
+    required this.lastTranscript,
+    this.lastResponseText,
+  });
+
+  final int totalQuestions;
+  final String lastTranscript;
+  final String? lastResponseText;
+
+  @override
+  InterviewStage get stage => InterviewStage.sessionComplete;
+
+  @override
+  List<Object?> get props => [
+    totalQuestions,
+    lastTranscript,
+    lastResponseText,
   ];
 }
 

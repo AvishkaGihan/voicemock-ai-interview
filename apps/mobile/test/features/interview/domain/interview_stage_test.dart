@@ -13,8 +13,9 @@ void main() {
       expect(stages, contains(InterviewStage.transcriptReview));
       expect(stages, contains(InterviewStage.thinking));
       expect(stages, contains(InterviewStage.speaking));
+      expect(stages, contains(InterviewStage.sessionComplete));
       expect(stages, contains(InterviewStage.error));
-      expect(stages.length, 8);
+      expect(stages.length, 9);
     });
 
     test('toString should return stage name for logging', () {
@@ -28,6 +29,10 @@ void main() {
       );
       expect(InterviewStage.thinking.toString(), contains('thinking'));
       expect(InterviewStage.speaking.toString(), contains('speaking'));
+      expect(
+        InterviewStage.sessionComplete.toString(),
+        contains('sessionComplete'),
+      );
       expect(InterviewStage.error.toString(), contains('error'));
     });
 
