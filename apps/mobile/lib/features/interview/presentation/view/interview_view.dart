@@ -23,34 +23,49 @@ class InterviewView extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<InterviewCubit, InterviewState>(
-        builder: (context, state) {
-          return SafeArea(
-            child: Column(
-              children: [
-                // Voice Pipeline Stepper (shown during processing)
-                VoicePipelineStepper(
-                  currentStage: state.stage,
-                  stageStartTime: _getStageStartTime(state),
-                ),
-
-                // Turn Card (question, transcript, response)
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildTurnCard(context, state),
-                  ),
-                ),
-
-                // Hold-to-Talk Button (anchored at bottom)
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildHoldToTalkButton(context, state),
-                ),
-              ],
-            ),
-          );
+      body: BlocListener<InterviewCubit, InterviewState>(
+        listener: (context, state) {
+          // Auto-complete the Speaking phase when there is no TTS audio to play.
+          // TTS playback is not yet implemented (Story 3.1), so we skip directly
+          // to the next Ready state. Once TTS is wired up, this block should be
+          // replaced by an audio-completion callback.
+          if (state is InterviewSpeaking && state.ttsAudioUrl.isEmpty) {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                context.read<InterviewCubit>().onSpeakingComplete();
+              }
+            });
+          }
         },
+        child: BlocBuilder<InterviewCubit, InterviewState>(
+          builder: (context, state) {
+            return SafeArea(
+              child: Column(
+                children: [
+                  // Voice Pipeline Stepper (shown during processing)
+                  VoicePipelineStepper(
+                    currentStage: state.stage,
+                    stageStartTime: _getStageStartTime(state),
+                  ),
+
+                  // Turn Card (question, transcript, response)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildTurnCard(context, state),
+                    ),
+                  ),
+
+                  // Hold-to-Talk Button (anchored at bottom)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildHoldToTalkButton(context, state),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
