@@ -25,10 +25,10 @@ class InterviewView extends StatelessWidget {
       ),
       body: BlocListener<InterviewCubit, InterviewState>(
         listener: (context, state) {
-          // Auto-complete the Speaking phase when there is no TTS audio to play.
-          // TTS playback is not yet implemented (Story 3.1), so we skip directly
-          // to the next Ready state. Once TTS is wired up, this block should be
-          // replaced by an audio-completion callback.
+          // Auto-complete the Speaking phase when there is no TTS audio to
+          // play. TTS playback is not yet implemented (Story 3.1), so we
+          // skip directly to the next Ready state. Once TTS is wired up,
+          // this block should be replaced by an audio-completion callback.
           if (state is InterviewSpeaking && state.ttsAudioUrl.isEmpty) {
             SchedulerBinding.instance.addPostFrameCallback((_) {
               if (context.mounted) {

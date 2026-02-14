@@ -842,6 +842,59 @@ Recent patterns:
 
 **Note:** Most mobile implementation was already complete (Tasks 6-11). This completion added comprehensive unit tests to validate the existing functionality and ensure all edge cases are covered.
 
+**Bug Fix: Microphone button stuck in "Waiting..." after first answer (2026-02-14)**
+
+🐛 **Issue:**
+
+After recording and submitting the first answer, the microphone button remained in "Waiting..." state permanently — even after the next question was received from the backend. The user could not answer subsequent questions.
+
+🔍 **Root Cause:**
+
+The state machine correctly transitioned through `Uploading → Transcribing → TranscriptReview → Thinking → Speaking`, but once in the `InterviewSpeaking` state, **nothing ever called `onSpeakingComplete()`** to transition back to `InterviewReady`. This is because TTS audio playback hasn't been implemented yet (Story 3.1), so there was no audio completion event to trigger the transition. The `HoldToTalkButton` shows "Waiting..." whenever the state is not `InterviewReady` or `InterviewRecording`, so it stayed stuck.
+
+✅ **Fix Applied:**
+
+- Added a `BlocListener<InterviewCubit, InterviewState>` in `InterviewView.build()` that detects when the state becomes `InterviewSpeaking` with an empty `ttsAudioUrl`
+- When detected, it calls `onSpeakingComplete()` via `SchedulerBinding.addPostFrameCallback` (to avoid emitting state during build)
+- This auto-advances the state machine to `InterviewReady` with the next question, re-enabling the microphone button
+- All 264 interview feature tests continue to pass
+
+📝 **Note:** Once TTS playback is implemented in Story 3.1, this auto-complete logic should be replaced by a proper audio completion callback.
+
+**Files Modified:**
+
+- apps/mobile/lib/features/interview/presentation/view/interview_view.dart (added BlocListener for Speaking auto-complete)
+
+**Bug Fix: Question count always displaying "5" regardless of user selection (2026-02-14)**
+
+🐛 **Issue:**
+
+The interview UI always showed "Question X of 5" regardless of the number selected by the user on the setup screen. The session complete screen also displayed "5" total questions.
+
+🔍 **Root Cause:**
+
+The `Session` domain model did not have a `totalQuestions` field. When the user selected a question count (e.g., 8), it was stored in `InterviewConfig.questionCount` and sent to the backend via `SessionStartRequest`, but the `Session` object created from the API response did not carry this value. When `InterviewPage` navigated to the interview screen passing `session` as route extra, `InterviewCubit` was constructed without `totalQuestions`, defaulting to `5`.
+
+Data flow break: `InterviewConfig.questionCount → SessionStartRequest → (lost) → Session → InterviewPage → InterviewCubit(totalQuestions: 5)`
+
+✅ **Fix Applied:**
+
+- Added `totalQuestions` field to `Session` domain model
+- `SessionRepositoryImpl.startSession()` now populates `session.totalQuestions` from `config.questionCount`
+- `SessionLocalDataSource` persists/retrieves `totalQuestions` via SharedPreferences
+- `InterviewPage` passes `session.totalQuestions` to `InterviewCubit` constructor
+- All 314 tests passing after fix
+
+**Files Modified:**
+
+- apps/mobile/lib/features/interview/domain/session.dart (added `totalQuestions` field)
+- apps/mobile/lib/features/interview/data/repositories/session_repository_impl.dart (populate `totalQuestions` from `config.questionCount`)
+- apps/mobile/lib/features/interview/data/datasources/session_local_data_source.dart (persist/retrieve `totalQuestions`)
+- apps/mobile/lib/features/interview/presentation/view/interview_page.dart (pass `session.totalQuestions` to cubit)
+- apps/mobile/test/features/interview/presentation/view/interview_page_test.dart (add `totalQuestions` to test Session)
+- apps/mobile/test/features/interview/data/repositories/session_repository_impl_test.dart (add `totalQuestions` to fallback Session)
+- apps/mobile/test/features/interview/presentation/cubit/session_cubit_test.dart (add `totalQuestions` to test Session)
+
 ### Change Log
 
 | Date       | Change                                                                                                           | Author                 |
@@ -849,6 +902,8 @@ Recent patterns:
 | 2026-02-14 | Story 2.5 created — comprehensive context for question progression with LLM integration                          | Antigravity (SM Agent) |
 | 2026-02-14 | Backend implementation complete — Tasks 1-5, 12 finished. All 80 tests passing. Ready for mobile implementation. | Dev Agent              |
 | 2026-02-14 | Mobile implementation complete — Tasks 6-11, 13-14 finished. All 264 interview tests passing. Story complete.    | Dev Agent              |
+| 2026-02-14 | Bug fix: Microphone button stuck in "Waiting..." — added BlocListener to auto-complete Speaking phase when no TTS audio. | Dev Agent              |
+| 2026-02-14 | Bug fix: Question count always showing "5" — added `totalQuestions` to `Session` model, wired from config through to cubit. | Dev Agent              |
 
 ### File List
 
@@ -872,3 +927,10 @@ Recent patterns:
 - apps/mobile/lib/features/interview/presentation/widgets/voice_pipeline_stepper.dart
 - apps/mobile/test/features/interview/presentation/cubit/interview_cubit_test.dart
 - apps/mobile/test/features/interview/presentation/view/interview_view_test.dart
+- apps/mobile/lib/features/interview/domain/session.dart
+- apps/mobile/lib/features/interview/data/repositories/session_repository_impl.dart
+- apps/mobile/lib/features/interview/data/datasources/session_local_data_source.dart
+- apps/mobile/lib/features/interview/presentation/view/interview_page.dart
+- apps/mobile/test/features/interview/presentation/view/interview_page_test.dart
+- apps/mobile/test/features/interview/data/repositories/session_repository_impl_test.dart
+- apps/mobile/test/features/interview/presentation/cubit/session_cubit_test.dart
