@@ -6,6 +6,7 @@ export 'hold_to_talk_button.dart';
 export 'permission_denied_banner.dart';
 export 'question_count_selector.dart';
 export 'role_selector.dart';
+export 'session_complete_card.dart';
 export 'session_error_dialog.dart';
 export 'transcript_review_card.dart';
 export 'turn_card.dart';

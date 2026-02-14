@@ -13,6 +13,9 @@ void main() {
           'stt_ms': 820.3,
           'total_ms': 940.8,
         },
+        'is_complete': false,
+        'question_number': 1,
+        'total_questions': 5,
       };
 
       final result = TurnResponseData.fromJson(json);
@@ -25,6 +28,9 @@ void main() {
         'stt_ms': 820.3,
         'total_ms': 940.8,
       });
+      expect(result.isComplete, false);
+      expect(result.questionNumber, 1);
+      expect(result.totalQuestions, 5);
     });
 
     test('should handle null optional fields', () {
@@ -36,6 +42,9 @@ void main() {
           'stt_ms': 820.3,
           'total_ms': 940.8,
         },
+        'is_complete': false,
+        'question_number': 1,
+        'total_questions': 5,
       };
 
       final result = TurnResponseData.fromJson(json);
@@ -44,6 +53,9 @@ void main() {
       expect(result.assistantText, null);
       expect(result.ttsAudioUrl, null);
       expect(result.timings['stt_ms'], 820.3);
+      expect(result.isComplete, false);
+      expect(result.questionNumber, 1);
+      expect(result.totalQuestions, 5);
     });
 
     test('should serialize to JSON with snake_case fields', () {
@@ -56,6 +68,8 @@ void main() {
           'stt_ms': 500.0,
           'total_ms': 600.0,
         },
+        questionNumber: 2,
+        totalQuestions: 5,
       );
 
       final json = data.toJson();
@@ -68,12 +82,17 @@ void main() {
         'stt_ms': 500.0,
         'total_ms': 600.0,
       });
+      expect(json['is_complete'], false);
+      expect(json['question_number'], 2);
+      expect(json['total_questions'], 5);
     });
 
     test('should handle missing optional fields in JSON', () {
       final json = {
         'transcript': 'Test',
         'timings': <String, dynamic>{},
+        'question_number': 1,
+        'total_questions': 3,
       };
 
       final result = TurnResponseData.fromJson(json);

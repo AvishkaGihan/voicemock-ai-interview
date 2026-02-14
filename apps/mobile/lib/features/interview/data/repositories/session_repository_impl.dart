@@ -36,6 +36,7 @@ class SessionRepositoryImpl implements SessionRepository {
         sessionId: response.sessionId,
         sessionToken: response.sessionToken,
         openingPrompt: response.openingPrompt,
+        totalQuestions: config.questionCount,
         createdAt: DateTime.now(),
       );
 

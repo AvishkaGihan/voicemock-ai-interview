@@ -27,6 +27,11 @@ class VoicePipelineStepper extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Hide stepper during session complete
+    if (currentStage == InterviewStage.sessionComplete) {
+      return const SizedBox.shrink();
+    }
+
     final showHint = _shouldShowHint();
 
     return Column(

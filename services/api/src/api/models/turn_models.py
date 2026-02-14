@@ -22,7 +22,7 @@ class TurnResponseData(BaseModel):
 
     assistant_text: str | None = Field(
         default=None,
-        description="LLM-generated follow-up question or response (null until Story 2.5)",
+        description="LLM-generated follow-up question or response",
         examples=["That's a good start. Can you elaborate on your approach?"],
     )
 
@@ -38,6 +38,24 @@ class TurnResponseData(BaseModel):
         examples=[
             {"upload_ms": 120.5, "stt_ms": 820.3, "llm_ms": 1200.0, "total_ms": 2140.8}
         ],
+    )
+
+    is_complete: bool = Field(
+        default=False,
+        description="Whether this was the final turn (session complete)",
+        examples=[False, True],
+    )
+
+    question_number: int = Field(
+        ...,
+        description="Current question number (1-indexed)",
+        examples=[1, 2, 3, 5],
+    )
+
+    total_questions: int = Field(
+        ...,
+        description="Total configured questions for the session",
+        examples=[3, 5, 10],
     )
 
 

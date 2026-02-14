@@ -26,6 +26,10 @@ class Settings(BaseSettings):
         session_ttl_minutes: Session time-to-live in minutes (default: 60)
         deepgram_api_key: Deepgram API key for STT (REQUIRED at runtime for /turn)
         stt_timeout_seconds: Timeout for STT requests in seconds (default: 30)
+        groq_api_key: Groq API key for LLM (REQUIRED at runtime for /turn)
+        llm_model: Groq model to use (default: llama-3.3-70b-versatile)
+        llm_timeout_seconds: Timeout for LLM requests in seconds (default: 30)
+        llm_max_tokens: Maximum tokens for LLM response (default: 256)
     """
 
     app_name: str = "VoiceMock AI Interview Coach API"
@@ -35,6 +39,10 @@ class Settings(BaseSettings):
     session_ttl_minutes: int = 60
     deepgram_api_key: str = Field(default="")  # REQUIRED at runtime for /turn endpoint
     stt_timeout_seconds: int = 30
+    groq_api_key: str = Field(default="")  # REQUIRED at runtime for /turn endpoint
+    llm_model: str = "llama-3.3-70b-versatile"
+    llm_timeout_seconds: int = 30
+    llm_max_tokens: int = 256
 
     model_config = {
         "env_file": ".env",

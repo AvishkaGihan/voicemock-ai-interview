@@ -28,6 +28,8 @@ void main() {
         data: TurnResponseData(
           transcript: 'Hello world',
           timings: {'stt_ms': 820.5, 'total_ms': 940.8},
+          questionNumber: 1,
+          totalQuestions: 5,
         ),
         error: null,
         requestId: 'test-request-id',
@@ -72,6 +74,8 @@ void main() {
       const expectedData = TurnResponseData(
         transcript: 'Test transcript',
         timings: {'upload_ms': 100.0, 'stt_ms': 500.0, 'total_ms': 600.0},
+        questionNumber: 1,
+        totalQuestions: 5,
       );
 
       const mockEnvelope = ApiEnvelope<TurnResponseData>(

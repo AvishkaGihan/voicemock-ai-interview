@@ -30,6 +30,7 @@ class InterviewPage extends StatelessWidget {
         sessionId: session.sessionId,
         sessionToken: session.sessionToken,
         initialQuestionText: session.openingPrompt,
+        totalQuestions: session.totalQuestions,
       ),
       child: const InterviewView(),
     );

@@ -2,7 +2,7 @@
 ///
 /// Defines the deterministic flow through the voice turn loop:
 /// Ready → Recording → Uploading → Transcribing → TranscriptReview → Thinking
-/// → Speaking → Ready (+ Error)
+/// → Speaking → Ready (+ Error + SessionComplete)
 enum InterviewStage {
   /// Waiting for user to record - mic available
   ready,
@@ -24,6 +24,9 @@ enum InterviewStage {
 
   /// TTS audio is playing - coach is speaking
   speaking,
+
+  /// Session complete - all questions answered
+  sessionComplete,
 
   /// Recoverable error occurred
   error,

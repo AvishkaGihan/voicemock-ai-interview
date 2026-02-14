@@ -115,6 +115,7 @@ class InterviewCubit extends Cubit<InterviewState> {
       emit(
         InterviewUploading(
           questionNumber: current.questionNumber,
+          totalQuestions: current.totalQuestions,
           questionText: current.questionText,
           audioPath: audioPath,
           startTime: DateTime.now(),
@@ -154,6 +155,7 @@ class InterviewCubit extends Cubit<InterviewState> {
       emit(
         InterviewTranscribing(
           questionNumber: current.questionNumber,
+          totalQuestions: current.totalQuestions,
           questionText: current.questionText,
           startTime: DateTime.now(),
         ),
@@ -172,15 +174,19 @@ class InterviewCubit extends Cubit<InterviewState> {
       emit(
         InterviewTranscriptReview(
           questionNumber: current.questionNumber,
+          totalQuestions: current.totalQuestions,
           questionText: current.questionText,
           transcript: turnResponse.transcript,
           audioPath: current.audioPath,
           isLowConfidence: isLowConfidence,
+          assistantText: turnResponse.assistantText,
+          isComplete: turnResponse.isComplete,
         ),
       );
       _logTransition(
         'TranscriptReview (transcript: ${turnResponse.transcript}, '
-        'lowConfidence: $isLowConfidence)',
+        'lowConfidence: $isLowConfidence, '
+        'isComplete: ${turnResponse.isComplete})',
       );
     } on ServerException catch (e) {
       // Clean up audio on error
@@ -223,16 +229,38 @@ class InterviewCubit extends Cubit<InterviewState> {
     // Clean up audio file — no longer needed after acceptance
     await _cleanupAudioFile(current.audioPath);
 
+    // Check if session is complete
+    if (current.isComplete) {
+      emit(
+        InterviewSessionComplete(
+          totalQuestions: _totalQuestions,
+          lastTranscript: current.transcript,
+          lastResponseText: current.assistantText,
+        ),
+      );
+      _logTransition('Session complete');
+      return;
+    }
+
+    // Transition to Thinking with accepted transcript
     emit(
       InterviewThinking(
         questionNumber: current.questionNumber,
+        totalQuestions: current.totalQuestions,
         questionText: current.questionText,
         transcript: current.transcript,
         startTime: DateTime.now(),
       ),
     );
-
     _logTransition('Transcript accepted → Thinking');
+
+    // Immediately transition to Speaking since we already have the LLM response
+    if (current.assistantText != null) {
+      onResponseReady(
+        responseText: current.assistantText!,
+        ttsAudioUrl: '', // No TTS yet (Story 3.1)
+      );
+    }
   }
 
   /// Re-record the answer — return to Ready with same question.
@@ -343,6 +371,7 @@ class InterviewCubit extends Cubit<InterviewState> {
     emit(
       InterviewSpeaking(
         questionNumber: current.questionNumber,
+        totalQuestions: current.totalQuestions,
         questionText: current.questionText,
         transcript: current.transcript,
         responseText: responseText,
@@ -352,26 +381,24 @@ class InterviewCubit extends Cubit<InterviewState> {
     _logTransition('Speaking');
   }
 
-  /// Speaking complete - transition back to Ready.
-  void onSpeakingComplete({
-    required String nextQuestionText,
-    required int totalQuestions,
-  }) {
+  /// Speaking complete - transition back to Ready with next question.
+  void onSpeakingComplete() {
     final current = state;
     if (current is! InterviewSpeaking) {
       _logInvalidTransition('onSpeakingComplete', current);
       return;
     }
 
+    // The responseText IS the next question from the LLM
     emit(
       InterviewReady(
         questionNumber: current.questionNumber + 1,
-        totalQuestions: totalQuestions,
-        questionText: nextQuestionText,
+        totalQuestions: _totalQuestions,
+        questionText: current.responseText,
         previousTranscript: current.transcript,
       ),
     );
-    _logTransition('Ready');
+    _logTransition('Ready with next question');
   }
 
   /// Handle error - can occur from any active state.

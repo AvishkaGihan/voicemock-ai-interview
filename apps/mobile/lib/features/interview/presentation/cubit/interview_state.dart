@@ -79,12 +79,14 @@ class InterviewRecording extends InterviewState {
 class InterviewUploading extends InterviewState {
   const InterviewUploading({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.audioPath,
     required this.startTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final String audioPath;
   final DateTime startTime;
@@ -95,6 +97,7 @@ class InterviewUploading extends InterviewState {
   @override
   List<Object?> get props => [
     questionNumber,
+    totalQuestions,
     questionText,
     audioPath,
     startTime,
@@ -105,11 +108,13 @@ class InterviewUploading extends InterviewState {
 class InterviewTranscribing extends InterviewState {
   const InterviewTranscribing({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.startTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final DateTime startTime;
 
@@ -117,24 +122,35 @@ class InterviewTranscribing extends InterviewState {
   InterviewStage get stage => InterviewStage.transcribing;
 
   @override
-  List<Object?> get props => [questionNumber, questionText, startTime];
+  List<Object?> get props => [
+    questionNumber,
+    totalQuestions,
+    questionText,
+    startTime,
+  ];
 }
 
 /// Transcript review state - user reviews STT output before proceeding.
 class InterviewTranscriptReview extends InterviewState {
   const InterviewTranscriptReview({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.transcript,
     required this.audioPath,
     this.isLowConfidence = false,
+    this.assistantText,
+    this.isComplete = false,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final String transcript;
   final String audioPath;
   final bool isLowConfidence;
+  final String? assistantText;
+  final bool isComplete;
 
   @override
   InterviewStage get stage => InterviewStage.transcriptReview;
@@ -142,10 +158,13 @@ class InterviewTranscriptReview extends InterviewState {
   @override
   List<Object?> get props => [
     questionNumber,
+    totalQuestions,
     questionText,
     transcript,
     audioPath,
     isLowConfidence,
+    assistantText,
+    isComplete,
   ];
 }
 
@@ -153,12 +172,14 @@ class InterviewTranscriptReview extends InterviewState {
 class InterviewThinking extends InterviewState {
   const InterviewThinking({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.transcript,
     required this.startTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final String transcript;
   final DateTime startTime;
@@ -169,6 +190,7 @@ class InterviewThinking extends InterviewState {
   @override
   List<Object?> get props => [
     questionNumber,
+    totalQuestions,
     questionText,
     transcript,
     startTime,
@@ -179,6 +201,7 @@ class InterviewThinking extends InterviewState {
 class InterviewSpeaking extends InterviewState {
   const InterviewSpeaking({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.transcript,
     required this.responseText,
@@ -186,6 +209,7 @@ class InterviewSpeaking extends InterviewState {
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final String transcript;
   final String responseText;
@@ -197,10 +221,34 @@ class InterviewSpeaking extends InterviewState {
   @override
   List<Object?> get props => [
     questionNumber,
+    totalQuestions,
     questionText,
     transcript,
     responseText,
     ttsAudioUrl,
+  ];
+}
+
+/// Session complete state - all questions answered.
+class InterviewSessionComplete extends InterviewState {
+  const InterviewSessionComplete({
+    required this.totalQuestions,
+    required this.lastTranscript,
+    this.lastResponseText,
+  });
+
+  final int totalQuestions;
+  final String lastTranscript;
+  final String? lastResponseText;
+
+  @override
+  InterviewStage get stage => InterviewStage.sessionComplete;
+
+  @override
+  List<Object?> get props => [
+    totalQuestions,
+    lastTranscript,
+    lastResponseText,
   ];
 }
 

@@ -14,6 +14,7 @@ class SessionLocalDataSource {
   static const _keySessionId = 'session_id';
   static const _keySessionToken = 'session_token';
   static const _keyOpeningPrompt = 'opening_prompt';
+  static const _keyTotalQuestions = 'total_questions';
   static const _keyCreatedAt = 'created_at';
 
   final SharedPreferences _prefs;
@@ -35,6 +36,7 @@ class SessionLocalDataSource {
         aOptions: _androidOptions,
       ),
       _prefs.setString(_keyOpeningPrompt, session.openingPrompt),
+      _prefs.setInt(_keyTotalQuestions, session.totalQuestions),
       _prefs.setString(
         _keyCreatedAt,
         session.createdAt.toIso8601String(),
@@ -53,11 +55,13 @@ class SessionLocalDataSource {
       aOptions: _androidOptions,
     );
     final openingPrompt = _prefs.getString(_keyOpeningPrompt);
+    final totalQuestions = _prefs.getInt(_keyTotalQuestions);
     final createdAtStr = _prefs.getString(_keyCreatedAt);
 
     if (sessionId == null ||
         sessionToken == null ||
         openingPrompt == null ||
+        totalQuestions == null ||
         createdAtStr == null) {
       return null;
     }
@@ -66,6 +70,7 @@ class SessionLocalDataSource {
       sessionId: sessionId,
       sessionToken: sessionToken,
       openingPrompt: openingPrompt,
+      totalQuestions: totalQuestions,
       createdAt: DateTime.parse(createdAtStr),
     );
   }
@@ -82,6 +87,7 @@ class SessionLocalDataSource {
         aOptions: _androidOptions,
       ),
       _prefs.remove(_keyOpeningPrompt),
+      _prefs.remove(_keyTotalQuestions),
       _prefs.remove(_keyCreatedAt),
     ]);
   }

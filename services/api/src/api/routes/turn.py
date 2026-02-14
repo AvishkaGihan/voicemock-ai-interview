@@ -46,9 +46,12 @@ async def submit_turn(
 
     **Response:**
     - `transcript`: Speech-to-text transcription of the answer
-    - `assistant_text`: LLM-generated follow-up (null in this story)
+    - `assistant_text`: LLM-generated follow-up question or closing acknowledgment
     - `tts_audio_url`: URL for TTS audio (null in this story)
     - `timings`: Stage-wise processing timings
+    - `is_complete`: Whether this was the final turn (session complete)
+    - `question_number`: Current question number (1-indexed)
+    - `total_questions`: Total configured questions for the session
 
     **Errors:**
     - 401: Invalid or expired session token
@@ -147,13 +150,33 @@ async def submit_turn(
 
     # Process turn through orchestrator
     try:
-        result = await process_turn(audio_bytes, audio.content_type, session)
+        result = await process_turn(
+            audio_bytes,
+            audio.content_type,
+            session,
+            role=session.role,
+            interview_type=session.interview_type,
+            difficulty=session.difficulty,
+            asked_questions=session.asked_questions,
+            question_count=session.question_count,
+        )
 
-        # Save session state changes (turn_count, last_activity_at)
+        # Update asked_questions list
+        new_asked_questions = list(session.asked_questions)
+        if result.assistant_text:
+            new_asked_questions.append(result.assistant_text)
+
+        # Detect session completion
+        is_complete = session.turn_count >= session.question_count
+        new_status = "completed" if is_complete else session.status
+
+        # Save session state changes
         session_store.update_session(
             session_id,
             turn_count=session.turn_count,
             last_activity_at=session.last_activity_at,
+            asked_questions=new_asked_questions,
+            status=new_status,
         )
 
         # Add upload timing to result timings
@@ -165,6 +188,9 @@ async def submit_turn(
             assistant_text=result.assistant_text,
             tts_audio_url=result.tts_audio_url,
             timings=result.timings,
+            is_complete=is_complete,
+            question_number=session.turn_count,
+            total_questions=session.question_count,
         )
 
         return ApiEnvelope(

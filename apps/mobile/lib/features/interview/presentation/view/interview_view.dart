@@ -23,34 +23,49 @@ class InterviewView extends StatelessWidget {
           ),
         ],
       ),
-      body: BlocBuilder<InterviewCubit, InterviewState>(
-        builder: (context, state) {
-          return SafeArea(
-            child: Column(
-              children: [
-                // Voice Pipeline Stepper (shown during processing)
-                VoicePipelineStepper(
-                  currentStage: state.stage,
-                  stageStartTime: _getStageStartTime(state),
-                ),
-
-                // Turn Card (question, transcript, response)
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildTurnCard(context, state),
-                  ),
-                ),
-
-                // Hold-to-Talk Button (anchored at bottom)
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildHoldToTalkButton(context, state),
-                ),
-              ],
-            ),
-          );
+      body: BlocListener<InterviewCubit, InterviewState>(
+        listener: (context, state) {
+          // Auto-complete the Speaking phase when there is no TTS audio to
+          // play. TTS playback is not yet implemented (Story 3.1), so we
+          // skip directly to the next Ready state. Once TTS is wired up,
+          // this block should be replaced by an audio-completion callback.
+          if (state is InterviewSpeaking && state.ttsAudioUrl.isEmpty) {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                context.read<InterviewCubit>().onSpeakingComplete();
+              }
+            });
+          }
         },
+        child: BlocBuilder<InterviewCubit, InterviewState>(
+          builder: (context, state) {
+            return SafeArea(
+              child: Column(
+                children: [
+                  // Voice Pipeline Stepper (shown during processing)
+                  VoicePipelineStepper(
+                    currentStage: state.stage,
+                    stageStartTime: _getStageStartTime(state),
+                  ),
+
+                  // Turn Card (question, transcript, response)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildTurnCard(context, state),
+                    ),
+                  ),
+
+                  // Hold-to-Talk Button (anchored at bottom)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildHoldToTalkButton(context, state),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -72,33 +87,46 @@ class InterviewView extends StatelessWidget {
           questionText: questionText,
           transcript: previousTranscript,
         ),
-      InterviewRecording(:final questionNumber, :final questionText) =>
+      InterviewRecording(
+        :final questionNumber,
+        :final totalQuestions,
+        :final questionText,
+      ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
         ),
-      InterviewUploading(:final questionNumber, :final questionText) =>
+      InterviewUploading(
+        :final questionNumber,
+        :final totalQuestions,
+        :final questionText,
+      ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
         ),
-      InterviewTranscribing(:final questionNumber, :final questionText) =>
+      InterviewTranscribing(
+        :final questionNumber,
+        :final totalQuestions,
+        :final questionText,
+      ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
         ),
       InterviewTranscriptReview(
         :final questionNumber,
+        :final totalQuestions,
         :final questionText,
         :final transcript,
         :final isLowConfidence,
       ) =>
         TranscriptReviewCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: transcript,
           isLowConfidence: isLowConfidence,
@@ -107,27 +135,44 @@ class InterviewView extends StatelessWidget {
         ),
       InterviewThinking(
         :final questionNumber,
+        :final totalQuestions,
         :final questionText,
         :final transcript,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: transcript,
         ),
       InterviewSpeaking(
         :final questionNumber,
+        :final totalQuestions,
         :final questionText,
         :final transcript,
         :final responseText,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: transcript,
           responseText: responseText,
+        ),
+      InterviewSessionComplete(
+        :final totalQuestions,
+        :final lastTranscript,
+        :final lastResponseText,
+      ) =>
+        SessionCompleteCard(
+          totalQuestions: totalQuestions,
+          lastTranscript: lastTranscript,
+          lastResponseText: lastResponseText,
+          onBackToHome: () => Navigator.pop(context),
+          onStartNew: () {
+            // Navigate to home then to setup (or directly to setup)
+            Navigator.pop(context);
+          },
         ),
       InterviewError(:final failure) => ErrorRecoverySheet(
         failure: failure,
@@ -140,6 +185,11 @@ class InterviewView extends StatelessWidget {
   Widget _buildHoldToTalkButton(BuildContext context, InterviewState state) {
     final cubit = context.read<InterviewCubit>();
     final isEnabled = state is InterviewReady || state is InterviewRecording;
+
+    // Hide button during session complete
+    if (state is InterviewSessionComplete) {
+      return const SizedBox.shrink();
+    }
 
     if (state is InterviewRecording) {
       return _RecordingTimer(

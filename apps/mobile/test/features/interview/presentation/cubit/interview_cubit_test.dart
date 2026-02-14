@@ -78,6 +78,8 @@ MockTurnRemoteDataSource createMockTurnRemoteDataSource({
             const TurnResponseData(
               transcript: 'Test transcript here',
               timings: {},
+              questionNumber: 1,
+              totalQuestions: 5,
             ),
       ),
     );
@@ -227,6 +229,7 @@ void main() {
         },
         seed: () => InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
@@ -251,6 +254,7 @@ void main() {
         },
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'transcript',
           responseText: 'response',
@@ -535,6 +539,110 @@ void main() {
           ),
         ],
       );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'populates assistantText and isComplete in TranscriptReview',
+        build: () {
+          final service = MockRecordingService();
+          when(
+            service.stopRecording,
+          ).thenAnswer((_) async => '/path/to/audio.m4a');
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: 'My answer to question 3',
+                timings: {'stt_ms': 800.0, 'llm_ms': 1200.0},
+                questionNumber: 3,
+                totalQuestions: 5,
+                assistantText: 'What frameworks have you worked with?',
+              ),
+            ),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 3,
+          totalQuestions: 5,
+          questionText: 'Previous question',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+          // Give async submitTurn time to complete
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        expect: () => [
+          isA<InterviewUploading>(),
+          isA<InterviewTranscribing>(),
+          isA<InterviewTranscriptReview>()
+              .having(
+                (s) => s.transcript,
+                'transcript',
+                'My answer to question 3',
+              )
+              .having(
+                (s) => s.assistantText,
+                'assistantText',
+                'What frameworks have you worked with?',
+              )
+              .having((s) => s.isComplete, 'isComplete', false)
+              .having((s) => s.questionNumber, 'questionNumber', 3),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'marks session complete when isComplete is true from backend',
+        build: () {
+          final service = MockRecordingService();
+          when(
+            service.stopRecording,
+          ).thenAnswer((_) async => '/path/to/audio.m4a');
+          when(service.dispose).thenAnswer((_) async {});
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: 'My final answer',
+                timings: {'stt_ms': 850.0, 'llm_ms': 1100.0},
+                questionNumber: 5,
+                totalQuestions: 5,
+                assistantText: 'Great work! Session complete.',
+                isComplete: true,
+              ),
+            ),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewRecording(
+          questionNumber: 5,
+          totalQuestions: 5,
+          questionText: 'Final question',
+          recordingStartTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.stopRecording();
+          // Give async submitTurn time to complete
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        expect: () => [
+          isA<InterviewUploading>(),
+          isA<InterviewTranscribing>(),
+          isA<InterviewTranscriptReview>()
+              .having((s) => s.transcript, 'transcript', 'My final answer')
+              .having(
+                (s) => s.assistantText,
+                'assistantText',
+                'Great work! Session complete.',
+              )
+              .having((s) => s.isComplete, 'isComplete', true),
+        ],
+      );
     });
 
     group('cancel', () {
@@ -602,6 +710,7 @@ void main() {
         },
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User transcript',
           responseText: 'Coach response',
@@ -640,6 +749,7 @@ void main() {
         ),
         seed: () => InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User transcript',
           startTime: DateTime.now(),
@@ -695,15 +805,13 @@ void main() {
         ),
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User transcript',
-          responseText: 'Coach response',
+          responseText: 'Next question',
           ttsAudioUrl: 'url',
         ),
-        act: (cubit) => cubit.onSpeakingComplete(
-          nextQuestionText: 'Next question',
-          totalQuestions: 5,
-        ),
+        act: (cubit) => cubit.onSpeakingComplete(),
         expect: () => [
           isA<InterviewReady>()
               .having((s) => s.questionNumber, 'questionNumber', 2)
@@ -731,10 +839,7 @@ void main() {
           totalQuestions: 5,
           questionText: 'Test question',
         ),
-        act: (cubit) => cubit.onSpeakingComplete(
-          nextQuestionText: 'Next',
-          totalQuestions: 5,
-        ),
+        act: (cubit) => cubit.onSpeakingComplete(),
       );
     });
 
@@ -782,6 +887,7 @@ void main() {
         ),
         seed: () => InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
@@ -918,6 +1024,7 @@ void main() {
         ),
         seed: () => InterviewThinking(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Question 2',
           transcript: 'My answer to question 2',
           startTime: DateTime.now(),
@@ -950,6 +1057,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'User transcript',
           audioPath: '/path/audio.m4a',
@@ -1019,6 +1127,7 @@ void main() {
         },
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'User transcript',
           audioPath: '/path/audio.m4a',
@@ -1028,6 +1137,74 @@ void main() {
         },
         expect: () => [
           isA<InterviewThinking>(),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'emits InterviewSessionComplete when isComplete is true',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 5,
+          totalQuestions: 5,
+          questionText: 'Final question',
+          transcript: 'Final answer',
+          audioPath: '/path/audio.m4a',
+          isComplete: true,
+          assistantText: 'Great job completing all questions!',
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+        expect: () => [
+          isA<InterviewSessionComplete>()
+              .having((s) => s.totalQuestions, 'totalQuestions', 5)
+              .having((s) => s.lastTranscript, 'lastTranscript', 'Final answer')
+              .having(
+                (s) => s.lastResponseText,
+                'lastResponseText',
+                'Great job completing all questions!',
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'emits Thinking then Speaking when assistantText is present',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Question 2',
+          transcript: 'My answer',
+          audioPath: '/path/audio.m4a',
+          assistantText: 'Next question from LLM',
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+        expect: () => [
+          isA<InterviewThinking>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having((s) => s.transcript, 'transcript', 'My answer'),
+          isA<InterviewSpeaking>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having(
+                (s) => s.responseText,
+                'responseText',
+                'Next question from LLM',
+              )
+              .having((s) => s.ttsAudioUrl, 'ttsAudioUrl', ''), // No TTS yet
         ],
       );
     });
@@ -1045,6 +1222,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Question 2',
           transcript: 'Bad transcript',
           audioPath: '/path/audio.m4a',
@@ -1090,6 +1268,7 @@ void main() {
         ),
         seed: () => InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'transcript',
           startTime: DateTime.now(),
@@ -1113,6 +1292,7 @@ void main() {
         },
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'User transcript',
           audioPath: '/path/audio.m4a',
@@ -1139,6 +1319,8 @@ void main() {
               response: const TurnResponseData(
                 transcript: 'yes',
                 timings: {},
+                questionNumber: 1,
+                totalQuestions: 5,
               ),
             ),
             sessionId: 'test-session-123',
@@ -1176,6 +1358,8 @@ void main() {
               response: const TurnResponseData(
                 transcript: '',
                 timings: {},
+                questionNumber: 1,
+                totalQuestions: 5,
               ),
             ),
             sessionId: 'test-session-123',
@@ -1213,6 +1397,8 @@ void main() {
               response: const TurnResponseData(
                 transcript: 'I am a software engineer',
                 timings: {},
+                questionNumber: 1,
+                totalQuestions: 5,
               ),
             ),
             sessionId: 'test-session-123',
@@ -1254,6 +1440,8 @@ void main() {
               response: const TurnResponseData(
                 transcript: 'I am ready',
                 timings: {},
+                questionNumber: 1,
+                totalQuestions: 5,
               ),
             ),
             sessionId: 'test-session-123',
@@ -1294,6 +1482,8 @@ void main() {
               response: const TurnResponseData(
                 transcript: 'New transcript',
                 timings: {},
+                questionNumber: 1,
+                totalQuestions: 5,
               ),
             ),
             sessionId: 'test-session-123',
@@ -1303,6 +1493,7 @@ void main() {
         },
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'Bad transcript',
           audioPath: '/path/audio.m4a',
@@ -1353,6 +1544,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 7,
+          totalQuestions: 10,
           questionText: 'Question 7 text',
           transcript: 'Old transcript',
           audioPath: '/path/audio.m4a',
