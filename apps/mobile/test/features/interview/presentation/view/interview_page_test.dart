@@ -16,6 +16,7 @@ void main() {
       sessionId: 'test-session-id',
       sessionToken: 'test-token',
       openingPrompt: 'This is the opening question.',
+      totalQuestions: 5,
       createdAt: DateTime(2025),
     );
     late MockApiClient mockApiClient;

@@ -155,6 +155,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: DateTime.now(),
@@ -165,6 +166,7 @@ void main() {
       test('stage should return uploading', () {
         final state = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: DateTime.now(),
@@ -176,12 +178,14 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: time,
         );
         final state2 = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: time,
@@ -193,6 +197,7 @@ void main() {
         final time = DateTime.now();
         final state = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: time,
@@ -208,6 +213,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: DateTime.now(),
         );
@@ -217,6 +223,7 @@ void main() {
       test('stage should return transcribing', () {
         final state = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: DateTime.now(),
         );
@@ -227,11 +234,13 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: time,
         );
         final state2 = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: time,
         );
@@ -243,6 +252,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: DateTime.now(),
@@ -253,6 +263,7 @@ void main() {
       test('stage should return thinking', () {
         final state = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: DateTime.now(),
@@ -264,12 +275,14 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: time,
         );
         final state2 = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: time,
@@ -282,6 +295,7 @@ void main() {
       test('should extend InterviewState', () {
         const state = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -293,6 +307,7 @@ void main() {
       test('stage should return speaking', () {
         const state = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -304,6 +319,7 @@ void main() {
       test('supports equality', () {
         const state1 = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -311,6 +327,7 @@ void main() {
         );
         const state2 = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -322,6 +339,7 @@ void main() {
       test('props should include all values', () {
         const state = InterviewSpeaking(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Q2',
           transcript: 'User said this',
           responseText: 'Coach response',

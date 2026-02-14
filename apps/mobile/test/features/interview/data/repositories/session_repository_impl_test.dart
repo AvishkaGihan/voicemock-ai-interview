@@ -31,6 +31,7 @@ void main() {
         sessionId: '',
         sessionToken: '',
         openingPrompt: '',
+        totalQuestions: 5,
         createdAt: DateTime.now(),
       ),
     );

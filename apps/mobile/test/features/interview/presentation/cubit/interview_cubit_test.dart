@@ -229,6 +229,7 @@ void main() {
         },
         seed: () => InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
@@ -253,6 +254,7 @@ void main() {
         },
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'transcript',
           responseText: 'response',
@@ -708,6 +710,7 @@ void main() {
         },
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User transcript',
           responseText: 'Coach response',
@@ -746,6 +749,7 @@ void main() {
         ),
         seed: () => InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User transcript',
           startTime: DateTime.now(),
@@ -801,6 +805,7 @@ void main() {
         ),
         seed: () => const InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User transcript',
           responseText: 'Next question',
@@ -882,6 +887,7 @@ void main() {
         ),
         seed: () => InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
@@ -1018,6 +1024,7 @@ void main() {
         ),
         seed: () => InterviewThinking(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Question 2',
           transcript: 'My answer to question 2',
           startTime: DateTime.now(),
@@ -1050,6 +1057,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'User transcript',
           audioPath: '/path/audio.m4a',
@@ -1119,6 +1127,7 @@ void main() {
         },
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'User transcript',
           audioPath: '/path/audio.m4a',
@@ -1142,6 +1151,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 5,
+          totalQuestions: 5,
           questionText: 'Final question',
           transcript: 'Final answer',
           audioPath: '/path/audio.m4a',
@@ -1174,6 +1184,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Question 2',
           transcript: 'My answer',
           audioPath: '/path/audio.m4a',
@@ -1211,6 +1222,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Question 2',
           transcript: 'Bad transcript',
           audioPath: '/path/audio.m4a',
@@ -1256,6 +1268,7 @@ void main() {
         ),
         seed: () => InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'transcript',
           startTime: DateTime.now(),
@@ -1279,6 +1292,7 @@ void main() {
         },
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'User transcript',
           audioPath: '/path/audio.m4a',
@@ -1479,6 +1493,7 @@ void main() {
         },
         seed: () => const InterviewTranscriptReview(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Question 1',
           transcript: 'Bad transcript',
           audioPath: '/path/audio.m4a',
@@ -1529,6 +1544,7 @@ void main() {
         ),
         seed: () => const InterviewTranscriptReview(
           questionNumber: 7,
+          totalQuestions: 10,
           questionText: 'Question 7 text',
           transcript: 'Old transcript',
           audioPath: '/path/audio.m4a',

@@ -87,33 +87,46 @@ class InterviewView extends StatelessWidget {
           questionText: questionText,
           transcript: previousTranscript,
         ),
-      InterviewRecording(:final questionNumber, :final questionText) =>
+      InterviewRecording(
+        :final questionNumber,
+        :final totalQuestions,
+        :final questionText,
+      ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
         ),
-      InterviewUploading(:final questionNumber, :final questionText) =>
+      InterviewUploading(
+        :final questionNumber,
+        :final totalQuestions,
+        :final questionText,
+      ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
         ),
-      InterviewTranscribing(:final questionNumber, :final questionText) =>
+      InterviewTranscribing(
+        :final questionNumber,
+        :final totalQuestions,
+        :final questionText,
+      ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
         ),
       InterviewTranscriptReview(
         :final questionNumber,
+        :final totalQuestions,
         :final questionText,
         :final transcript,
         :final isLowConfidence,
       ) =>
         TranscriptReviewCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: transcript,
           isLowConfidence: isLowConfidence,
@@ -122,24 +135,26 @@ class InterviewView extends StatelessWidget {
         ),
       InterviewThinking(
         :final questionNumber,
+        :final totalQuestions,
         :final questionText,
         :final transcript,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: transcript,
         ),
       InterviewSpeaking(
         :final questionNumber,
+        :final totalQuestions,
         :final questionText,
         :final transcript,
         :final responseText,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
-          totalQuestions: 5,
+          totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: transcript,
           responseText: responseText,

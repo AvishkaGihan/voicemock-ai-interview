@@ -60,6 +60,7 @@ void main() {
       when(() => mockCubit.state).thenReturn(
         InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path',
           startTime: DateTime.now(),
@@ -82,6 +83,7 @@ void main() {
       when(() => mockCubit.state).thenReturn(
         InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: DateTime.now(),
         ),
@@ -106,6 +108,7 @@ void main() {
       when(() => mockCubit.state).thenReturn(
         InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Tell me about a challenge you faced',
           transcript: 'I faced a bug in production and fixed it quickly',
           startTime: DateTime.now(),
@@ -135,6 +138,7 @@ void main() {
       when(() => mockCubit.state).thenReturn(
         const InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -281,6 +285,7 @@ void main() {
         when(() => mockCubit.state).thenReturn(
           const InterviewTranscriptReview(
             questionNumber: 1,
+            totalQuestions: 5,
             questionText: 'What is your greatest strength?',
             transcript: 'My greatest strength is problem solving',
             audioPath: '/path/audio.m4a',
@@ -310,6 +315,7 @@ void main() {
         when(() => mockCubit.state).thenReturn(
           const InterviewTranscriptReview(
             questionNumber: 1,
+            totalQuestions: 5,
             questionText: 'Question 1',
             transcript: 'Answer',
             audioPath: '/path/audio.m4a',
@@ -334,6 +340,7 @@ void main() {
         when(() => mockCubit.state).thenReturn(
           const InterviewTranscriptReview(
             questionNumber: 1,
+            totalQuestions: 5,
             questionText: 'Question 1',
             transcript: 'Answer',
             audioPath: '/path/audio.m4a',
@@ -364,6 +371,7 @@ void main() {
         when(() => mockCubit.state).thenReturn(
           const InterviewTranscriptReview(
             questionNumber: 1,
+            totalQuestions: 5,
             questionText: 'Question 1',
             transcript: 'Answer',
             audioPath: '/path/audio.m4a',
@@ -391,6 +399,7 @@ void main() {
         when(() => mockCubit.state).thenReturn(
           const InterviewTranscriptReview(
             questionNumber: 1,
+            totalQuestions: 5,
             questionText: 'Question 1',
             transcript: 'Answer',
             audioPath: '/path/audio.m4a',
@@ -419,6 +428,7 @@ void main() {
         when(() => mockCubit.state).thenReturn(
           const InterviewTranscriptReview(
             questionNumber: 1,
+            totalQuestions: 5,
             questionText: 'Question 1',
             transcript: 'um',
             audioPath: '/path/audio.m4a',
