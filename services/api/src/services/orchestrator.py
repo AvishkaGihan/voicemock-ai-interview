@@ -1,6 +1,30 @@
 """Turn orchestration service.
 
 Orchestrates the turn processing pipeline: STT → LLM → (TTS deferred).
+
+Error Codes by Stage:
+=====================
+
+Upload stage:
+- file_too_large: Audio file exceeds size limit (non-retryable)
+- invalid_audio: Invalid audio format or empty file (non-retryable)
+- upload_timeout: Upload took too long (retryable)
+
+STT stage:
+- stt_timeout: Transcription request timed out (retryable)
+- stt_provider_error: STT service unavailable or server error (retryable)
+- stt_empty_transcript: No speech detected in audio (non-retryable, user should re-record)
+- stt_rate_limit: Too many requests to STT service (retryable)
+- stt_auth_error: STT authentication failed (non-retryable)
+- stt_bad_request: Invalid audio format or parameters (non-retryable)
+
+LLM stage:
+- llm_timeout: LLM request timed out (retryable)
+- llm_provider_error: LLM service unavailable or server error (retryable)
+- llm_rate_limit: Too many requests to LLM service (retryable)
+- llm_content_filter: Response blocked by content policy (non-retryable)
+- null_response: LLM returned null content (non-retryable)
+- empty_response: LLM returned empty response (non-retryable)
 """
 
 import time
@@ -40,12 +64,14 @@ class TurnProcessingError(Exception):
         stage: str,
         code: str,
         retryable: bool,
+        request_id: str | None = None,
     ):
         super().__init__(message)
         self.message_safe = message_safe
         self.stage = stage
         self.code = code
         self.retryable = retryable
+        self.request_id = request_id
 
 
 def get_stt_provider() -> DeepgramSTTProvider:
@@ -69,14 +95,16 @@ def get_llm_provider() -> GroqLLMProvider:
 
 
 async def process_turn(
-    audio_bytes: bytes,
-    mime_type: str,
+    audio_bytes: bytes | None,
+    mime_type: str | None,
     session: Any,  # SessionState type
     role: str,
     interview_type: str,
     difficulty: str,
     asked_questions: list[str],
     question_count: int,
+    transcript: str | None = None,
+    request_id: str | None = None,
 ) -> TurnResult:
     """Process a turn through the STT → LLM pipeline.
 
@@ -89,6 +117,8 @@ async def process_turn(
         difficulty: Difficulty level (e.g., "Entry", "Mid", "Senior")
         asked_questions: List of previously asked questions (to avoid repeats)
         question_count: Total configured questions for the session
+        transcript: Optional transcript (skips STT if provided)
+        request_id: Request ID for error tracing (optional)
 
     Returns:
         TurnResult with transcript, assistant text, and timings
@@ -99,13 +129,27 @@ async def process_turn(
     start_time = time.perf_counter()
 
     try:
-        # STT processing
-        stt_provider = get_stt_provider()
-        stt_start = time.perf_counter()
-        transcript = await stt_provider.transcribe_audio(audio_bytes, mime_type)
-        stt_end = time.perf_counter()
+        if transcript:
+            # Skip STT if transcript provided (retry flow)
+            stt_ms = 0.0
+        else:
+            # STT processing
+            if not audio_bytes or not mime_type:
+               raise TurnProcessingError(
+                   message="Audio is required when no transcript provided",
+                   message_safe="Audio missing for transcription",
+                   stage="upload",
+                   code="invalid_audio",
+                   retryable=False,
+                   request_id=request_id,
+               )
 
-        stt_ms = (stt_end - stt_start) * 1000
+            stt_provider = get_stt_provider()
+            stt_start = time.perf_counter()
+            transcript = await stt_provider.transcribe_audio(audio_bytes, mime_type)
+            stt_end = time.perf_counter()
+
+            stt_ms = (stt_end - stt_start) * 1000
 
         # LLM processing
         llm_provider = get_llm_provider()
@@ -152,6 +196,7 @@ async def process_turn(
             stage=e.stage,
             code=e.code,
             retryable=e.retryable,
+            request_id=request_id,
         ) from e
 
     except LLMError as e:
@@ -162,4 +207,5 @@ async def process_turn(
             stage=e.stage,
             code=e.code,
             retryable=e.retryable,
+            request_id=request_id,
         ) from e

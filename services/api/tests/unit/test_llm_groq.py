@@ -177,7 +177,7 @@ async def test_generate_follow_up_api_error():
             )
 
         assert exc_info.value.stage == "llm"
-        assert exc_info.value.code == "provider_error"
+        assert exc_info.value.code == "llm_provider_error"
         assert exc_info.value.retryable is True
 
 

@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
+import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/core/permissions/permissions.dart';
 import 'package:voicemock/features/interview/data/data.dart';
@@ -931,6 +932,7 @@ void main() {
             totalQuestions: 5,
             questionText: 'Test question',
           ),
+          failedStage: InterviewStage.uploading,
         ),
         act: (cubit) => cubit.retry(),
         expect: () => [
@@ -972,7 +974,14 @@ void main() {
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
             recordingService: service,
-            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(
+              response: const TurnResponseData(
+                transcript: 'Test transcript here',
+                timings: {},
+                questionNumber: 3,
+                totalQuestions: 5,
+              ),
+            ),
             sessionId: 'test-session-123',
             sessionToken: 'test-token',
             permissionService: createMockPermissionService(),
@@ -1557,6 +1566,467 @@ void main() {
               .having((s) => s.questionNumber, 'questionNumber', 7)
               .having((s) => s.totalQuestions, 'totalQuestions', 10)
               .having((s) => s.questionText, 'questionText', 'Question 7 text'),
+        ],
+      );
+    });
+
+    group('error retry logic', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'retry from upload error re-submits same audio',
+        build: () {
+          var callCount = 0;
+          final dataSource = MockTurnRemoteDataSource();
+          when(
+            () => dataSource.submitTurn(
+              audioPath: any(named: 'audioPath'),
+              sessionId: any(named: 'sessionId'),
+              sessionToken: any(named: 'sessionToken'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              throw ServerException(
+                stage: 'upload',
+                code: 'upload_timeout',
+                message: 'Upload timed out. Please retry.',
+                retryable: true,
+                requestId: 'req-123',
+              );
+            }
+            return const TurnResponseData(
+              transcript: 'Successful transcript',
+              timings: {},
+              questionNumber: 1,
+              totalQuestions: 5,
+            );
+          });
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: dataSource,
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewUploading(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          audioPath: '/path/audio.m4a',
+          startTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.submitTurn();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await cubit.retry();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        expect: () => [
+          isA<InterviewError>()
+              .having(
+                (s) => s.failedStage,
+                'failedStage',
+                InterviewStage.uploading,
+              )
+              .having((s) => s.audioPath, 'audioPath', '/path/audio.m4a'),
+          isA<InterviewUploading>().having(
+            (s) => s.audioPath,
+            'audioPath',
+            '/path/audio.m4a',
+          ),
+          isA<InterviewTranscribing>(),
+          isA<InterviewTranscriptReview>().having(
+            (s) => s.transcript,
+            'transcript',
+            'Successful transcript',
+          ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'retry from STT retryable error re-submits same audio',
+        build: () {
+          var callCount = 0;
+          final dataSource = MockTurnRemoteDataSource();
+          when(
+            () => dataSource.submitTurn(
+              audioPath: any(named: 'audioPath'),
+              sessionId: any(named: 'sessionId'),
+              sessionToken: any(named: 'sessionToken'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              throw ServerException(
+                stage: 'stt',
+                code: 'stt_timeout',
+                message: 'Speech-to-text service timed out. Please retry.',
+                retryable: true,
+                requestId: 'req-456',
+              );
+            }
+            return const TurnResponseData(
+              transcript: 'Retry successful',
+              timings: {},
+              questionNumber: 2,
+              totalQuestions: 5,
+            );
+          });
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: dataSource,
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewUploading(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Q2',
+          audioPath: '/path/audio2.m4a',
+          startTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.submitTurn();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await cubit.retry();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        expect: () => [
+          // First submission fails during STT processing
+          isA<InterviewError>()
+              .having(
+                (s) => s.failedStage,
+                'failedStage',
+                InterviewStage.transcribing,
+              )
+              .having((s) => s.audioPath, 'audioPath', '/path/audio2.m4a'),
+          // Retry takes us back to Uploading
+          isA<InterviewUploading>(),
+          // Then success flow
+          isA<InterviewTranscribing>(),
+          isA<InterviewTranscriptReview>().having(
+            (s) => s.transcript,
+            'transcript',
+            'Retry successful',
+          ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'retry from STT non-retryable error goes to Ready state for re-record',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => InterviewError(
+          failure: const ServerFailure(
+            message: 'No speech detected in audio.',
+            stage: 'stt',
+            code: 'stt_empty_transcript',
+            requestId: 'req-789',
+          ),
+          previousState: InterviewTranscribing(
+            questionNumber: 3,
+            totalQuestions: 5,
+            questionText: 'Q3',
+            startTime: DateTime.now(),
+          ),
+          failedStage: InterviewStage.transcribing,
+          audioPath: '/path/audio3.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.retry();
+        },
+        expect: () => [
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 3)
+              .having((s) => s.questionText, 'questionText', 'Q3'),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'retry from LLM retryable error re-submits transcript',
+        build: () {
+          final dataSource = MockTurnRemoteDataSource();
+          when(
+            () => dataSource.submitTurn(
+              sessionId: any(named: 'sessionId'),
+              sessionToken: any(named: 'sessionToken'),
+              transcript: any(named: 'transcript'),
+            ),
+          ).thenAnswer(
+            (_) async => const TurnResponseData(
+              transcript: 'Retry successful',
+              timings: {},
+              questionNumber: 4,
+              totalQuestions: 5,
+            ),
+          );
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: dataSource,
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewError(
+          failure: const ServerFailure(
+            message: 'LLM service rate limited. Please retry.',
+            stage: 'llm',
+            code: 'llm_rate_limit',
+            retryable: true,
+            requestId: 'req-999',
+          ),
+          previousState: InterviewThinking(
+            questionNumber: 4,
+            totalQuestions: 5,
+            questionText: 'Q4',
+            transcript: 'User answer',
+            startTime: DateTime.now(),
+          ),
+          failedStage: InterviewStage.thinking,
+          transcript: 'User answer',
+        ),
+        act: (cubit) async {
+          await cubit.retry();
+        },
+        verify: (cubit) {
+          // Verify submitTurn was called with transcript
+          // Note: Cannot easily access private _turnRemoteDataSource to verify
+          // call without reflection
+        },
+        expect: () => [
+          // Retry LLM → Thinking with preserved transcript
+          isA<InterviewThinking>()
+              .having((s) => s.transcript, 'transcript', 'User answer')
+              .having((s) => s.questionNumber, 'questionNumber', 4),
+          // Success flow (skip Transcribing because no audio) ->
+          // TranscriptReview
+          isA<InterviewTranscriptReview>()
+              .having(
+                (s) => s.transcript,
+                'transcript',
+                'Retry successful',
+              )
+              .having(
+                (s) => s.questionNumber,
+                'questionNumber',
+                4,
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'reRecordFromError cleans up audio and transitions to Ready',
+        build: () {
+          final service = createMockRecordingService();
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewError(
+          failure: const ServerFailure(
+            message: 'Upload failed',
+            stage: 'upload',
+            code: 'upload_failed',
+            retryable: true,
+            requestId: 'req-111',
+          ),
+          previousState: InterviewTranscribing(
+            questionNumber: 2,
+            totalQuestions: 5,
+            questionText: 'Q2',
+            startTime: DateTime.now(),
+          ),
+          failedStage: InterviewStage.uploading,
+          audioPath: '/path/error-audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.reRecordFromError();
+        },
+        expect: () => [
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having((s) => s.totalQuestions, 'totalQuestions', 5)
+              .having((s) => s.questionText, 'questionText', 'Q2'),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'cancel from error state cleans up audio and transitions to Idle',
+        build: () {
+          final service = createMockRecordingService();
+          when(() => service.isRecording).thenAnswer((_) async => false);
+          return InterviewCubit(
+            recordingService: service,
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewError(
+          failure: const ServerFailure(
+            message: 'STT timeout',
+            stage: 'stt',
+            code: 'stt_timeout',
+            retryable: true,
+            requestId: 'req-222',
+          ),
+          previousState: InterviewTranscribing(
+            questionNumber: 3,
+            totalQuestions: 5,
+            questionText: 'Q3',
+            startTime: DateTime.now(),
+          ),
+          failedStage: InterviewStage.transcribing,
+          audioPath: '/path/cleanup-audio.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.cancel();
+        },
+        expect: () => [const InterviewIdle()],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'request_id is preserved in error state',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(
+            throwsException: ServerException(
+              stage: 'upload',
+              code: 'upload_failed',
+              message: 'Upload failed with network error',
+              retryable: true,
+              requestId: 'req-preserved-123',
+            ),
+          ),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => InterviewUploading(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          audioPath: '/path/audio.m4a',
+          startTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.submitTurn();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        expect: () => [
+          isA<InterviewError>()
+              .having(
+                (s) => s.failure.requestId,
+                'failure.requestId',
+                'req-preserved-123',
+              )
+              .having(
+                (s) => s.failedStage,
+                'failedStage',
+                InterviewStage.uploading,
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'failedStage is correctly set for each error origin',
+        build: () {
+          var callCount = 0;
+          final dataSource = MockTurnRemoteDataSource();
+          when(
+            () => dataSource.submitTurn(
+              audioPath: any(named: 'audioPath'),
+              sessionId: any(named: 'sessionId'),
+              sessionToken: any(named: 'sessionToken'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            switch (callCount) {
+              case 1:
+                throw ServerException(
+                  stage: 'upload',
+                  code: 'upload_timeout',
+                  message: 'Upload error',
+                  retryable: true,
+                  requestId: 'req-upload',
+                );
+              case 2:
+                throw ServerException(
+                  stage: 'stt',
+                  code: 'stt_timeout',
+                  message: 'STT error',
+                  retryable: true,
+                  requestId: 'req-stt',
+                );
+              default:
+                return const TurnResponseData(
+                  transcript: 'Success',
+                  timings: {},
+                  questionNumber: 1,
+                  totalQuestions: 5,
+                );
+            }
+          });
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: dataSource,
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+          );
+        },
+        seed: () => InterviewUploading(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          audioPath: '/path/audio.m4a',
+          startTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          // First submission fails with upload error
+          await cubit.submitTurn();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Retry fails with STT error
+          await cubit.retry();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Retry succeeds
+          await cubit.retry();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        expect: () => [
+          // First error: upload stage
+          isA<InterviewError>().having(
+            (s) => s.failedStage,
+            'failedStage',
+            InterviewStage.uploading,
+          ),
+          // Retry → Uploading
+          isA<InterviewUploading>(),
+          // Second error: STT stage
+          isA<InterviewError>().having(
+            (s) => s.failedStage,
+            'failedStage',
+            InterviewStage.transcribing,
+          ),
+          // Retry → Uploading → success
+          isA<InterviewUploading>(),
+          isA<InterviewTranscribing>(),
+          isA<InterviewTranscriptReview>(),
         ],
       );
     });

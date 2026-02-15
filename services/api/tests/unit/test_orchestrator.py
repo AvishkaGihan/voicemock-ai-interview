@@ -14,6 +14,7 @@ from src.providers.stt_deepgram import (
     STTAuthError,
     STTProviderError,
     STTTimeoutError,
+    STTRateLimitError,
 )
 from src.providers.llm_groq import LLMError
 
@@ -104,7 +105,7 @@ async def test_process_turn_empty_transcript_error():
     error = exc_info.value
     assert error.stage == "stt"
     assert error.code == "stt_empty_transcript"
-    assert error.retryable is True
+    assert error.retryable is False  # User should re-record
     assert "couldn't hear" in error.message_safe
 
     # Session turn_count should NOT increment on error
@@ -375,7 +376,7 @@ async def test_process_turn_llm_error():
     mock_llm = AsyncMock()
     mock_llm.generate_follow_up.side_effect = LLMError(
         message="LLM API error",
-        code="provider_error",
+        code="llm_provider_error",
         retryable=True,
     )
 
@@ -402,7 +403,7 @@ async def test_process_turn_llm_error():
 
     error = exc_info.value
     assert error.stage == "llm"
-    assert error.code == "provider_error"
+    assert error.code == "llm_provider_error"
     assert error.retryable is True
 
 
@@ -443,3 +444,189 @@ async def test_process_turn_llm_timing_captured():
         result.timings["total_ms"]
         >= result.timings["stt_ms"] + result.timings["llm_ms"]
     )
+
+
+@pytest.mark.asyncio
+async def test_process_turn_stt_rate_limit_error():
+    """Test turn processing with STT rate limit error."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.side_effect = STTRateLimitError()
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=0,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch("src.services.orchestrator.get_stt_provider", return_value=mock_stt):
+        with pytest.raises(TurnProcessingError) as exc_info:
+            await process_turn(
+                b"audio",
+                "audio/webm",
+                session,
+                "backend developer",
+                "technical interview",
+                "mid-level",
+                [],
+                5,
+            )
+
+    error = exc_info.value
+    assert error.stage == "stt"
+    assert error.code == "stt_rate_limit"
+    assert error.retryable is True
+
+
+@pytest.mark.asyncio
+async def test_process_turn_llm_rate_limit_error():
+    """Test turn processing with LLM rate limit error."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "Test transcript"
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.side_effect = LLMError(
+        message="Rate limit exceeded",
+        code="llm_rate_limit",
+        retryable=True,
+    )
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=0,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+        with pytest.raises(TurnProcessingError) as exc_info:
+            await process_turn(
+                b"audio",
+                "audio/webm",
+                session,
+                "backend developer",
+                "technical interview",
+                "mid-level",
+                [],
+                5,
+            )
+
+    error = exc_info.value
+    assert error.stage == "llm"
+    assert error.code == "llm_rate_limit"
+    assert error.retryable is True
+
+
+@pytest.mark.asyncio
+async def test_process_turn_llm_content_filter_error():
+    """Test turn processing with LLM content filter error."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "Test transcript"
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.side_effect = LLMError(
+        message="Content blocked by policy",
+        code="llm_content_filter",
+        retryable=False,
+    )
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=0,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+        with pytest.raises(TurnProcessingError) as exc_info:
+            await process_turn(
+                b"audio",
+                "audio/webm",
+                session,
+                "backend developer",
+                "technical interview",
+                "mid-level",
+                [],
+                5,
+            )
+
+    error = exc_info.value
+    assert error.stage == "llm"
+    assert error.code == "llm_content_filter"
+    assert error.retryable is False
+
+
+@pytest.mark.asyncio
+async def test_process_turn_request_id_propagation():
+    """Test that request_id is propagated through error handling."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.side_effect = STTTimeoutError()
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=0,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    test_request_id = "test-request-123"
+
+    with patch("src.services.orchestrator.get_stt_provider", return_value=mock_stt):
+        with pytest.raises(TurnProcessingError) as exc_info:
+            await process_turn(
+                b"audio",
+                "audio/webm",
+                session,
+                "backend developer",
+                "technical interview",
+                "mid-level",
+                [],
+                5,
+                request_id=test_request_id,
+            )
+
+    error = exc_info.value
+    assert error.request_id == test_request_id
+
+
+@pytest.mark.asyncio
+async def test_process_turn_request_id_in_llm_error():
+    """Test that request_id is included in LLM errors."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "Test transcript"
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.side_effect = LLMError(
+        message="LLM timeout",
+        code="llm_timeout",
+        retryable=True,
+    )
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=0,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    test_request_id = "test-request-456"
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+        with pytest.raises(TurnProcessingError) as exc_info:
+            await process_turn(
+                b"audio",
+                "audio/webm",
+                session,
+                "backend developer",
+                "technical interview",
+                "mid-level",
+                [],
+                5,
+                request_id=test_request_id,
+            )
+
+    error = exc_info.value
+    assert error.request_id == test_request_id
+    assert error.stage == "llm"
+    assert error.code == "llm_timeout"

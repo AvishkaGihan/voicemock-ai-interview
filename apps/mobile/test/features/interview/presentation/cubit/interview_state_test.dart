@@ -365,6 +365,7 @@ void main() {
         const state = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state, isA<InterviewState>());
       });
@@ -375,6 +376,7 @@ void main() {
         const state = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state.stage, InterviewStage.error);
       });
@@ -385,10 +387,12 @@ void main() {
         const state1 = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         const state2 = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state1, equals(state2));
       });
@@ -400,10 +404,12 @@ void main() {
         const state1 = InterviewError(
           failure: failure1,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         const state2 = InterviewError(
           failure: failure2,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state1, isNot(equals(state2)));
       });
@@ -414,8 +420,12 @@ void main() {
         const state = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
-        expect(state.props, containsAll([failure, previousState]));
+        expect(
+          state.props,
+          containsAll([failure, previousState, InterviewStage.recording]),
+        );
       });
     });
   });

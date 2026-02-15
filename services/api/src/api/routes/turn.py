@@ -27,7 +27,8 @@ router = APIRouter(tags=["Turn Management"])
     description="Upload audio answer to be transcribed and processed through the interview pipeline.",
 )
 async def submit_turn(
-    audio: UploadFile = File(..., description="Recorded audio file"),
+    audio: UploadFile | None = File(None, description="Recorded audio file (optional if transcript provided)"),
+    transcript: str | None = Form(None, description="Existing transcript (optional, for LLM retry)"),
     session_id: str = Form(..., description="Active session ID"),
     authorization: str = Header(..., alias="Authorization"),
     ctx: RequestContext = Depends(get_request_context),
@@ -38,7 +39,8 @@ async def submit_turn(
     Submit a turn (audio answer) for processing.
 
     **Multipart Form Data:**
-    - `audio`: Recorded audio file (required)
+    - `audio`: Recorded audio file (optional if transcript provided)
+    - `transcript`: Existing transcript (optional, for LLM retry)
     - `session_id`: Active session ID (required)
 
     **Headers:**
@@ -118,32 +120,50 @@ async def submit_turn(
             request_id=ctx.request_id,
         )
 
-    # Validate audio file
-    if not audio.content_type or not audio.content_type.startswith("audio/"):
+    # Validate input: either audio or transcript is required
+    if not audio and not transcript:
         return ApiEnvelope(
             data=None,
             error=ApiError(
                 stage="upload",
-                code="invalid_audio",
-                message_safe="Audio file must have audio/* MIME type",
+                code="missing_input",
+                message_safe="Either audio file or transcript is required",
                 retryable=False,
             ),
             request_id=ctx.request_id,
         )
 
-    # Read audio bytes
-    audio_bytes = await audio.read()
-    if len(audio_bytes) == 0:
-        return ApiEnvelope(
-            data=None,
-            error=ApiError(
-                stage="upload",
-                code="invalid_audio",
-                message_safe="Audio file is empty",
-                retryable=False,
-            ),
-            request_id=ctx.request_id,
-        )
+    # Validate audio file if provided
+    audio_bytes = None
+    content_type = None
+
+    if audio:
+        if not audio.content_type or not audio.content_type.startswith("audio/"):
+            return ApiEnvelope(
+                data=None,
+                error=ApiError(
+                    stage="upload",
+                    code="invalid_audio",
+                    message_safe="Audio file must have audio/* MIME type",
+                    retryable=False,
+                ),
+                request_id=ctx.request_id,
+            )
+
+        # Read audio bytes
+        audio_bytes = await audio.read()
+        if len(audio_bytes) == 0:
+            return ApiEnvelope(
+                data=None,
+                error=ApiError(
+                    stage="upload",
+                    code="invalid_audio",
+                    message_safe="Audio file is empty",
+                    retryable=False,
+                ),
+                request_id=ctx.request_id,
+            )
+        content_type = audio.content_type
 
     upload_end = time.perf_counter()
     upload_ms = (upload_end - upload_start) * 1000
@@ -152,13 +172,15 @@ async def submit_turn(
     try:
         result = await process_turn(
             audio_bytes,
-            audio.content_type,
+            content_type,
             session,
             role=session.role,
             interview_type=session.interview_type,
             difficulty=session.difficulty,
             asked_questions=session.asked_questions,
             question_count=session.question_count,
+            transcript=transcript,
+            request_id=ctx.request_id,
         )
 
         # Update asked_questions list

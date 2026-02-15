@@ -257,14 +257,26 @@ class InterviewError extends InterviewState {
   const InterviewError({
     required this.failure,
     required this.previousState,
+    required this.failedStage,
+    this.audioPath,
+    this.transcript,
   });
 
   final InterviewFailure failure;
   final InterviewState previousState;
+  final InterviewStage failedStage;
+  final String? audioPath; // Preserved for upload/STT retry
+  final String? transcript; // Preserved for LLM retry
 
   @override
   InterviewStage get stage => InterviewStage.error;
 
   @override
-  List<Object?> get props => [failure, previousState];
+  List<Object?> get props => [
+    failure,
+    previousState,
+    failedStage,
+    audioPath,
+    transcript,
+  ];
 }

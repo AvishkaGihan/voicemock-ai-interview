@@ -36,6 +36,35 @@ class InterviewView extends StatelessWidget {
               }
             });
           }
+
+          // Show error recovery sheet as modal bottom sheet
+          if (state is InterviewError) {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                unawaited(
+                  ErrorRecoverySheet.show(
+                    context,
+                    failure: state.failure,
+                    failedStage: state.failedStage,
+                    onRetry: () {
+                      Navigator.pop(context); // Close sheet
+                      unawaited(context.read<InterviewCubit>().retry());
+                    },
+                    onReRecord: () {
+                      Navigator.pop(context); // Close sheet
+                      unawaited(
+                        context.read<InterviewCubit>().reRecordFromError(),
+                      );
+                    },
+                    onCancel: () {
+                      Navigator.pop(context); // Close sheet
+                      unawaited(context.read<InterviewCubit>().cancel());
+                    },
+                  ),
+                );
+              }
+            });
+          }
         },
         child: BlocBuilder<InterviewCubit, InterviewState>(
           builder: (context, state) {
@@ -71,6 +100,11 @@ class InterviewView extends StatelessWidget {
   }
 
   Widget _buildTurnCard(BuildContext context, InterviewState state) {
+    // For error state, show the previous state's turn card behind the modal
+    if (state is InterviewError) {
+      return _buildTurnCard(context, state.previousState);
+    }
+
     return switch (state) {
       InterviewIdle() => const Center(
         child: Text('Initializing interview...'),
@@ -174,11 +208,8 @@ class InterviewView extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
-      InterviewError(:final failure) => ErrorRecoverySheet(
-        failure: failure,
-        onRetry: () => context.read<InterviewCubit>().retry(),
-        onCancel: () => context.read<InterviewCubit>().cancel(),
-      ),
+      // InterviewError is handled by BlocListener showing modal bottom sheet
+      InterviewError() => const SizedBox.shrink(),
     };
   }
 

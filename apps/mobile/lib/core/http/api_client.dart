@@ -81,22 +81,25 @@ class ApiClient {
 
   /// Makes multipart POST request with file upload.
   ///
-  /// Used for uploading audio files to `/turn` endpoint.
+  /// Used for uploading audio files or data to `/turn` endpoint.
+  /// [filePath] and [fileFieldName] are optional if only sending fields.
   /// Throws [NetworkException] on connectivity issues.
   /// Throws [ServerException] on API error responses.
   Future<ApiEnvelope<T>> postMultipart<T>(
     String path, {
-    required String filePath,
-    required String fileFieldName,
     required Map<String, String> fields,
     required T Function(Map<String, dynamic>) fromJson,
+    String? filePath,
+    String? fileFieldName,
     String? bearerToken,
   }) async {
     try {
-      final formData = FormData.fromMap({
-        fileFieldName: await MultipartFile.fromFile(filePath),
-        ...fields,
-      });
+      final map = Map<String, dynamic>.from(fields);
+      if (filePath != null && fileFieldName != null) {
+        map[fileFieldName] = await MultipartFile.fromFile(filePath);
+      }
+
+      final formData = FormData.fromMap(map);
 
       final options = Options(
         headers: {
