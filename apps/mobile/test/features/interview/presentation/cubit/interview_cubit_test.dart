@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:audio_session/audio_session.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:voicemock/core/audio/audio_focus_service.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
 import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/models/models.dart';
@@ -15,6 +19,8 @@ class MockRecordingService extends Mock implements RecordingService {}
 class MockPermissionService extends Mock implements PermissionService {}
 
 class MockTurnRemoteDataSource extends Mock implements TurnRemoteDataSource {}
+
+class MockAudioFocusService extends Mock implements AudioFocusService {}
 
 // Stub functions for tearoffs
 Future<void> _disposeStub(Invocation _) => Future.value();
@@ -92,6 +98,14 @@ MockTurnRemoteDataSource createMockTurnRemoteDataSource({
   return dataSource;
 }
 
+// Helper to create a mock AudioFocusService
+MockAudioFocusService createMockAudioFocusService() {
+  final service = MockAudioFocusService();
+  final controller = StreamController<AudioInterruptionEvent>.broadcast();
+  when(() => service.interruptions).thenAnswer((_) => controller.stream);
+  return service;
+}
+
 void main() {
   group('InterviewCubit', () {
     late InterviewCubit cubit;
@@ -108,6 +122,7 @@ void main() {
       ).thenAnswer(_isRecordingStub);
       mockTurnRemoteDataSource = createMockTurnRemoteDataSource();
       cubit = InterviewCubit(
+        audioFocusService: createMockAudioFocusService(),
         recordingService: mockRecordingService,
         turnRemoteDataSource: mockTurnRemoteDataSource,
         sessionId: 'test-session-123',
@@ -132,6 +147,7 @@ void main() {
           when(service.startRecording).thenAnswer((_) async {});
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -169,6 +185,7 @@ void main() {
           ).thenThrow(Exception('Failed to start recording'));
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -201,6 +218,7 @@ void main() {
           final service = MockRecordingService();
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -225,6 +243,7 @@ void main() {
           final service = MockRecordingService();
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -250,6 +269,7 @@ void main() {
           final service = MockRecordingService();
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -281,6 +301,7 @@ void main() {
           ).thenAnswer((_) async => '/path/to/audio.m4a');
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -324,6 +345,7 @@ void main() {
           when(service.stopRecording).thenAnswer((_) async => null);
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -358,6 +380,7 @@ void main() {
           when(service.stopRecording).thenAnswer((_) async => '');
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -394,6 +417,7 @@ void main() {
           ).thenThrow(Exception('Failed to stop recording'));
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -427,6 +451,7 @@ void main() {
           final service = MockRecordingService();
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -453,6 +478,7 @@ void main() {
           when(service.stopRecording).thenAnswer((_) async => '/path');
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -483,6 +509,7 @@ void main() {
           final service = MockRecordingService();
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -512,6 +539,7 @@ void main() {
           ).thenAnswer((_) async => '/path/audio.m4a');
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -554,6 +582,7 @@ void main() {
           ).thenAnswer((_) async => '/path/to/audio.m4a');
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -608,6 +637,7 @@ void main() {
           ).thenAnswer((_) async => '/path/to/audio.m4a');
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -659,6 +689,7 @@ void main() {
           when(() => service.isRecording).thenAnswer((_) async => true);
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -683,6 +714,7 @@ void main() {
           when(() => service.isRecording).thenAnswer((_) async => false);
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -706,6 +738,7 @@ void main() {
           when(() => service.isRecording).thenAnswer((_) async => false);
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -731,6 +764,7 @@ void main() {
         final service = MockRecordingService();
         when(service.dispose).thenAnswer((_) async {});
         final cubit = InterviewCubit(
+          audioFocusService: createMockAudioFocusService(),
           recordingService: service,
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
@@ -750,6 +784,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewThinking(
@@ -784,6 +819,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -806,6 +842,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewSpeaking(
@@ -837,6 +874,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -856,6 +894,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -888,6 +927,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewUploading(
@@ -927,6 +967,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewError(
@@ -955,6 +996,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -977,6 +1019,7 @@ void main() {
           ).thenAnswer((_) async => '/path/audio.m4a');
           when(service.dispose).thenAnswer((_) async {});
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -1033,6 +1076,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewThinking(
@@ -1066,6 +1110,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewTranscriptReview(
@@ -1094,6 +1139,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -1113,6 +1159,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewRecording(
@@ -1131,6 +1178,7 @@ void main() {
         build: () {
           final service = createMockRecordingService();
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -1160,6 +1208,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewTranscriptReview(
@@ -1193,6 +1242,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewTranscriptReview(
@@ -1231,6 +1281,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewTranscriptReview(
@@ -1258,6 +1309,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => const InterviewReady(
@@ -1277,6 +1329,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewThinking(
@@ -1296,6 +1349,7 @@ void main() {
         build: () {
           final service = createMockRecordingService();
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -1327,6 +1381,7 @@ void main() {
             onStopRecording: () => Future.value('/path/audio.m4a'),
           );
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -1366,6 +1421,7 @@ void main() {
             onStopRecording: () => Future.value('/path/audio.m4a'),
           );
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -1405,6 +1461,7 @@ void main() {
             onStopRecording: () => Future.value('/path/audio.m4a'),
           );
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -1448,6 +1505,7 @@ void main() {
             onStopRecording: () => Future.value('/path/audio.m4a'),
           );
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -1490,6 +1548,7 @@ void main() {
             onStopRecording: () => Future.value('/path/new-audio.m4a'),
           );
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(
               response: const TurnResponseData(
@@ -1552,6 +1611,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
           totalQuestions: 10,
         ),
@@ -1608,6 +1668,7 @@ void main() {
             );
           });
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: createMockRecordingService(),
             turnRemoteDataSource: dataSource,
             sessionId: 'test-session-123',
@@ -1683,6 +1744,7 @@ void main() {
             );
           });
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: createMockRecordingService(),
             turnRemoteDataSource: dataSource,
             sessionId: 'test-session-123',
@@ -1731,6 +1793,7 @@ void main() {
           turnRemoteDataSource: createMockTurnRemoteDataSource(),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewError(
@@ -1781,6 +1844,7 @@ void main() {
             ),
           );
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: createMockRecordingService(),
             turnRemoteDataSource: dataSource,
             sessionId: 'test-session-123',
@@ -1840,6 +1904,7 @@ void main() {
         build: () {
           final service = createMockRecordingService();
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -1881,6 +1946,7 @@ void main() {
           final service = createMockRecordingService();
           when(() => service.isRecording).thenAnswer((_) async => false);
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: service,
             turnRemoteDataSource: createMockTurnRemoteDataSource(),
             sessionId: 'test-session-123',
@@ -1926,6 +1992,7 @@ void main() {
           ),
           sessionId: 'test-session-123',
           sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
           permissionService: createMockPermissionService(),
         ),
         seed: () => InterviewUploading(
@@ -1997,6 +2064,7 @@ void main() {
             }
           });
           return InterviewCubit(
+            audioFocusService: createMockAudioFocusService(),
             recordingService: createMockRecordingService(),
             turnRemoteDataSource: dataSource,
             sessionId: 'test-session-123',

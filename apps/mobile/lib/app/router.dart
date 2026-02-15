@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:voicemock/features/diagnostics/presentation/view/diagnostics_page.dart';
 import 'package:voicemock/features/interview/domain/session.dart';
+import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_page.dart';
 import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
 import 'package:voicemock/features/interview/presentation/view/setup_page.dart';
@@ -39,7 +41,16 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/diagnostics',
       name: 'diagnostics',
-      builder: (context, state) => const DiagnosticsPage(),
+      builder: (context, state) {
+        final cubit = state.extra as InterviewCubit?;
+        if (cubit == null) {
+          return const DiagnosticsPage();
+        }
+        return BlocProvider<InterviewCubit>.value(
+          value: cubit,
+          child: const DiagnosticsPage(),
+        );
+      },
     ),
   ],
   errorBuilder: (context, state) => Scaffold(

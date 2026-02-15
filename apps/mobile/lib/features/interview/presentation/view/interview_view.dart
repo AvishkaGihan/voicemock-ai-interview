@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show unawaited;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -17,9 +17,40 @@ class InterviewView extends StatefulWidget {
   State<InterviewView> createState() => _InterviewViewState();
 }
 
-class _InterviewViewState extends State<InterviewView> {
+class _InterviewViewState extends State<InterviewView>
+    with WidgetsBindingObserver {
+  static const _interruptionMessage =
+      'Recording interrupted — hold to try again';
   int _debugTapCount = 0;
   bool _showDiagnostics = kDebugMode; // Always show in debug mode
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Handle backgrounding: if recording, cancel the recording
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      final interviewCubit = context.read<InterviewCubit>();
+      final currentState = interviewCubit.state;
+
+      if (currentState is InterviewRecording) {
+        unawaited(interviewCubit.cancelRecording(wasInterrupted: true));
+      }
+    }
+  }
 
   void _onTitleTap() {
     setState(() {
@@ -50,7 +81,10 @@ class _InterviewViewState extends State<InterviewView> {
             IconButton(
               icon: const Icon(Icons.analytics_outlined),
               tooltip: 'Diagnostics',
-              onPressed: () => context.push('/diagnostics'),
+              onPressed: () => context.push(
+                '/diagnostics',
+                extra: context.read<InterviewCubit>(),
+              ),
             ),
           IconButton(
             icon: const Icon(Icons.close),
@@ -60,6 +94,21 @@ class _InterviewViewState extends State<InterviewView> {
       ),
       body: BlocListener<InterviewCubit, InterviewState>(
         listener: (context, state) {
+          // Show interruption feedback when recording was interrupted
+          if (state is InterviewReady && state.wasInterrupted) {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(_interruptionMessage),
+                    duration: Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            });
+          }
+
           // Auto-complete the Speaking phase when there is no TTS audio to
           // play. TTS playback is not yet implemented (Story 3.1), so we
           // skip directly to the next Ready state. Once TTS is wired up,

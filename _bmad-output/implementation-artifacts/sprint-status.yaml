@@ -59,7 +59,7 @@ development_status:
   2-5-question-progression-avoid-repeats-end-cancel: done
   2-6-stage-aware-recoverable-errors-with-request-ids: done
   2-7-latency-timings-captured-and-surfaced-basic: done
-  2-8-handle-interruptions-during-recording-android: backlog
+  2-8-handle-interruptions-during-recording-android: done
   epic-2-retrospective: optional
 
   # Epic 3: Hear the Interviewer (Voice Output + Playback Control)
