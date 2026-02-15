@@ -3,6 +3,7 @@
 from groq import AsyncGroq
 from groq import APIError
 from groq import APITimeoutError
+from groq import RateLimitError
 
 
 class LLMError(Exception):
@@ -111,10 +112,27 @@ class GroqLLMProvider:
                 code="llm_timeout",
                 retryable=True,
             ) from e
-        except APIError as e:
+        except RateLimitError as e:
             raise LLMError(
                 message=str(e),
-                code="provider_error",
+                code="llm_rate_limit",
+                retryable=True,
+            ) from e
+        except APIError as e:
+            # Check if it's a content filter error
+            error_msg = str(e).lower()
+            if "content" in error_msg and (
+                "filter" in error_msg or "policy" in error_msg
+            ):
+                raise LLMError(
+                    message=str(e),
+                    code="llm_content_filter",
+                    retryable=False,
+                ) from e
+            # Generic provider error
+            raise LLMError(
+                message=str(e),
+                code="llm_provider_error",
                 retryable=True,
             ) from e
 

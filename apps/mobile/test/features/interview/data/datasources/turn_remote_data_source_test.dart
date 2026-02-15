@@ -67,6 +67,51 @@ void main() {
       ).called(1);
     });
 
+    test('should call postMultipart for transcript retry', () async {
+      const mockEnvelope = ApiEnvelope<TurnResponseData>(
+        data: TurnResponseData(
+          transcript: 'Existing transcript',
+          timings: {'llm_ms': 500.0, 'total_ms': 500.0},
+          questionNumber: 1,
+          totalQuestions: 5,
+        ),
+        error: null,
+        requestId: 'test-request-id',
+      );
+
+      when(
+        () => mockApiClient.postMultipart<TurnResponseData>(
+          any(),
+          // filePath/fileFieldName should be null/not provided or null
+          filePath: any(named: 'filePath'),
+          fileFieldName: any(named: 'fileFieldName'),
+          fields: any(named: 'fields'),
+          bearerToken: any(named: 'bearerToken'),
+          fromJson: any(named: 'fromJson'),
+        ),
+      ).thenAnswer((_) async => mockEnvelope);
+
+      final result = await dataSource.submitTurn(
+        transcript: 'Existing transcript',
+        sessionId: 'test-session-123',
+        sessionToken: 'test_token',
+      );
+
+      expect(result.transcript, 'Existing transcript');
+
+      verify(
+        () => mockApiClient.postMultipart<TurnResponseData>(
+          '/turn',
+          fields: {
+            'session_id': 'test-session-123',
+            'transcript': 'Existing transcript',
+          },
+          bearerToken: 'test_token',
+          fromJson: any(named: 'fromJson'),
+        ),
+      ).called(1);
+    });
+
     test('should return unwrapped TurnResponseData from envelope', () async {
       final testFile = File('test_audio.webm')..writeAsStringSync('fake_audio');
       addTearDown(testFile.deleteSync);

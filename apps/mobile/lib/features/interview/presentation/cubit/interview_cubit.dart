@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
 import 'package:voicemock/core/http/exceptions.dart';
+import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/core/permissions/permissions.dart';
 import 'package:voicemock/features/interview/data/data.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
@@ -151,46 +152,18 @@ class InterviewCubit extends Cubit<InterviewState> {
         sessionToken: _sessionToken,
       );
 
-      // Brief transition to Transcribing state
-      emit(
-        InterviewTranscribing(
-          questionNumber: current.questionNumber,
-          totalQuestions: current.totalQuestions,
-          questionText: current.questionText,
-          startTime: DateTime.now(),
-        ),
-      );
-      _logTransition('Transcribing');
-
-      // Detect low-confidence transcript (< 3 words)
-      final wordCount = turnResponse.transcript
-          .trim()
-          .split(RegExp(r'\s+'))
-          .where((word) => word.isNotEmpty)
-          .length;
-      final isLowConfidence = wordCount < 3;
-
-      // Transition to TranscriptReview instead of Thinking
-      emit(
-        InterviewTranscriptReview(
-          questionNumber: current.questionNumber,
-          totalQuestions: current.totalQuestions,
-          questionText: current.questionText,
-          transcript: turnResponse.transcript,
-          audioPath: current.audioPath,
-          isLowConfidence: isLowConfidence,
-          assistantText: turnResponse.assistantText,
-          isComplete: turnResponse.isComplete,
-        ),
-      );
-      _logTransition(
-        'TranscriptReview (transcript: ${turnResponse.transcript}, '
-        'lowConfidence: $isLowConfidence, '
-        'isComplete: ${turnResponse.isComplete})',
+      _handleTurnResponse(
+        turnResponse,
+        questionText: current.questionText,
+        audioPath: current.audioPath,
       );
     } on ServerException catch (e) {
-      // Clean up audio on error
-      await _cleanupAudioFile(current.audioPath);
+      // Only clean up audio for non-retryable errors
+      // For retryable errors, preserve audio for retry
+      if (!(e.retryable ?? false)) {
+        await _cleanupAudioFile(current.audioPath);
+      }
+
       handleError(
         ServerFailure(
           message: e.message,
@@ -199,20 +172,23 @@ class InterviewCubit extends Cubit<InterviewState> {
           retryable: e.retryable ?? false,
           requestId: e.requestId,
         ),
+        audioPath: e.retryable ?? false ? current.audioPath : null,
       );
     } on NetworkException catch (e) {
-      // Clean up audio on error
-      await _cleanupAudioFile(current.audioPath);
-      handleError(NetworkFailure(message: e.message));
+      // Network errors are typically retryable, preserve audio
+      handleError(
+        NetworkFailure(message: e.message),
+        audioPath: current.audioPath,
+      );
     } on Object catch (e) {
-      // Clean up audio on error
-      await _cleanupAudioFile(current.audioPath);
+      // Unknown errors are retryable, preserve audio
       handleError(
         ServerFailure(
           message: 'Failed to process turn: $e',
           code: 'unknown_error',
           retryable: true,
         ),
+        audioPath: current.audioPath,
       );
     }
   }
@@ -402,34 +378,314 @@ class InterviewCubit extends Cubit<InterviewState> {
   }
 
   /// Handle error - can occur from any active state.
-  void handleError(InterviewFailure failure) {
+  ///
+  /// Preserves audio path for upload/STT errors (retryable).
+  /// Preserves transcript for LLM errors (retryable).
+  void handleError(
+    InterviewFailure failure, {
+    String? audioPath,
+    String? transcript,
+  }) {
+    final current = state;
+
+    if (audioPath != null) {
+      developer.log(
+        'Preserving audio path for retry: $audioPath',
+        name: 'InterviewCubit',
+      );
+    }
+
+    if (transcript != null) {
+      developer.log(
+        'Preserving transcript for retry: $transcript',
+        name: 'InterviewCubit',
+      );
+    }
+
+    // Map failure stage to InterviewStage enum
+    var failedStage = current.stage;
+    if (failure is ServerFailure && failure.stage != null) {
+      switch (failure.stage) {
+        case 'upload':
+          failedStage = InterviewStage.uploading;
+        case 'stt':
+          failedStage = InterviewStage.transcribing;
+        case 'llm':
+          failedStage = InterviewStage.thinking;
+        case 'tts':
+          failedStage = InterviewStage.speaking;
+        default:
+          failedStage = current.stage;
+      }
+    }
+
     emit(
       InterviewError(
         failure: failure,
         previousState: state,
+        failedStage: failedStage,
+        audioPath: audioPath,
+        transcript: transcript,
       ),
     );
-    _logTransition('Error: ${failure.message}');
+    _logTransition('Error: ${failure.message} at stage $failedStage');
   }
 
-  /// Retry from error state - restores previous state.
-  void retry() {
+  /// Retry from error state with stage-aware retry logic.
+  ///
+  /// - Upload/STT failure (retryable) → re-submit same audio
+  /// - STT failure (non-retryable) → go to re-record (Ready state)
+  /// - LLM failure → re-submit same transcript (not implemented yet - no
+  ///   LLM-only endpoint)
+  Future<void> retry() async {
     final current = state;
     if (current is! InterviewError) {
       _logInvalidTransition('retry', current);
       return;
     }
-    // Restore to appropriate state based on failure stage
-    emit(current.previousState);
-    _logTransition('Retry → ${current.previousState.stage}');
+
+    final previousState = current.previousState;
+    final failure = current.failure;
+
+    // Non-retryable errors should go to re-record
+    if (!failure.retryable) {
+      developer.log(
+        'Non-retryable error, transitioning to re-record flow',
+        name: 'InterviewCubit',
+      );
+      await reRecordFromError();
+      return;
+    }
+
+    // Stage-aware retry logic
+    if (previousState is InterviewUploading ||
+        previousState is InterviewTranscribing) {
+      // Retry upload/STT: re-submit the same audio
+      if (current.audioPath != null) {
+        await retryTurn(current.audioPath!);
+      } else {
+        // Audio path not preserved, fall back to re-record
+        await reRecordFromError();
+      }
+    } else if (previousState is InterviewThinking) {
+      // Retry LLM: re-submit transcript
+      if (current.transcript != null) {
+        await retryLLM(current.transcript!);
+      } else {
+        developer.log(
+          'Cannot retry LLM: transcript missing in error state',
+          name: 'InterviewCubit',
+          level: 900,
+        );
+        await reRecordFromError();
+      }
+    } else {
+      // For other error states, restore previous state
+      emit(previousState);
+      _logTransition('Retry → ${previousState.stage}');
+    }
+  }
+
+  /// Retry turn submission from error state (for upload/STT errors).
+  ///
+  /// Re-submits the same audio file that was preserved in error state.
+  Future<void> retryTurn(String audioPath) async {
+    final current = state;
+    if (current is! InterviewError) {
+      _logInvalidTransition('retryTurn', current);
+      return;
+    }
+
+    final previousState = current.previousState;
+    if (previousState is! InterviewUploading &&
+        previousState is! InterviewTranscribing) {
+      developer.log(
+        'retryTurn called from invalid previous state: ${previousState.stage}',
+        name: 'InterviewCubit',
+        level: 900,
+      );
+      return;
+    }
+
+    // Extract question info from previous state
+    int questionNumber;
+    String questionText;
+
+    if (previousState is InterviewUploading) {
+      questionNumber = previousState.questionNumber;
+      questionText = previousState.questionText;
+    } else if (previousState is InterviewTranscribing) {
+      questionNumber = previousState.questionNumber;
+      questionText = previousState.questionText;
+    } else {
+      developer.log(
+        'Could not extract question info from previous state',
+        name: 'InterviewCubit',
+        level: 900,
+      );
+      return;
+    }
+
+    // Transition back to Uploading state with preserved audio
+    emit(
+      InterviewUploading(
+        questionNumber: questionNumber,
+        totalQuestions: _totalQuestions,
+        questionText: questionText,
+        audioPath: audioPath,
+        startTime: DateTime.now(),
+      ),
+    );
+    _logTransition('Retry → Uploading with preserved audio');
+
+    // Trigger turn submission
+    await submitTurn();
+  }
+
+  /// Re-record from error state.
+  ///
+  /// Cleans up retained audio and transitions to Ready state with same
+  /// question.
+  Future<void> reRecordFromError() async {
+    final current = state;
+    if (current is! InterviewError) {
+      _logInvalidTransition('reRecordFromError', current);
+      return;
+    }
+
+    // Clean up retained audio if any
+    if (current.audioPath != null) {
+      await _cleanupAudioFile(current.audioPath!);
+    }
+
+    final previousState = current.previousState;
+
+    // Extract question info from previous state
+    var questionNumber = 1;
+    var questionText = '';
+
+    if (previousState is InterviewUploading) {
+      questionNumber = previousState.questionNumber;
+      questionText = previousState.questionText;
+    } else if (previousState is InterviewTranscribing) {
+      questionNumber = previousState.questionNumber;
+      questionText = previousState.questionText;
+    } else if (previousState is InterviewThinking) {
+      questionNumber = previousState.questionNumber;
+      questionText = previousState.questionText;
+    } else if (previousState is InterviewReady) {
+      questionNumber = previousState.questionNumber;
+      questionText = previousState.questionText;
+    }
+
+    emit(
+      InterviewReady(
+        questionNumber: questionNumber,
+        totalQuestions: _totalQuestions,
+        questionText: questionText,
+      ),
+    );
+
+    _logTransition('Re-record from error → Ready');
+  }
+
+  /// Retry LLM generation from error state.
+  ///
+  /// Re-submits the preserved transcript to the backend.
+  Future<void> retryLLM(String transcript) async {
+    final current = state;
+    if (current is! InterviewError) {
+      _logInvalidTransition('retryLLM', current);
+      return;
+    }
+
+    final previousState = current.previousState;
+
+    // Extract question info from previous state
+    int questionNumber;
+    String questionText;
+
+    if (previousState is InterviewThinking) {
+      questionNumber = previousState.questionNumber;
+      questionText = previousState.questionText;
+    } else {
+      developer.log(
+        'retryLLM called from invalid previous state: ${previousState.stage}',
+        name: 'InterviewCubit',
+        level: 900,
+      );
+      return;
+    }
+
+    // Transition back to Thinking state with preserved transcript
+    emit(
+      InterviewThinking(
+        questionNumber: questionNumber,
+        totalQuestions: _totalQuestions,
+        questionText: questionText,
+        transcript: transcript,
+        startTime: DateTime.now(),
+      ),
+    );
+    _logTransition('Retry LLM → Thinking with preserved transcript');
+
+    try {
+      final response = await _turnRemoteDataSource.submitTurn(
+        sessionId: _sessionId,
+        sessionToken: _sessionToken,
+        transcript: transcript,
+      );
+
+      _handleTurnResponse(
+        response,
+        questionText: questionText,
+        // audioPath is null for transcript-only retry
+      );
+    } on Exception catch (e) {
+      developer.log(
+        'InterviewCubit: Error during LLM retry: $e',
+        name: 'InterviewCubit',
+        level: 900,
+      );
+
+      final failure = e is ServerException
+          ? ServerFailure(
+              message: e.message,
+              requestId: e.requestId,
+              retryable: e.retryable ?? false,
+              stage: e.stage,
+              code: e.code,
+            )
+          : const NetworkFailure(
+              message: 'Failed to connect. Please check your internet.',
+            );
+
+      handleError(
+        failure,
+        transcript: transcript, // Preserve transcript again for next retry
+      );
+    }
   }
 
   /// Cancel interview - return to idle.
+  ///
+  /// Cleans up any retained audio files from error state.
   Future<void> cancel() async {
+    // Clean up retained audio in error state
+    if (state is InterviewError) {
+      final errorState = state as InterviewError;
+      if (errorState.audioPath != null) {
+        await _cleanupAudioFile(errorState.audioPath!);
+      }
+    }
+
     // Stop recording if currently recording
     if (await _recordingService.isRecording) {
       try {
-        await _recordingService.stopRecording();
+        final audioPath = await _recordingService.stopRecording();
+        if (audioPath != null && audioPath.isNotEmpty) {
+          await _recordingService.deleteRecording(audioPath);
+        }
       } on Object catch (e) {
         developer.log(
           'InterviewCubit: Error stopping recording during cancel: $e',
@@ -463,6 +719,55 @@ class InterviewCubit extends Cubit<InterviewState> {
       '${current.stage}',
       name: 'InterviewCubit',
       level: 900, // Warning level
+    );
+  }
+
+  void _handleTurnResponse(
+    TurnResponseData response, {
+    required String questionText,
+    String? audioPath,
+  }) {
+    // Brief transition to Transcribing state (if audio path exists, otherwise
+    // skip?) Actually, consistency is good. Let's show it briefly or just
+    // go straight to Review.
+    if (audioPath != null) {
+      emit(
+        InterviewTranscribing(
+          questionNumber: response.questionNumber,
+          totalQuestions: response.totalQuestions,
+          questionText: questionText,
+          startTime: DateTime.now(),
+        ),
+      );
+      _logTransition('Transcribing');
+    }
+
+    // Detect low-confidence transcript (< 3 words)
+    final wordCount = response.transcript
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .length;
+    final isLowConfidence = wordCount < 3;
+
+    // Transition to TranscriptReview instead of Thinking
+    emit(
+      InterviewTranscriptReview(
+        questionNumber: response.questionNumber,
+        totalQuestions: response.totalQuestions,
+        questionText: questionText,
+        transcript: response.transcript,
+        audioPath:
+            audioPath ?? '', // Empty string if no audio (transcript-only flow)
+        isLowConfidence: isLowConfidence,
+        assistantText: response.assistantText,
+        isComplete: response.isComplete,
+      ),
+    );
+    _logTransition(
+      'TranscriptReview (transcript: ${response.transcript}, '
+      'lowConfidence: $isLowConfidence, '
+      'isComplete: ${response.isComplete})',
     );
   }
 }

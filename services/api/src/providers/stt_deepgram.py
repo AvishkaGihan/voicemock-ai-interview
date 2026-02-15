@@ -21,7 +21,7 @@ class EmptyTranscriptError(STTError):
             message="We couldn't hear anything. Please try again.",
             stage="stt",
             code="stt_empty_transcript",
-            retryable=True,
+            retryable=False,  # User should re-record
         )
 
 
@@ -73,6 +73,18 @@ class STTTimeoutError(STTError):
         )
 
 
+class STTRateLimitError(STTError):
+    """Rate limit error from STT provider (429)."""
+
+    def __init__(self, message: str = "Too many requests. Please try again shortly."):
+        super().__init__(
+            message=message,
+            stage="stt",
+            code="stt_rate_limit",
+            retryable=True,
+        )
+
+
 class DeepgramSTTProvider:
     """Deepgram Nova-2 speech-to-text provider.
 
@@ -103,6 +115,7 @@ class DeepgramSTTProvider:
         Raises:
             EmptyTranscriptError: If transcript is empty or whitespace-only
             STTAuthError: If authentication fails (401/403)
+            STTRateLimitError: If rate limit is exceeded (429)
             STTBadRequestError: If request is invalid (4xx)
             STTProviderError: If provider has server error (5xx)
             STTTimeoutError: If request times out
@@ -146,6 +159,8 @@ class DeepgramSTTProvider:
 
             if status_code in (401, 403):
                 raise STTAuthError()
+            elif status_code == 429:
+                raise STTRateLimitError()
             elif 400 <= status_code < 500:
                 raise STTBadRequestError()
             else:  # 5xx
