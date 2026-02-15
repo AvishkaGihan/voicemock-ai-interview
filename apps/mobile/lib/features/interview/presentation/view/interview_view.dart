@@ -81,7 +81,10 @@ class _InterviewViewState extends State<InterviewView>
             IconButton(
               icon: const Icon(Icons.analytics_outlined),
               tooltip: 'Diagnostics',
-              onPressed: () => context.push('/diagnostics'),
+              onPressed: () => context.push(
+                '/diagnostics',
+                extra: context.read<InterviewCubit>(),
+              ),
             ),
           IconButton(
             icon: const Icon(Icons.close),
