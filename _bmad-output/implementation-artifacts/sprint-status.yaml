@@ -51,7 +51,7 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Complete the Core Voice Turn Loop (Record → Transcribe → Next Question)
-  epic-2: in-progress
+  epic-2: done
   2-1-interview-state-machine-android-ui: done
   2-2-push-to-talk-recording-capture-android: done
   2-3-post-turn-contract-multipart-transcript-response: done
@@ -60,7 +60,7 @@ development_status:
   2-6-stage-aware-recoverable-errors-with-request-ids: done
   2-7-latency-timings-captured-and-surfaced-basic: done
   2-8-handle-interruptions-during-recording-android: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Hear the Interviewer (Voice Output + Playback Control)
   epic-3: backlog
