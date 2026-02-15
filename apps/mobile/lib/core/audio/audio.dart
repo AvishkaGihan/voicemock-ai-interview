@@ -5,6 +5,8 @@
 /// - Audio playback queue management
 /// - Playback controls (pause, resume, stop)
 /// - Audio level monitoring
+/// - Audio focus and interruption detection
 library;
 
+export 'audio_focus_service.dart';
 export 'recording_service.dart';

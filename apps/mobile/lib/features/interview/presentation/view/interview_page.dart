@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voicemock/core/audio/audio.dart';
@@ -22,16 +24,23 @@ class InterviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final apiClient = context.read<ApiClient>();
+    final audioFocusService = AudioFocusService();
 
     return BlocProvider(
-      create: (_) => InterviewCubit(
-        recordingService: RecordingService(),
-        turnRemoteDataSource: TurnRemoteDataSource(apiClient),
-        sessionId: session.sessionId,
-        sessionToken: session.sessionToken,
-        initialQuestionText: session.openingPrompt,
-        totalQuestions: session.totalQuestions,
-      ),
+      create: (_) {
+        final cubit = InterviewCubit(
+          recordingService: RecordingService(),
+          turnRemoteDataSource: TurnRemoteDataSource(apiClient),
+          sessionId: session.sessionId,
+          sessionToken: session.sessionToken,
+          audioFocusService: audioFocusService,
+          initialQuestionText: session.openingPrompt,
+          totalQuestions: session.totalQuestions,
+        );
+        // Initialize audio focus service
+        unawaited(audioFocusService.initialize());
+        return cubit;
+      },
       child: const InterviewView(),
     );
   }

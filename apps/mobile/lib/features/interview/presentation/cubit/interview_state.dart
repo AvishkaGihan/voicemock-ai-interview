@@ -30,12 +30,14 @@ class InterviewReady extends InterviewState {
     required this.totalQuestions,
     required this.questionText,
     this.previousTranscript,
+    this.wasInterrupted = false,
   });
 
   final int questionNumber;
   final int totalQuestions;
   final String questionText;
   final String? previousTranscript;
+  final bool wasInterrupted;
 
   @override
   InterviewStage get stage => InterviewStage.ready;
@@ -46,6 +48,7 @@ class InterviewReady extends InterviewState {
     totalQuestions,
     questionText,
     previousTranscript,
+    wasInterrupted,
   ];
 }
 

@@ -1,7 +1,9 @@
-import 'dart:async';
+import 'dart:async' show StreamSubscription, Timer, unawaited;
 import 'dart:developer' as developer;
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voicemock/core/audio/audio_focus_service.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
 import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/models/models.dart';
@@ -25,6 +27,7 @@ class InterviewCubit extends Cubit<InterviewState> {
     required TurnRemoteDataSource turnRemoteDataSource,
     required String sessionId,
     required String sessionToken,
+    required AudioFocusService audioFocusService,
     PermissionService? permissionService,
     int questionNumber = 1,
     int totalQuestions = 5,
@@ -34,6 +37,7 @@ class InterviewCubit extends Cubit<InterviewState> {
        _turnRemoteDataSource = turnRemoteDataSource,
        _sessionId = sessionId,
        _sessionToken = sessionToken,
+       _audioFocusService = audioFocusService,
        _permissionService =
            permissionService ?? const MicrophonePermissionService(),
        _maxRecordingDuration = maxRecordingDuration,
@@ -49,16 +53,23 @@ class InterviewCubit extends Cubit<InterviewState> {
        ) {
     // Initialize diagnostics for the session
     _diagnostics = SessionDiagnostics(sessionId: sessionId);
+
+    // Subscribe to audio interruption events
+    _audioInterruptionSubscription = _audioFocusService.interruptions.listen(
+      _onAudioInterruption,
+    );
   }
 
   final RecordingService _recordingService;
   final TurnRemoteDataSource _turnRemoteDataSource;
   final String _sessionId;
   final String _sessionToken;
+  final AudioFocusService _audioFocusService;
   final PermissionService _permissionService;
   final Duration _maxRecordingDuration;
   final int _totalQuestions;
   Timer? _maxDurationTimer;
+  StreamSubscription<AudioInterruptionEvent>? _audioInterruptionSubscription;
 
   /// Session diagnostics for timing and error tracking.
   late SessionDiagnostics _diagnostics;
@@ -307,7 +318,10 @@ class InterviewCubit extends Cubit<InterviewState> {
   }
 
   /// Cancel recording - only valid from Recording state.
-  Future<void> cancelRecording() async {
+  ///
+  /// If [wasInterrupted] is true, marks the transition as caused by
+  /// an external interruption (e.g., phone call, backgrounding).
+  Future<void> cancelRecording({bool wasInterrupted = false}) async {
     final current = state;
     if (current is! InterviewRecording) {
       _logInvalidTransition('cancelRecording', current);
@@ -328,9 +342,12 @@ class InterviewCubit extends Cubit<InterviewState> {
           questionNumber: current.questionNumber,
           totalQuestions: current.totalQuestions,
           questionText: current.questionText,
+          wasInterrupted: wasInterrupted,
         ),
       );
-      _logTransition('Ready (cancelled)');
+      _logTransition(
+        wasInterrupted ? 'Ready (interrupted)' : 'Ready (cancelled)',
+      );
     } on Object catch (e) {
       developer.log(
         'InterviewCubit: Error cancelling recording: $e',
@@ -343,7 +360,44 @@ class InterviewCubit extends Cubit<InterviewState> {
           questionNumber: current.questionNumber,
           totalQuestions: current.totalQuestions,
           questionText: current.questionText,
+          wasInterrupted: wasInterrupted,
         ),
+      );
+    }
+  }
+
+  /// Handles audio interruption events.
+  ///
+  /// If recording is active, cancels the recording and returns to Ready.
+  /// If not recording, logs the event but takes no action.
+  void _onAudioInterruption(AudioInterruptionEvent event) {
+    final current = state;
+
+    developer.log(
+      'InterviewCubit: Audio interruption received in '
+      'state ${current.runtimeType}',
+      name: 'InterviewCubit',
+      error: {
+        'began': event.begin,
+        'type': event.type.toString(),
+      },
+    );
+
+    // Only handle interruptions during recording
+    if (current is InterviewRecording) {
+      developer.log(
+        'InterviewCubit: Interruption occurred during recording - '
+        'cancelling',
+        name: 'InterviewCubit',
+      );
+      // Use cancelRecording to stop + discard + return to Ready
+      unawaited(cancelRecording(wasInterrupted: true));
+    } else {
+      // Log but take no action for non-recording states
+      developer.log(
+        'InterviewCubit: Interruption during non-recording state - '
+        'no action taken',
+        name: 'InterviewCubit',
       );
     }
   }
@@ -751,6 +805,8 @@ class InterviewCubit extends Cubit<InterviewState> {
   @override
   Future<void> close() async {
     _maxDurationTimer?.cancel();
+    await _audioInterruptionSubscription?.cancel();
+    await _audioFocusService.dispose(); // Fix: dispose service to prevent leaks
     await _recordingService.dispose();
     return super.close();
   }
