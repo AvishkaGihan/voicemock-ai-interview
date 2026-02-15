@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
 import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/models/models.dart';
+import 'package:voicemock/core/models/session_diagnostics.dart';
+import 'package:voicemock/core/models/turn_timing_record.dart';
 import 'package:voicemock/core/permissions/permissions.dart';
 import 'package:voicemock/features/interview/data/data.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
@@ -44,7 +46,10 @@ class InterviewCubit extends Cubit<InterviewState> {
                  questionText: initialQuestionText,
                )
              : const InterviewIdle(),
-       );
+       ) {
+    // Initialize diagnostics for the session
+    _diagnostics = SessionDiagnostics(sessionId: sessionId);
+  }
 
   final RecordingService _recordingService;
   final TurnRemoteDataSource _turnRemoteDataSource;
@@ -54,6 +59,12 @@ class InterviewCubit extends Cubit<InterviewState> {
   final Duration _maxRecordingDuration;
   final int _totalQuestions;
   Timer? _maxDurationTimer;
+
+  /// Session diagnostics for timing and error tracking.
+  late SessionDiagnostics _diagnostics;
+
+  /// Public getter for diagnostics data.
+  SessionDiagnostics get diagnostics => _diagnostics;
 
   /// Start recording - only valid from Ready state.
   ///
@@ -152,8 +163,22 @@ class InterviewCubit extends Cubit<InterviewState> {
         sessionToken: _sessionToken,
       );
 
+      // Create timing record from response
+      final timingRecord = TurnTimingRecord(
+        turnNumber: turnResponse.data.questionNumber,
+        requestId: turnResponse.requestId,
+        uploadMs: turnResponse.data.timings['upload_ms'],
+        sttMs: turnResponse.data.timings['stt_ms'],
+        llmMs: turnResponse.data.timings['llm_ms'],
+        totalMs: turnResponse.data.timings['total_ms'],
+        timestamp: DateTime.now(),
+      );
+
+      // Add timing record to diagnostics
+      _diagnostics = _diagnostics.addTurn(timingRecord);
+
       _handleTurnResponse(
-        turnResponse,
+        turnResponse.data,
         questionText: current.questionText,
         audioPath: current.audioPath,
       );
@@ -402,6 +427,16 @@ class InterviewCubit extends Cubit<InterviewState> {
       );
     }
 
+    // Record error in diagnostics if we have stage and request ID
+    if (failure is ServerFailure &&
+        failure.stage != null &&
+        failure.requestId != null) {
+      _diagnostics = _diagnostics.recordError(
+        failure.requestId!,
+        failure.stage!,
+      );
+    }
+
     // Map failure stage to InterviewStage enum
     var failedStage = current.stage;
     if (failure is ServerFailure && failure.stage != null) {
@@ -636,8 +671,22 @@ class InterviewCubit extends Cubit<InterviewState> {
         transcript: transcript,
       );
 
+      // Create timing record from response
+      final timingRecord = TurnTimingRecord(
+        turnNumber: response.data.questionNumber,
+        requestId: response.requestId,
+        uploadMs: response.data.timings['upload_ms'],
+        sttMs: response.data.timings['stt_ms'],
+        llmMs: response.data.timings['llm_ms'],
+        totalMs: response.data.timings['total_ms'],
+        timestamp: DateTime.now(),
+      );
+
+      // Add timing record to diagnostics
+      _diagnostics = _diagnostics.addTurn(timingRecord);
+
       _handleTurnResponse(
-        response,
+        response.data,
         questionText: questionText,
         // audioPath is null for transcript-only retry
       );

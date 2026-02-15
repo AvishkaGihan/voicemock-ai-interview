@@ -58,7 +58,7 @@ development_status:
   2-4-transcript-trust-layer-re-record-flow: done
   2-5-question-progression-avoid-repeats-end-cancel: done
   2-6-stage-aware-recoverable-errors-with-request-ids: done
-  2-7-latency-timings-captured-and-surfaced-basic: backlog
+  2-7-latency-timings-captured-and-surfaced-basic: done
   2-8-handle-interruptions-during-recording-android: backlog
   epic-2-retrospective: optional
 

@@ -75,13 +75,17 @@ MockTurnRemoteDataSource createMockTurnRemoteDataSource({
       ),
     ).thenAnswer(
       (_) => Future.value(
-        response ??
-            const TurnResponseData(
-              transcript: 'Test transcript here',
-              timings: {},
-              questionNumber: 1,
-              totalQuestions: 5,
-            ),
+        TurnResponseWithId(
+          data:
+              response ??
+              const TurnResponseData(
+                transcript: 'Test transcript here',
+                timings: {},
+                questionNumber: 1,
+                totalQuestions: 5,
+              ),
+          requestId: 'test-request-id',
+        ),
       ),
     );
   }
@@ -1593,11 +1597,14 @@ void main() {
                 requestId: 'req-123',
               );
             }
-            return const TurnResponseData(
-              transcript: 'Successful transcript',
-              timings: {},
-              questionNumber: 1,
-              totalQuestions: 5,
+            return const TurnResponseWithId(
+              data: TurnResponseData(
+                transcript: 'Successful transcript',
+                timings: {},
+                questionNumber: 1,
+                totalQuestions: 5,
+              ),
+              requestId: 'req-123',
             );
           });
           return InterviewCubit(
@@ -1665,11 +1672,14 @@ void main() {
                 requestId: 'req-456',
               );
             }
-            return const TurnResponseData(
-              transcript: 'Retry successful',
-              timings: {},
-              questionNumber: 2,
-              totalQuestions: 5,
+            return const TurnResponseWithId(
+              data: TurnResponseData(
+                transcript: 'Retry successful',
+                timings: {},
+                questionNumber: 2,
+                totalQuestions: 5,
+              ),
+              requestId: 'req-456',
             );
           });
           return InterviewCubit(
@@ -1760,11 +1770,14 @@ void main() {
               transcript: any(named: 'transcript'),
             ),
           ).thenAnswer(
-            (_) async => const TurnResponseData(
-              transcript: 'Retry successful',
-              timings: {},
-              questionNumber: 4,
-              totalQuestions: 5,
+            (_) async => const TurnResponseWithId(
+              data: TurnResponseData(
+                transcript: 'Retry successful',
+                timings: {},
+                questionNumber: 4,
+                totalQuestions: 5,
+              ),
+              requestId: 'req-llm-retry',
             ),
           );
           return InterviewCubit(
@@ -1972,11 +1985,14 @@ void main() {
                   requestId: 'req-stt',
                 );
               default:
-                return const TurnResponseData(
-                  transcript: 'Success',
-                  timings: {},
-                  questionNumber: 1,
-                  totalQuestions: 5,
+                return const TurnResponseWithId(
+                  data: TurnResponseData(
+                    transcript: 'Success',
+                    timings: {},
+                    questionNumber: 1,
+                    totalQuestions: 5,
+                  ),
+                  requestId: 'req-success',
                 );
             }
           });

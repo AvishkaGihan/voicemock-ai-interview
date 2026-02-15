@@ -52,8 +52,8 @@ void main() {
         sessionToken: 'test_token',
       );
 
-      expect(result.transcript, 'Hello world');
-      expect(result.timings['stt_ms'], 820.5);
+      expect(result.data.transcript, 'Hello world');
+      expect(result.data.timings['stt_ms'], 820.5);
 
       verify(
         () => mockApiClient.postMultipart<TurnResponseData>(
@@ -97,7 +97,7 @@ void main() {
         sessionToken: 'test_token',
       );
 
-      expect(result.transcript, 'Existing transcript');
+      expect(result.data.transcript, 'Existing transcript');
 
       verify(
         () => mockApiClient.postMultipart<TurnResponseData>(
@@ -126,7 +126,7 @@ void main() {
       const mockEnvelope = ApiEnvelope<TurnResponseData>(
         data: expectedData,
         error: null,
-        requestId: 'test-request-id',
+        requestId: 'req-123',
       );
 
       when(
@@ -146,7 +146,9 @@ void main() {
         sessionToken: 'token',
       );
 
-      expect(result, expectedData);
+      expect(result, isA<TurnResponseWithId>());
+      expect(result.requestId, 'req-123');
+      expect(result.data, expectedData);
     });
 
     test('should propagate ServerException from ApiClient', () async {

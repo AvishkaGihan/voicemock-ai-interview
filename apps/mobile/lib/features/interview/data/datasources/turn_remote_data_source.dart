@@ -2,6 +2,17 @@ import 'package:voicemock/core/http/api_client.dart';
 import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/models/models.dart';
 
+/// Wrapper for turn response with request ID.
+class TurnResponseWithId {
+  const TurnResponseWithId({
+    required this.data,
+    required this.requestId,
+  });
+
+  final TurnResponseData data;
+  final String requestId;
+}
+
 /// Remote data source for turn-related API operations.
 class TurnRemoteDataSource {
   /// Creates a [TurnRemoteDataSource].
@@ -15,11 +26,11 @@ class TurnRemoteDataSource {
   /// [transcript], along with the [sessionId].
   /// Authenticates using [sessionToken].
   ///
-  /// Returns [TurnResponseData] containing the transcript and timing info.
+  /// Returns [TurnResponseWithId] containing the data and request ID.
   ///
   /// Throws [ServerException] on API errors (auth, STT failures, etc).
   /// Throws [NetworkException] on connectivity issues.
-  Future<TurnResponseData> submitTurn({
+  Future<TurnResponseWithId> submitTurn({
     required String sessionId,
     required String sessionToken,
     String? audioPath,
@@ -39,6 +50,9 @@ class TurnRemoteDataSource {
       fromJson: TurnResponseData.fromJson,
     );
 
-    return envelope.data!;
+    return TurnResponseWithId(
+      data: envelope.data!,
+      requestId: envelope.requestId,
+    );
   }
 }
