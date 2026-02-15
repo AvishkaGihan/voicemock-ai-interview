@@ -30,12 +30,14 @@ class InterviewReady extends InterviewState {
     required this.totalQuestions,
     required this.questionText,
     this.previousTranscript,
+    this.wasInterrupted = false,
   });
 
   final int questionNumber;
   final int totalQuestions;
   final String questionText;
   final String? previousTranscript;
+  final bool wasInterrupted;
 
   @override
   InterviewStage get stage => InterviewStage.ready;
@@ -46,6 +48,7 @@ class InterviewReady extends InterviewState {
     totalQuestions,
     questionText,
     previousTranscript,
+    wasInterrupted,
   ];
 }
 
@@ -53,11 +56,13 @@ class InterviewReady extends InterviewState {
 class InterviewRecording extends InterviewState {
   const InterviewRecording({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.recordingStartTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final DateTime recordingStartTime;
 
@@ -65,19 +70,26 @@ class InterviewRecording extends InterviewState {
   InterviewStage get stage => InterviewStage.recording;
 
   @override
-  List<Object?> get props => [questionNumber, questionText, recordingStartTime];
+  List<Object?> get props => [
+    questionNumber,
+    totalQuestions,
+    questionText,
+    recordingStartTime,
+  ];
 }
 
 /// Uploading state - audio file is being uploaded to backend.
 class InterviewUploading extends InterviewState {
   const InterviewUploading({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.audioPath,
     required this.startTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final String audioPath;
   final DateTime startTime;
@@ -88,6 +100,7 @@ class InterviewUploading extends InterviewState {
   @override
   List<Object?> get props => [
     questionNumber,
+    totalQuestions,
     questionText,
     audioPath,
     startTime,
@@ -98,11 +111,13 @@ class InterviewUploading extends InterviewState {
 class InterviewTranscribing extends InterviewState {
   const InterviewTranscribing({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.startTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final DateTime startTime;
 
@@ -110,19 +125,64 @@ class InterviewTranscribing extends InterviewState {
   InterviewStage get stage => InterviewStage.transcribing;
 
   @override
-  List<Object?> get props => [questionNumber, questionText, startTime];
+  List<Object?> get props => [
+    questionNumber,
+    totalQuestions,
+    questionText,
+    startTime,
+  ];
+}
+
+/// Transcript review state - user reviews STT output before proceeding.
+class InterviewTranscriptReview extends InterviewState {
+  const InterviewTranscriptReview({
+    required this.questionNumber,
+    required this.totalQuestions,
+    required this.questionText,
+    required this.transcript,
+    required this.audioPath,
+    this.isLowConfidence = false,
+    this.assistantText,
+    this.isComplete = false,
+  });
+
+  final int questionNumber;
+  final int totalQuestions;
+  final String questionText;
+  final String transcript;
+  final String audioPath;
+  final bool isLowConfidence;
+  final String? assistantText;
+  final bool isComplete;
+
+  @override
+  InterviewStage get stage => InterviewStage.transcriptReview;
+
+  @override
+  List<Object?> get props => [
+    questionNumber,
+    totalQuestions,
+    questionText,
+    transcript,
+    audioPath,
+    isLowConfidence,
+    assistantText,
+    isComplete,
+  ];
 }
 
 /// Thinking state - LLM is generating the next response.
 class InterviewThinking extends InterviewState {
   const InterviewThinking({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.transcript,
     required this.startTime,
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final String transcript;
   final DateTime startTime;
@@ -133,6 +193,7 @@ class InterviewThinking extends InterviewState {
   @override
   List<Object?> get props => [
     questionNumber,
+    totalQuestions,
     questionText,
     transcript,
     startTime,
@@ -143,6 +204,7 @@ class InterviewThinking extends InterviewState {
 class InterviewSpeaking extends InterviewState {
   const InterviewSpeaking({
     required this.questionNumber,
+    required this.totalQuestions,
     required this.questionText,
     required this.transcript,
     required this.responseText,
@@ -150,6 +212,7 @@ class InterviewSpeaking extends InterviewState {
   });
 
   final int questionNumber;
+  final int totalQuestions;
   final String questionText;
   final String transcript;
   final String responseText;
@@ -161,10 +224,34 @@ class InterviewSpeaking extends InterviewState {
   @override
   List<Object?> get props => [
     questionNumber,
+    totalQuestions,
     questionText,
     transcript,
     responseText,
     ttsAudioUrl,
+  ];
+}
+
+/// Session complete state - all questions answered.
+class InterviewSessionComplete extends InterviewState {
+  const InterviewSessionComplete({
+    required this.totalQuestions,
+    required this.lastTranscript,
+    this.lastResponseText,
+  });
+
+  final int totalQuestions;
+  final String lastTranscript;
+  final String? lastResponseText;
+
+  @override
+  InterviewStage get stage => InterviewStage.sessionComplete;
+
+  @override
+  List<Object?> get props => [
+    totalQuestions,
+    lastTranscript,
+    lastResponseText,
   ];
 }
 
@@ -173,14 +260,26 @@ class InterviewError extends InterviewState {
   const InterviewError({
     required this.failure,
     required this.previousState,
+    required this.failedStage,
+    this.audioPath,
+    this.transcript,
   });
 
   final InterviewFailure failure;
   final InterviewState previousState;
+  final InterviewStage failedStage;
+  final String? audioPath; // Preserved for upload/STT retry
+  final String? transcript; // Preserved for LLM retry
 
   @override
   InterviewStage get stage => InterviewStage.error;
 
   @override
-  List<Object?> get props => [failure, previousState];
+  List<Object?> get props => [
+    failure,
+    previousState,
+    failedStage,
+    audioPath,
+    transcript,
+  ];
 }

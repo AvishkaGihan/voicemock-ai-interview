@@ -31,11 +31,13 @@ class ServerFailure extends InterviewFailure {
     super.requestId,
     super.retryable,
     this.stage,
+    this.code,
   });
   final String? stage;
+  final String? code;
 
   @override
-  List<Object?> get props => [...super.props, stage];
+  List<Object?> get props => [...super.props, stage, code];
 }
 
 /// Validation error (invalid input).
@@ -59,4 +61,18 @@ class UnknownFailure extends InterviewFailure {
     super.requestId,
     super.retryable = false,
   });
+}
+
+/// Recording failure (microphone capture errors).
+class RecordingFailure extends InterviewFailure {
+  const RecordingFailure({
+    required super.message,
+    super.requestId,
+    super.retryable = true,
+  });
+
+  String get stage => 'recording';
+
+  @override
+  List<Object?> get props => [...super.props, stage];
 }

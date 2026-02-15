@@ -117,9 +117,9 @@ void main() {
         ),
       );
 
-      // Uploading and Transcribing should be complete (checkmarks)
+      // Uploading, Transcribing, and Review should be complete (checkmarks)
       // Thinking is current, Speaking is pending
-      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+      expect(find.byIcon(Icons.check_circle), findsNWidgets(3));
     });
 
     testWidgets('does not show stepper for Ready stage', (tester) async {

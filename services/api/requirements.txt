@@ -15,6 +15,9 @@ itsdangerous==2.2.0
 # Utilities
 python-multipart==0.0.20
 
+# LLM Provider
+groq==1.0.0
+
 # Testing (development)
 pytest==8.3.5
 pytest-asyncio==0.24.0

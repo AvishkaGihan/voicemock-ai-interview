@@ -53,13 +53,13 @@ development_status:
   # Epic 2: Complete the Core Voice Turn Loop (Record → Transcribe → Next Question)
   epic-2: in-progress
   2-1-interview-state-machine-android-ui: done
-  2-2-push-to-talk-recording-capture-android: backlog
-  2-3-post-turn-contract-multipart-transcript-response: backlog
-  2-4-transcript-trust-layer-re-record-flow: backlog
-  2-5-question-progression-avoid-repeats-end-cancel: backlog
-  2-6-stage-aware-recoverable-errors-with-request-ids: backlog
-  2-7-latency-timings-captured-and-surfaced-basic: backlog
-  2-8-handle-interruptions-during-recording-android: backlog
+  2-2-push-to-talk-recording-capture-android: done
+  2-3-post-turn-contract-multipart-transcript-response: done
+  2-4-transcript-trust-layer-re-record-flow: done
+  2-5-question-progression-avoid-repeats-end-cancel: done
+  2-6-stage-aware-recoverable-errors-with-request-ids: done
+  2-7-latency-timings-captured-and-surfaced-basic: done
+  2-8-handle-interruptions-during-recording-android: done
   epic-2-retrospective: optional
 
   # Epic 3: Hear the Interviewer (Voice Output + Playback Control)

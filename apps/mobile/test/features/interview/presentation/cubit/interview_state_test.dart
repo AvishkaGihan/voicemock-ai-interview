@@ -105,6 +105,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         );
@@ -114,6 +115,7 @@ void main() {
       test('stage should return recording', () {
         final state = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: DateTime.now(),
         );
@@ -124,11 +126,13 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: time,
         );
         final state2 = InterviewRecording(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           recordingStartTime: time,
         );
@@ -139,10 +143,11 @@ void main() {
         final time = DateTime.now();
         final state = InterviewRecording(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Q2',
           recordingStartTime: time,
         );
-        expect(state.props, containsAll([2, 'Q2', time]));
+        expect(state.props, containsAll([2, 5, 'Q2', time]));
       });
     });
 
@@ -150,6 +155,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: DateTime.now(),
@@ -160,6 +166,7 @@ void main() {
       test('stage should return uploading', () {
         final state = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: DateTime.now(),
@@ -171,12 +178,14 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: time,
         );
         final state2 = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: time,
@@ -188,6 +197,7 @@ void main() {
         final time = DateTime.now();
         final state = InterviewUploading(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           audioPath: '/path/to/audio.m4a',
           startTime: time,
@@ -203,6 +213,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: DateTime.now(),
         );
@@ -212,6 +223,7 @@ void main() {
       test('stage should return transcribing', () {
         final state = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: DateTime.now(),
         );
@@ -222,11 +234,13 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: time,
         );
         final state2 = InterviewTranscribing(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           startTime: time,
         );
@@ -238,6 +252,7 @@ void main() {
       test('should extend InterviewState', () {
         final state = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: DateTime.now(),
@@ -248,6 +263,7 @@ void main() {
       test('stage should return thinking', () {
         final state = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: DateTime.now(),
@@ -259,12 +275,14 @@ void main() {
         final time = DateTime.now();
         final state1 = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: time,
         );
         final state2 = InterviewThinking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           startTime: time,
@@ -277,6 +295,7 @@ void main() {
       test('should extend InterviewState', () {
         const state = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -288,6 +307,7 @@ void main() {
       test('stage should return speaking', () {
         const state = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -299,6 +319,7 @@ void main() {
       test('supports equality', () {
         const state1 = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -306,6 +327,7 @@ void main() {
         );
         const state2 = InterviewSpeaking(
           questionNumber: 1,
+          totalQuestions: 5,
           questionText: 'Q1',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -317,6 +339,7 @@ void main() {
       test('props should include all values', () {
         const state = InterviewSpeaking(
           questionNumber: 2,
+          totalQuestions: 5,
           questionText: 'Q2',
           transcript: 'User said this',
           responseText: 'Coach response',
@@ -342,6 +365,7 @@ void main() {
         const state = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state, isA<InterviewState>());
       });
@@ -352,6 +376,7 @@ void main() {
         const state = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state.stage, InterviewStage.error);
       });
@@ -362,10 +387,12 @@ void main() {
         const state1 = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         const state2 = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state1, equals(state2));
       });
@@ -377,10 +404,12 @@ void main() {
         const state1 = InterviewError(
           failure: failure1,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         const state2 = InterviewError(
           failure: failure2,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
         expect(state1, isNot(equals(state2)));
       });
@@ -391,8 +420,12 @@ void main() {
         const state = InterviewError(
           failure: failure,
           previousState: previousState,
+          failedStage: InterviewStage.recording,
         );
-        expect(state.props, containsAll([failure, previousState]));
+        expect(
+          state.props,
+          containsAll([failure, previousState, InterviewStage.recording]),
+        );
       });
     });
   });

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 
-/// 4-step horizontal stepper showing voice pipeline progress.
+/// 5-step horizontal stepper showing voice pipeline progress.
 ///
-/// Displays stages: Uploading → Transcribing → Thinking → Speaking
+/// Displays stages: Uploading → Transcribing → Review → Thinking → Speaking
 /// with visual indicators for pending/active/complete/error states.
 class VoicePipelineStepper extends StatelessWidget {
   const VoicePipelineStepper({
@@ -24,6 +24,11 @@ class VoicePipelineStepper extends StatelessWidget {
     // Hide stepper during Ready/Recording states
     if (currentStage == InterviewStage.ready ||
         currentStage == InterviewStage.recording) {
+      return const SizedBox.shrink();
+    }
+
+    // Hide stepper during session complete
+    if (currentStage == InterviewStage.sessionComplete) {
       return const SizedBox.shrink();
     }
 
@@ -48,6 +53,13 @@ class VoicePipelineStepper extends StatelessWidget {
                 label: 'Transcribing',
                 icon: Icons.transcribe,
                 stage: InterviewStage.transcribing,
+              ),
+              _buildConnector(context),
+              _buildStep(
+                context,
+                label: 'Review',
+                icon: Icons.rate_review,
+                stage: InterviewStage.transcriptReview,
               ),
               _buildConnector(context),
               _buildStep(
@@ -130,6 +142,7 @@ class VoicePipelineStepper extends StatelessWidget {
     final stageOrder = [
       InterviewStage.uploading,
       InterviewStage.transcribing,
+      InterviewStage.transcriptReview,
       InterviewStage.thinking,
       InterviewStage.speaking,
     ];

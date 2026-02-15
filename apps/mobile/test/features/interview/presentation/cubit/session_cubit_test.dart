@@ -35,6 +35,7 @@ void main() {
       sessionId: 'session-123',
       sessionToken: 'token-abc',
       openingPrompt: 'Welcome!',
+      totalQuestions: 5,
       createdAt: DateTime(2026, 2, 3),
     );
 
