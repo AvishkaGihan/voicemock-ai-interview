@@ -1,5 +1,6 @@
 """Turn submission route - POST /turn endpoint."""
 
+import logging
 import time
 from fastapi import APIRouter, Depends, File, Form, UploadFile, Header
 
@@ -203,6 +204,17 @@ async def submit_turn(
 
         # Add upload timing to result timings
         result.timings["upload_ms"] = upload_ms
+
+        # Log structured timing data
+        logging.info(
+            "Turn processed successfully",
+            extra={
+                "request_id": ctx.request_id,
+                "session_id": session_id,
+                "turn_number": session.turn_count,
+                "timings": result.timings,
+            },
+        )
 
         # Build response data
         turn_data = TurnResponseData(

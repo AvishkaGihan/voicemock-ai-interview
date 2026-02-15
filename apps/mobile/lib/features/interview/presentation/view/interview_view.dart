@@ -1,22 +1,57 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/widgets/widgets.dart';
 
 /// Main interview view displaying the interview UI.
 ///
 /// Uses BlocBuilder to reactively update UI based on InterviewState.
-class InterviewView extends StatelessWidget {
+class InterviewView extends StatefulWidget {
   const InterviewView({super.key});
+
+  @override
+  State<InterviewView> createState() => _InterviewViewState();
+}
+
+class _InterviewViewState extends State<InterviewView> {
+  int _debugTapCount = 0;
+  bool _showDiagnostics = kDebugMode; // Always show in debug mode
+
+  void _onTitleTap() {
+    setState(() {
+      _debugTapCount++;
+      if (_debugTapCount >= 3) {
+        _showDiagnostics = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Diagnostics mode enabled'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Interview'),
+        title: GestureDetector(
+          onTap: _onTitleTap,
+          child: const Text('Interview'),
+        ),
         actions: [
+          // Diagnostics button (debug mode or unlocked via triple-tap)
+          if (_showDiagnostics)
+            IconButton(
+              icon: const Icon(Icons.analytics_outlined),
+              tooltip: 'Diagnostics',
+              onPressed: () => context.push('/diagnostics'),
+            ),
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => _showEndSessionDialog(context),

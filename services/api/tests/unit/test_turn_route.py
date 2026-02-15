@@ -56,7 +56,7 @@ def mock_turn_result():
     """Mock turn result from orchestrator."""
     return TurnResult(
         transcript="I would approach this problem by breaking it down.",
-        timings={"stt_ms": 820.5, "total_ms": 940.8},
+        timings={"stt_ms": 820.5, "llm_ms": 150.3, "total_ms": 940.8},
         assistant_text=None,
         tts_audio_url=None,
     )
@@ -108,8 +108,13 @@ def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
         )
         assert json_resp["data"]["assistant_text"] is None
         assert json_resp["data"]["tts_audio_url"] is None
+        
+        # AC #1: Validate all four timing keys are present
+        assert "upload_ms" in json_resp["data"]["timings"]
         assert "stt_ms" in json_resp["data"]["timings"]
+        assert "llm_ms" in json_resp["data"]["timings"]
         assert "total_ms" in json_resp["data"]["timings"]
+        
         assert json_resp["error"] is None
         assert "request_id" in json_resp
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:voicemock/features/diagnostics/presentation/view/diagnostics_page.dart';
 import 'package:voicemock/features/interview/domain/session.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_page.dart';
 import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
@@ -34,6 +35,11 @@ final GoRouter appRouter = GoRouter(
         }
         return InterviewPage(session: session);
       },
+    ),
+    GoRoute(
+      path: '/diagnostics',
+      name: 'diagnostics',
+      builder: (context, state) => const DiagnosticsPage(),
     ),
   ],
   errorBuilder: (context, state) => Scaffold(
