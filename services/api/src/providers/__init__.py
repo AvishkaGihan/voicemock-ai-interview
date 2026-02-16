@@ -10,6 +10,15 @@ from src.providers.stt_deepgram import (
     STTError,
 )
 from src.providers.llm_groq import GroqLLMProvider, LLMError
+from src.providers.tts_deepgram import (
+    DeepgramTTSProvider,
+    TTSAuthError,
+    TTSBadRequestError,
+    TTSProviderError,
+    TTSTimeoutError,
+    TTSRateLimitError,
+    TTSError,
+)
 
 __all__ = [
     "DeepgramSTTProvider",
@@ -21,4 +30,11 @@ __all__ = [
     "STTError",
     "GroqLLMProvider",
     "LLMError",
+    "DeepgramTTSProvider",
+    "TTSAuthError",
+    "TTSBadRequestError",
+    "TTSProviderError",
+    "TTSTimeoutError",
+    "TTSRateLimitError",
+    "TTSError",
 ]

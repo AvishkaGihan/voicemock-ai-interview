@@ -7,12 +7,13 @@ visible to /turn.
 """
 
 from src.security import SessionTokenService
-from src.services import SessionStore
+from src.services import SessionStore, TTSCache
 from src.settings.config import get_settings
 
 
 _session_store: SessionStore | None = None
 _token_service: SessionTokenService | None = None
+_tts_cache: TTSCache | None = None
 
 
 def get_session_store() -> SessionStore:
@@ -34,3 +35,12 @@ def get_token_service() -> SessionTokenService:
             max_age_seconds=settings.session_ttl_minutes * 60,
         )
     return _token_service
+
+
+def get_tts_cache() -> TTSCache:
+    """Dependency to get the TTS cache singleton."""
+    global _tts_cache
+    if _tts_cache is None:
+        settings = get_settings()
+        _tts_cache = TTSCache(ttl_seconds=settings.tts_cache_ttl_seconds)
+    return _tts_cache
