@@ -84,6 +84,7 @@ def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
         difficulty,
         asked_questions,
         question_count,
+        tts_cache,
         transcript=None,
         request_id=None,
     ):
@@ -108,13 +109,13 @@ def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
         )
         assert json_resp["data"]["assistant_text"] is None
         assert json_resp["data"]["tts_audio_url"] is None
-        
+
         # AC #1: Validate all four timing keys are present
         assert "upload_ms" in json_resp["data"]["timings"]
         assert "stt_ms" in json_resp["data"]["timings"]
         assert "llm_ms" in json_resp["data"]["timings"]
         assert "total_ms" in json_resp["data"]["timings"]
-        
+
         assert json_resp["error"] is None
         assert "request_id" in json_resp
 
@@ -231,6 +232,7 @@ def test_submit_turn_stt_error(client, mock_session, mock_app):
         difficulty,
         asked_questions,
         question_count,
+        tts_cache,
         transcript=None,
         request_id=None,
     ):
@@ -283,6 +285,7 @@ def test_submit_turn_stt_rate_limit_error(client, mock_session, mock_app):
         difficulty,
         asked_questions,
         question_count,
+        tts_cache,
         transcript=None,
         request_id=None,
     ):
@@ -336,6 +339,7 @@ def test_submit_turn_llm_rate_limit_error(client, mock_session, mock_app):
         difficulty,
         asked_questions,
         question_count,
+        tts_cache,
         transcript=None,
         request_id=None,
     ):
@@ -389,6 +393,7 @@ def test_submit_turn_llm_content_filter_error(client, mock_session, mock_app):
         difficulty,
         asked_questions,
         question_count,
+        tts_cache,
         transcript=None,
         request_id=None,
     ):
@@ -442,6 +447,7 @@ def test_submit_turn_empty_transcript_error(client, mock_session, mock_app):
         difficulty,
         asked_questions,
         question_count,
+        tts_cache,
         transcript=None,
         request_id=None,
     ):

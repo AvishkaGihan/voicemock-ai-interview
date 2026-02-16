@@ -5,14 +5,18 @@ import time
 from fastapi import APIRouter, Depends, File, Form, UploadFile, Header
 
 from src.api.dependencies import RequestContext, get_request_context
-from src.api.dependencies.shared_services import get_session_store, get_token_service
+from src.api.dependencies.shared_services import (
+    get_session_store,
+    get_token_service,
+    get_tts_cache,
+)
 from src.api.models import (
     TurnResponseData,
     TurnResponse,
     ApiEnvelope,
     ApiError,
 )
-from src.services import process_turn, TurnProcessingError
+from src.services import process_turn, TurnProcessingError, TTSCache
 from src.security import SessionTokenService
 from src.services import SessionStore
 
@@ -28,13 +32,18 @@ router = APIRouter(tags=["Turn Management"])
     description="Upload audio answer to be transcribed and processed through the interview pipeline.",
 )
 async def submit_turn(
-    audio: UploadFile | None = File(None, description="Recorded audio file (optional if transcript provided)"),
-    transcript: str | None = Form(None, description="Existing transcript (optional, for LLM retry)"),
+    audio: UploadFile | None = File(
+        None, description="Recorded audio file (optional if transcript provided)"
+    ),
+    transcript: str | None = Form(
+        None, description="Existing transcript (optional, for LLM retry)"
+    ),
     session_id: str = Form(..., description="Active session ID"),
     authorization: str = Header(..., alias="Authorization"),
     ctx: RequestContext = Depends(get_request_context),
     session_store: SessionStore = Depends(get_session_store),
     token_service: SessionTokenService = Depends(get_token_service),
+    tts_cache: TTSCache = Depends(get_tts_cache),
 ) -> TurnResponse:
     """
     Submit a turn (audio answer) for processing.
@@ -180,6 +189,7 @@ async def submit_turn(
             difficulty=session.difficulty,
             asked_questions=session.asked_questions,
             question_count=session.question_count,
+            tts_cache=tts_cache,
             transcript=transcript,
             request_id=ctx.request_id,
         )

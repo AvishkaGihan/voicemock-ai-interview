@@ -30,6 +30,9 @@ class Settings(BaseSettings):
         llm_model: Groq model to use (default: llama-3.3-70b-versatile)
         llm_timeout_seconds: Timeout for LLM requests in seconds (default: 30)
         llm_max_tokens: Maximum tokens for LLM response (default: 256)
+        tts_timeout_seconds: Timeout for TTS requests in seconds (default: 30)
+        tts_model: Deepgram Aura voice model (default: aura-2-thalia-en)
+        tts_cache_ttl_seconds: TTL for cached TTS audio (default: 300 = 5 min)
     """
 
     app_name: str = "VoiceMock AI Interview Coach API"
@@ -43,6 +46,9 @@ class Settings(BaseSettings):
     llm_model: str = "llama-3.3-70b-versatile"
     llm_timeout_seconds: int = 30
     llm_max_tokens: int = 256
+    tts_timeout_seconds: int = 30
+    tts_model: str = "aura-2-thalia-en"
+    tts_cache_ttl_seconds: int = 300
 
     model_config = {
         "env_file": ".env",

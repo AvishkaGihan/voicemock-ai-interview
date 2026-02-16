@@ -7,6 +7,7 @@ from src.services.orchestrator import (
     TurnResult,
     TurnProcessingError,
 )
+from src.services.tts_cache import TTSCache
 
 __all__ = [
     "SessionStore",
@@ -14,4 +15,5 @@ __all__ = [
     "process_turn",
     "TurnResult",
     "TurnProcessingError",
+    "TTSCache",
 ]

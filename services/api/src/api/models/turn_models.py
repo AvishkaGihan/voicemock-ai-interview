@@ -28,8 +28,8 @@ class TurnResponseData(BaseModel):
 
     tts_audio_url: str | None = Field(
         default=None,
-        description="URL to fetch TTS audio of assistant_text (null until Story 3.1)",
-        examples=["https://api.voicemock.com/tts/550e8400-e29b"],
+        description="URL to fetch TTS audio of assistant_text",
+        examples=["/tts/550e8400-e29b-41d4-a716-446655440000"],
     )
 
     timings: dict[str, float] = Field(
