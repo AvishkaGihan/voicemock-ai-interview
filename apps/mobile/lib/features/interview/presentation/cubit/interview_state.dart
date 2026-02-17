@@ -143,6 +143,7 @@ class InterviewTranscriptReview extends InterviewState {
     required this.audioPath,
     this.isLowConfidence = false,
     this.assistantText,
+    this.ttsAudioUrl = '',
     this.isComplete = false,
   });
 
@@ -153,6 +154,7 @@ class InterviewTranscriptReview extends InterviewState {
   final String audioPath;
   final bool isLowConfidence;
   final String? assistantText;
+  final String ttsAudioUrl;
   final bool isComplete;
 
   @override
@@ -167,6 +169,7 @@ class InterviewTranscriptReview extends InterviewState {
     audioPath,
     isLowConfidence,
     assistantText,
+    ttsAudioUrl,
     isComplete,
   ];
 }

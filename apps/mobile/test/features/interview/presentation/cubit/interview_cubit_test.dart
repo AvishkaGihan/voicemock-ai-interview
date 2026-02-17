@@ -1,3 +1,6 @@
+// ignore_for_file: unnecessary_lambdas, reason: mocktail `when(...)` requires
+// closure syntax for stubbing methods/getters.
+
 import 'dart:async';
 
 import 'package:audio_session/audio_session.dart';
@@ -103,6 +106,7 @@ MockAudioFocusService createMockAudioFocusService() {
   final service = MockAudioFocusService();
   final controller = StreamController<AudioInterruptionEvent>.broadcast();
   when(() => service.interruptions).thenAnswer((_) => controller.stream);
+  when(() => service.dispose()).thenAnswer(_disposeStub);
   return service;
 }
 
@@ -772,7 +776,7 @@ void main() {
           permissionService: createMockPermissionService(),
         );
         await cubit.close();
-        verify(service.dispose).called(1);
+        verifyNever(service.dispose);
       });
     });
 
@@ -1267,7 +1271,55 @@ void main() {
                 'responseText',
                 'Next question from LLM',
               )
-              .having((s) => s.ttsAudioUrl, 'ttsAudioUrl', ''), // No TTS yet
+              .having((s) => s.ttsAudioUrl, 'ttsAudioUrl', ''),
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 3)
+              .having(
+                (s) => s.questionText,
+                'questionText',
+                'Next question from LLM',
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'preserves ttsAudioUrl when accepting transcript',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Question 2',
+          transcript: 'My answer',
+          audioPath: '/path/audio.m4a',
+          assistantText: 'Next question from LLM',
+          ttsAudioUrl: '/tts/request-123',
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+        expect: () => [
+          isA<InterviewThinking>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having((s) => s.transcript, 'transcript', 'My answer'),
+          isA<InterviewSpeaking>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having(
+                (s) => s.responseText,
+                'responseText',
+                'Next question from LLM',
+              )
+              .having(
+                (s) => s.ttsAudioUrl,
+                'ttsAudioUrl',
+                '/tts/request-123',
+              ),
         ],
       );
     });
