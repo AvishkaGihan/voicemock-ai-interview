@@ -9,4 +9,5 @@
 library;
 
 export 'audio_focus_service.dart';
+export 'playback_service.dart';
 export 'recording_service.dart';

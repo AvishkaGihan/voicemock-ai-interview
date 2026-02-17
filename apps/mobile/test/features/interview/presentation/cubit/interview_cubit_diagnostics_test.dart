@@ -1,6 +1,7 @@
 /// Unit tests for InterviewCubit diagnostics functionality.
 library;
 
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/audio/audio_focus_service.dart';
@@ -20,17 +21,23 @@ class MockAudioFocusService extends Mock implements AudioFocusService {}
 void main() {
   late MockRecordingService mockRecordingService;
   late MockTurnRemoteDataSource mockTurnRemoteDataSource;
+  late MockAudioFocusService mockAudioFocusService;
 
   setUp(() {
     mockRecordingService = MockRecordingService();
     mockTurnRemoteDataSource = MockTurnRemoteDataSource();
+    mockAudioFocusService = MockAudioFocusService();
+    when(
+      () => mockAudioFocusService.interruptions,
+    ).thenAnswer((_) => const Stream<AudioInterruptionEvent>.empty());
+    when(() => mockAudioFocusService.dispose()).thenAnswer((_) async {});
     registerFallbackValue(Uri());
   });
 
   group('InterviewCubit - Diagnostics', () {
     test('initializes SessionDiagnostics with session ID', () {
       final cubit = InterviewCubit(
-        audioFocusService: MockAudioFocusService(),
+        audioFocusService: mockAudioFocusService,
         recordingService: mockRecordingService,
         turnRemoteDataSource: mockTurnRemoteDataSource,
         sessionId: 'test-session-123',
@@ -52,10 +59,10 @@ void main() {
       () async {
         // Arrange
         final cubit = InterviewCubit(
-        audioFocusService: MockAudioFocusService(),
-        recordingService: mockRecordingService,
-        turnRemoteDataSource: mockTurnRemoteDataSource,
-        sessionId: 'test-session',
+          audioFocusService: mockAudioFocusService,
+          recordingService: mockRecordingService,
+          turnRemoteDataSource: mockTurnRemoteDataSource,
+          sessionId: 'test-session',
           sessionToken: 'test-token',
           initialQuestionText: 'Initial question',
         );
@@ -110,7 +117,7 @@ void main() {
     test('records error diagnostics on failed turn', () {
       // Arrange
       final cubit = InterviewCubit(
-        audioFocusService: MockAudioFocusService(),
+        audioFocusService: mockAudioFocusService,
         recordingService: mockRecordingService,
         turnRemoteDataSource: mockTurnRemoteDataSource,
         sessionId: 'test-session',
@@ -140,10 +147,10 @@ void main() {
       () {
         // Arrange
         final cubit = InterviewCubit(
-        audioFocusService: MockAudioFocusService(),
-        recordingService: mockRecordingService,
-        turnRemoteDataSource: mockTurnRemoteDataSource,
-        sessionId: 'test-session',
+          audioFocusService: mockAudioFocusService,
+          recordingService: mockRecordingService,
+          turnRemoteDataSource: mockTurnRemoteDataSource,
+          sessionId: 'test-session',
           sessionToken: 'test-token',
         );
 

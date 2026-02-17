@@ -109,18 +109,6 @@ class _InterviewViewState extends State<InterviewView>
             });
           }
 
-          // Auto-complete the Speaking phase when there is no TTS audio to
-          // play. TTS playback is not yet implemented (Story 3.1), so we
-          // skip directly to the next Ready state. Once TTS is wired up,
-          // this block should be replaced by an audio-completion callback.
-          if (state is InterviewSpeaking && state.ttsAudioUrl.isEmpty) {
-            SchedulerBinding.instance.addPostFrameCallback((_) {
-              if (context.mounted) {
-                context.read<InterviewCubit>().onSpeakingComplete();
-              }
-            });
-          }
-
           // Show error recovery sheet as modal bottom sheet
           if (state is InterviewError) {
             SchedulerBinding.instance.addPostFrameCallback((_) {

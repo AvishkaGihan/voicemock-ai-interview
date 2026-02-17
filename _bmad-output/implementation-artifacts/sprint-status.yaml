@@ -66,7 +66,7 @@ development_status:
   epic-3: in-progress
   3-1-generate-tts-and-return-tts-audio-url-in-post-turn: done
   3-2-implement-get-tts-request-id-short-lived-audio-fetch: done
-  3-3-android-playback-queue-with-no-overlap: backlog
+  3-3-android-playback-queue-with-no-overlap: done
   3-4-playback-controls-pause-stop-replay: backlog
   epic-3-retrospective: optional
 
