@@ -56,6 +56,9 @@ from src.settings.config import get_settings
 logger = logging.getLogger(__name__)
 
 
+from src.api.models.turn_models import CoachingFeedback
+
+
 @dataclass
 class TurnResult:
     """Result of processing a turn.
@@ -68,6 +71,7 @@ class TurnResult:
     timings: dict[str, float]
     assistant_text: str | None = None
     tts_audio_url: str | None = None
+    coaching_feedback: CoachingFeedback | None = None
 
 
 class TurnProcessingError(Exception):
@@ -182,7 +186,7 @@ async def process_turn(
         # LLM processing
         llm_provider = get_llm_provider()
         llm_start = time.perf_counter()
-        assistant_text = await llm_provider.generate_follow_up(
+        llm_response = await llm_provider.generate_follow_up(
             transcript=transcript,
             role=role,
             interview_type=interview_type,
@@ -191,6 +195,12 @@ async def process_turn(
             question_number=session.turn_count + 1,  # 1-indexed
             total_questions=question_count,
         )
+        if isinstance(llm_response, str):
+            assistant_text = llm_response
+            coaching_feedback = None
+        else:
+            assistant_text = llm_response.follow_up_question
+            coaching_feedback = llm_response.coaching_feedback
         llm_end = time.perf_counter()
 
         llm_ms = (llm_end - llm_start) * 1000
@@ -251,6 +261,7 @@ async def process_turn(
             timings=timings,
             assistant_text=assistant_text,
             tts_audio_url=tts_audio_url,
+            coaching_feedback=coaching_feedback,
         )
 
     except STTError as e:

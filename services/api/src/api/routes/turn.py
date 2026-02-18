@@ -231,6 +231,7 @@ async def submit_turn(
             transcript=result.transcript,
             assistant_text=result.assistant_text,
             tts_audio_url=result.tts_audio_url,
+            coaching_feedback=result.coaching_feedback,
             timings=result.timings,
             is_complete=is_complete,
             question_number=session.turn_count,

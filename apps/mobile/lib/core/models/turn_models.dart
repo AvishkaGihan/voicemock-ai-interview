@@ -2,6 +2,57 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'turn_models.g.dart';
 
+/// Coaching rubric dimension score and tip.
+@JsonSerializable()
+class CoachingDimension {
+  /// Creates a [CoachingDimension].
+  const CoachingDimension({
+    required this.label,
+    required this.score,
+    required this.tip,
+  });
+
+  /// Creates a [CoachingDimension] from JSON.
+  factory CoachingDimension.fromJson(Map<String, dynamic> json) =>
+      _$CoachingDimensionFromJson(json);
+
+  /// Rubric dimension label (e.g., Clarity).
+  final String label;
+
+  /// Score from 1 to 5.
+  final int score;
+
+  /// Actionable short tip for this dimension.
+  final String tip;
+
+  /// Converts this [CoachingDimension] to JSON.
+  Map<String, dynamic> toJson() => _$CoachingDimensionToJson(this);
+}
+
+/// Structured coaching feedback returned per turn.
+@JsonSerializable()
+class CoachingFeedback {
+  /// Creates a [CoachingFeedback].
+  const CoachingFeedback({
+    required this.dimensions,
+    required this.summaryTip,
+  });
+
+  /// Creates a [CoachingFeedback] from JSON.
+  factory CoachingFeedback.fromJson(Map<String, dynamic> json) =>
+      _$CoachingFeedbackFromJson(json);
+
+  /// Rubric dimensions with score and tip.
+  final List<CoachingDimension> dimensions;
+
+  /// Most impactful one-line improvement tip.
+  @JsonKey(name: 'summary_tip')
+  final String summaryTip;
+
+  /// Converts this [CoachingFeedback] to JSON.
+  Map<String, dynamic> toJson() => _$CoachingFeedbackToJson(this);
+}
+
 /// Response data from POST /turn containing transcript and metadata.
 @JsonSerializable()
 class TurnResponseData {
@@ -13,6 +64,7 @@ class TurnResponseData {
     required this.totalQuestions,
     this.assistantText,
     this.ttsAudioUrl,
+    this.coachingFeedback,
     this.isComplete = false,
   });
 
@@ -30,6 +82,10 @@ class TurnResponseData {
   /// URL to the TTS audio file (null until TTS is integrated).
   @JsonKey(name: 'tts_audio_url')
   final String? ttsAudioUrl;
+
+  /// Structured coaching feedback for this turn.
+  @JsonKey(name: 'coaching_feedback')
+  final CoachingFeedback? coachingFeedback;
 
   /// Timing information for each processing stage in milliseconds.
   final Map<String, double> timings;

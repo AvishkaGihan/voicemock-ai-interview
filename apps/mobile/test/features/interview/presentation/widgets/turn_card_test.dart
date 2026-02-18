@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/features/interview/presentation/widgets/turn_card.dart';
 
 void main() {
@@ -129,6 +130,67 @@ void main() {
       );
 
       expect(find.text('Replay response'), findsNothing);
+    });
+
+    testWidgets('renders coaching feedback summary and dimensions', (
+      tester,
+    ) async {
+      const feedback = CoachingFeedback(
+        dimensions: [
+          CoachingDimension(
+            label: 'Clarity',
+            score: 4,
+            tip: 'Lead with your strongest point first.',
+          ),
+          CoachingDimension(
+            label: 'Structure',
+            score: 3,
+            tip: 'Use problem-action-result flow.',
+          ),
+        ],
+        summaryTip:
+            'Lead with one clear thesis and support it with '
+            'one concrete example.',
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TurnCard(
+              questionNumber: 1,
+              totalQuestions: 5,
+              questionText: 'Tell me about yourself',
+              responseText: 'Thanks. Can you share a challenge?',
+              coachingFeedback: feedback,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Top Tip'), findsOneWidget);
+      expect(find.textContaining('clear thesis'), findsOneWidget);
+      expect(find.textContaining('Clarity'), findsOneWidget);
+      expect(find.textContaining('4/5'), findsOneWidget);
+      expect(find.textContaining('Structure'), findsOneWidget);
+    });
+
+    testWidgets('hides coaching section when coachingFeedback is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TurnCard(
+              questionNumber: 1,
+              totalQuestions: 5,
+              questionText: 'Tell me about yourself',
+              responseText: 'Thanks. Can you share a challenge?',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Top Tip'), findsNothing);
     });
   });
 }
