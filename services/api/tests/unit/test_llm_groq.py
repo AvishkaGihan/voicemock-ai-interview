@@ -57,6 +57,7 @@ async def test_generate_follow_up_success():
         assert call_args[1]["model"] == "llama-3.3-70b-versatile"
         assert call_args[1]["max_tokens"] == 256
         assert call_args[1]["temperature"] == 0.7
+        assert call_args[1]["response_format"] == {"type": "json_object"}
         assert len(call_args[1]["messages"]) == 2  # system + user
 
 
@@ -391,6 +392,10 @@ async def test_generate_session_summary_success():
         assert result["overall_assessment"] == "Strong performance overall."
         assert result["average_scores"]["clarity"] == 4.5
         assert result["average_scores"]["relevance"] == 3.0
+
+        # Verify LLM call
+        call_args = mock_client.chat.completions.create.call_args
+        assert call_args[1]["response_format"] == {"type": "json_object"}
 
 
 @pytest.mark.asyncio

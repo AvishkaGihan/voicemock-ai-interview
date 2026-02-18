@@ -124,6 +124,7 @@ class GroqLLMProvider:
                 ],
                 max_tokens=self._max_tokens,
                 temperature=0.7,
+                response_format={"type": "json_object"},
             )
             raw_content = response.choices[0].message.content
             if raw_content is None:
@@ -309,6 +310,7 @@ class GroqLLMProvider:
                 ],
                 max_tokens=self._max_tokens,
                 temperature=0.5,
+                response_format={"type": "json_object"},
             )
             raw_content = response.choices[0].message.content
             if raw_content is None:
