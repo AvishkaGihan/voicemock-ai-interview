@@ -67,7 +67,7 @@ development_status:
   3-1-generate-tts-and-return-tts-audio-url-in-post-turn: done
   3-2-implement-get-tts-request-id-short-lived-audio-fetch: done
   3-3-android-playback-queue-with-no-overlap: done
-  3-4-playback-controls-pause-stop-replay: backlog
+  3-4-playback-controls-pause-stop-replay: done
   epic-3-retrospective: optional
 
   # Epic 4: Get Coaching Feedback & End-of-Session Summary

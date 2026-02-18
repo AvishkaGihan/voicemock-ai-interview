@@ -32,7 +32,11 @@ void main() {
         () => mockAudioPlayer.playbackEventStream,
       ).thenAnswer((_) => playbackEventController.stream);
       when(() => mockAudioPlayer.playing).thenReturn(false);
+      when(
+        () => mockAudioPlayer.processingState,
+      ).thenReturn(ja.ProcessingState.idle);
       when(() => mockAudioPlayer.stop()).thenAnswer((_) async {});
+      when(() => mockAudioPlayer.pause()).thenAnswer((_) async {});
       when(
         () => mockAudioPlayer.setAudioSource(any()),
       ).thenAnswer((_) async => null);
@@ -111,6 +115,66 @@ void main() {
       await service.dispose();
 
       verify(() => mockAudioPlayer.dispose()).called(1);
+    });
+
+    test('pause pauses playback and emits PlaybackPaused', () async {
+      final events = <PlaybackEvent>[];
+      final subscription = service.events.listen(events.add);
+
+      await service.pause();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      verify(() => mockAudioPlayer.pause()).called(1);
+      expect(events.any((event) => event is PlaybackPaused), isTrue);
+      await subscription.cancel();
+    });
+
+    test('resume resumes playback and emits PlaybackPlaying', () async {
+      final events = <PlaybackEvent>[];
+      final subscription = service.events.listen(events.add);
+
+      await service.resume();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      verify(() => mockAudioPlayer.play()).called(1);
+      expect(events.any((event) => event is PlaybackPlaying), isTrue);
+      await subscription.cancel();
+    });
+
+    test('isPaused returns true when paused and not idle/completed', () {
+      when(() => mockAudioPlayer.playing).thenReturn(false);
+      when(
+        () => mockAudioPlayer.processingState,
+      ).thenReturn(ja.ProcessingState.ready);
+
+      expect(service.isPaused, isTrue);
+    });
+
+    test('isPaused returns false when idle', () {
+      when(() => mockAudioPlayer.playing).thenReturn(false);
+      when(
+        () => mockAudioPlayer.processingState,
+      ).thenReturn(ja.ProcessingState.idle);
+
+      expect(service.isPaused, isFalse);
+    });
+
+    test('pause is no-op in noop mode', () async {
+      final noopService = PlaybackService.noop();
+
+      await noopService.pause();
+
+      verifyNever(() => mockAudioPlayer.pause());
+      await noopService.dispose();
+    });
+
+    test('resume is no-op in noop mode', () async {
+      final noopService = PlaybackService.noop();
+
+      await noopService.resume();
+
+      verifyNever(() => mockAudioPlayer.play());
+      await noopService.dispose();
     });
   });
 }

@@ -4,6 +4,7 @@ export 'difficulty_selector.dart';
 export 'error_recovery_sheet.dart';
 export 'hold_to_talk_button.dart';
 export 'permission_denied_banner.dart';
+export 'playback_control_bar.dart';
 export 'question_count_selector.dart';
 export 'role_selector.dart';
 export 'session_complete_card.dart';

@@ -93,5 +93,42 @@ void main() {
 
       expect(find.textContaining('Coach says'), findsNothing);
     });
+
+    testWidgets('shows Replay button when onReplay is provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TurnCard(
+              questionNumber: 1,
+              totalQuestions: 5,
+              questionText: 'Tell me about yourself',
+              responseText: 'Coach response',
+              onReplay: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Replay response'), findsOneWidget);
+    });
+
+    testWidgets('hides Replay button when onReplay is null', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TurnCard(
+              questionNumber: 1,
+              totalQuestions: 5,
+              questionText: 'Tell me about yourself',
+              responseText: 'Coach response',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Replay response'), findsNothing);
+    });
   });
 }

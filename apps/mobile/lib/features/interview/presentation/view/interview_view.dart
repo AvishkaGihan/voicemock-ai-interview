@@ -186,12 +186,28 @@ class _InterviewViewState extends State<InterviewView>
         :final totalQuestions,
         :final questionText,
         :final previousTranscript,
+        :final lastTtsAudioUrl,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
           totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: previousTranscript,
+          onReplay: lastTtsAudioUrl.isNotEmpty
+              ? () async {
+                  final replayStarted = await context
+                      .read<InterviewCubit>()
+                      .replayLastResponse();
+                  if (!replayStarted && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Response audio expired'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              : null,
         ),
       InterviewRecording(
         :final questionNumber,
@@ -257,13 +273,25 @@ class _InterviewViewState extends State<InterviewView>
         :final questionText,
         :final transcript,
         :final responseText,
+        :final isPaused,
       ) =>
-        TurnCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
-          transcript: transcript,
-          responseText: responseText,
+        Column(
+          children: [
+            TurnCard(
+              questionNumber: questionNumber,
+              totalQuestions: totalQuestions,
+              questionText: questionText,
+              transcript: transcript,
+              responseText: responseText,
+            ),
+            PlaybackControlBar(
+              isPaused: isPaused,
+              isBuffering: state.isBuffering,
+              onPause: () => context.read<InterviewCubit>().pausePlayback(),
+              onResume: () => context.read<InterviewCubit>().resumePlayback(),
+              onStop: () => context.read<InterviewCubit>().stopPlayback(),
+            ),
+          ],
         ),
       InterviewSessionComplete(
         :final totalQuestions,
