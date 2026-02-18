@@ -27,6 +27,7 @@ void main() {
   setUp(() {
     mockApiClient = MockApiClient();
     mockPrefs = MockSharedPreferences();
+    when(() => mockApiClient.baseUrl).thenReturn('https://api.example.com');
 
     // Setup basic mock behavior for prefs if needed by SetupPage
     when(() => mockPrefs.getBool(any())).thenReturn(null);

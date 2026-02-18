@@ -1,6 +1,6 @@
 """Turn orchestration service.
 
-Orchestrates the turn processing pipeline: STT → LLM → (TTS deferred).
+Orchestrates the turn processing pipeline: STT → LLM → TTS.
 
 Error Codes by Stage:
 =====================
@@ -25,8 +25,16 @@ LLM stage:
 - llm_content_filter: Response blocked by content policy (non-retryable)
 - null_response: LLM returned null content (non-retryable)
 - empty_response: LLM returned empty response (non-retryable)
+
+TTS stage:
+- tts_timeout: TTS request timed out (retryable)
+- tts_provider_error: TTS service unavailable or server error (retryable)
+- tts_rate_limit: Too many requests to TTS service (retryable)
+- tts_auth_error: TTS authentication failed (non-retryable)
+- tts_bad_request: Invalid text or parameters (non-retryable)
 """
 
+import logging
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -37,21 +45,29 @@ from src.providers.stt_deepgram import (
     STTError,
 )
 from src.providers.llm_groq import GroqLLMProvider, LLMError
+from src.providers.tts_deepgram import (
+    DeepgramTTSProvider,
+    TTSError,
+    TTSAuthError,
+    TTSBadRequestError,
+)
 from src.settings.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class TurnResult:
     """Result of processing a turn.
 
-    Contains the transcript, assistant response text, timings, and
-    placeholders for future TTS integration (Story 3.1).
+    Contains the transcript, assistant response text, TTS audio URL,
+    and timing information for each pipeline stage.
     """
 
     transcript: str
     timings: dict[str, float]
     assistant_text: str | None = None
-    tts_audio_url: str | None = None  # Populated in Story 3.1
+    tts_audio_url: str | None = None
 
 
 class TurnProcessingError(Exception):
@@ -94,6 +110,16 @@ def get_llm_provider() -> GroqLLMProvider:
     )
 
 
+def get_tts_provider() -> DeepgramTTSProvider:
+    """Get TTS provider instance with settings."""
+    settings = get_settings()
+    return DeepgramTTSProvider(
+        api_key=settings.deepgram_api_key,
+        timeout_seconds=settings.tts_timeout_seconds,
+        model=settings.tts_model,
+    )
+
+
 async def process_turn(
     audio_bytes: bytes | None,
     mime_type: str | None,
@@ -103,10 +129,11 @@ async def process_turn(
     difficulty: str,
     asked_questions: list[str],
     question_count: int,
+    tts_cache: Any,  # TTSCache instance
     transcript: str | None = None,
     request_id: str | None = None,
 ) -> TurnResult:
-    """Process a turn through the STT → LLM pipeline.
+    """Process a turn through the STT → LLM → TTS pipeline.
 
     Args:
         audio_bytes: Raw audio data to transcribe
@@ -117,14 +144,15 @@ async def process_turn(
         difficulty: Difficulty level (e.g., "Entry", "Mid", "Senior")
         asked_questions: List of previously asked questions (to avoid repeats)
         question_count: Total configured questions for the session
+        tts_cache: TTSCache instance for storing generated audio
         transcript: Optional transcript (skips STT if provided)
-        request_id: Request ID for error tracing (optional)
+        request_id: Request ID for error tracing and TTS cache key (optional)
 
     Returns:
-        TurnResult with transcript, assistant text, and timings
+        TurnResult with transcript, assistant text, TTS audio URL, and timings
 
     Raises:
-        TurnProcessingError: If STT, LLM, or processing fails
+        TurnProcessingError: If STT, LLM, or non-retryable TTS errors occur
     """
     start_time = time.perf_counter()
 
@@ -135,14 +163,14 @@ async def process_turn(
         else:
             # STT processing
             if not audio_bytes or not mime_type:
-               raise TurnProcessingError(
-                   message="Audio is required when no transcript provided",
-                   message_safe="Audio missing for transcription",
-                   stage="upload",
-                   code="invalid_audio",
-                   retryable=False,
-                   request_id=request_id,
-               )
+                raise TurnProcessingError(
+                    message="Audio is required when no transcript provided",
+                    message_safe="Audio missing for transcription",
+                    stage="upload",
+                    code="invalid_audio",
+                    retryable=False,
+                    request_id=request_id,
+                )
 
             stt_provider = get_stt_provider()
             stt_start = time.perf_counter()
@@ -167,6 +195,42 @@ async def process_turn(
 
         llm_ms = (llm_end - llm_start) * 1000
 
+        # TTS processing (with graceful degradation)
+        tts_audio_url = None
+        tts_ms = 0.0
+
+        try:
+            tts_provider = get_tts_provider()
+            tts_start = time.perf_counter()
+            audio_bytes_result = await tts_provider.synthesize(assistant_text)
+            tts_end = time.perf_counter()
+
+            tts_ms = (tts_end - tts_start) * 1000
+
+            # Store in cache and set URL
+            if request_id:
+                tts_cache.store(request_id, audio_bytes_result)
+                tts_audio_url = f"/tts/{request_id}"
+
+        except (TTSAuthError, TTSBadRequestError) as e:
+            # Non-retryable TTS errors: propagate as TurnProcessingError
+            raise TurnProcessingError(
+                message=str(e),
+                message_safe="TTS generation failed",
+                stage=e.stage,
+                code=e.code,
+                retryable=e.retryable,
+                request_id=request_id,
+            ) from e
+
+        except TTSError as e:
+            # Retryable TTS errors: log and degrade gracefully
+            logger.warning(
+                f"TTS generation failed (retryable): {e.code} - {str(e)} "
+                f"(request_id={request_id})"
+            )
+            # tts_audio_url remains None (graceful degradation)
+
         # Update session state
         session.turn_count += 1
         session.last_activity_at = datetime.now(timezone.utc)
@@ -178,6 +242,7 @@ async def process_turn(
         timings = {
             "stt_ms": stt_ms,
             "llm_ms": llm_ms,
+            "tts_ms": tts_ms,
             "total_ms": total_ms,
         }
 
@@ -185,7 +250,7 @@ async def process_turn(
             transcript=transcript,
             timings=timings,
             assistant_text=assistant_text,
-            tts_audio_url=None,  # Story 3.1
+            tts_audio_url=tts_audio_url,
         )
 
     except STTError as e:

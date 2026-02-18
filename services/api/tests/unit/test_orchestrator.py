@@ -16,7 +16,21 @@ from src.providers.stt_deepgram import (
     STTTimeoutError,
     STTRateLimitError,
 )
+from src.providers.tts_deepgram import (
+    TTSAuthError,
+    TTSTimeoutError,
+)
 from src.providers.llm_groq import LLMError
+from unittest.mock import Mock
+
+
+@pytest.fixture
+def mock_tts_cache():
+    """Mock TTS cache for testing."""
+    cache = Mock()
+    cache.store = Mock()
+    cache.get = Mock(return_value=None)
+    return cache
 
 
 @dataclass
@@ -29,7 +43,7 @@ class MockSessionState:
 
 
 @pytest.mark.asyncio
-async def test_process_turn_success():
+async def test_process_turn_success(mock_tts_cache):
     """Test successful turn processing with STT."""
     # Mock STT provider
     mock_stt = AsyncMock()
@@ -50,9 +64,16 @@ async def test_process_turn_success():
     mock_llm = AsyncMock()
     mock_llm.generate_follow_up.return_value = "Next question"
 
+    mock_tts = AsyncMock()
+    mock_tts.synthesize.return_value = b"fake_mp3_audio"
+
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider", return_value=mock_tts
+    ):
         result = await process_turn(
             audio_bytes,
             mime_type,
@@ -62,6 +83,7 @@ async def test_process_turn_success():
             "mid-level",
             [],
             5,
+            mock_tts_cache,
         )
 
     assert result.transcript == "I would approach this by breaking it down."
@@ -78,7 +100,7 @@ async def test_process_turn_success():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_empty_transcript_error():
+async def test_process_turn_empty_transcript_error(mock_tts_cache):
     """Test turn processing with empty transcript error."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.side_effect = EmptyTranscriptError()
@@ -100,6 +122,7 @@ async def test_process_turn_empty_transcript_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -113,7 +136,7 @@ async def test_process_turn_empty_transcript_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_stt_auth_error():
+async def test_process_turn_stt_auth_error(mock_tts_cache):
     """Test turn processing with STT authentication error."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.side_effect = STTAuthError()
@@ -135,6 +158,7 @@ async def test_process_turn_stt_auth_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -144,7 +168,7 @@ async def test_process_turn_stt_auth_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_stt_provider_error():
+async def test_process_turn_stt_provider_error(mock_tts_cache):
     """Test turn processing with STT provider error (5xx)."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.side_effect = STTProviderError()
@@ -166,6 +190,7 @@ async def test_process_turn_stt_provider_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -175,7 +200,7 @@ async def test_process_turn_stt_provider_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_stt_timeout_error():
+async def test_process_turn_stt_timeout_error(mock_tts_cache):
     """Test turn processing with STT timeout."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.side_effect = STTTimeoutError()
@@ -197,6 +222,7 @@ async def test_process_turn_stt_timeout_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -206,7 +232,7 @@ async def test_process_turn_stt_timeout_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_captures_timing():
+async def test_process_turn_captures_timing(mock_tts_cache):
     """Test that timing measurements are captured accurately."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Test transcript"
@@ -222,7 +248,12 @@ async def test_process_turn_captures_timing():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         result = await process_turn(
             b"audio",
             "audio/webm",
@@ -232,6 +263,7 @@ async def test_process_turn_captures_timing():
             "mid-level",
             [],
             5,
+            mock_tts_cache,
         )
 
     # Verify timing structure
@@ -243,7 +275,7 @@ async def test_process_turn_captures_timing():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_updates_session_state():
+async def test_process_turn_updates_session_state(mock_tts_cache):
     """Test that session state is updated correctly."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Transcript"
@@ -260,7 +292,12 @@ async def test_process_turn_updates_session_state():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         await process_turn(
             b"audio",
             "audio/webm",
@@ -270,6 +307,7 @@ async def test_process_turn_updates_session_state():
             "mid-level",
             [],
             5,
+            mock_tts_cache,
         )
 
     # Verify turn count incremented
@@ -280,7 +318,7 @@ async def test_process_turn_updates_session_state():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_with_llm_success():
+async def test_process_turn_with_llm_success(mock_tts_cache):
     """Test successful turn processing with STT and LLM integration."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "I have 5 years of Python experience."
@@ -296,7 +334,12 @@ async def test_process_turn_with_llm_success():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         result = await process_turn(
             b"audio",
             "audio/webm",
@@ -306,6 +349,7 @@ async def test_process_turn_with_llm_success():
             "mid-level",
             ["Tell me about yourself."],
             5,
+            mock_tts_cache,
         )
 
     assert result.transcript == "I have 5 years of Python experience."
@@ -328,7 +372,7 @@ async def test_process_turn_with_llm_success():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_llm_timeout_error():
+async def test_process_turn_llm_timeout_error(mock_tts_cache):
     """Test turn processing with LLM timeout."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Test transcript"
@@ -348,7 +392,12 @@ async def test_process_turn_llm_timeout_error():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
                 b"audio",
@@ -359,6 +408,7 @@ async def test_process_turn_llm_timeout_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -368,7 +418,7 @@ async def test_process_turn_llm_timeout_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_llm_error():
+async def test_process_turn_llm_error(mock_tts_cache):
     """Test turn processing with LLM error."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Test transcript"
@@ -388,7 +438,12 @@ async def test_process_turn_llm_error():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
                 b"audio",
@@ -399,6 +454,7 @@ async def test_process_turn_llm_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -408,7 +464,7 @@ async def test_process_turn_llm_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_llm_timing_captured():
+async def test_process_turn_llm_timing_captured(mock_tts_cache):
     """Test that LLM timing is captured accurately."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Test transcript"
@@ -424,7 +480,12 @@ async def test_process_turn_llm_timing_captured():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         result = await process_turn(
             b"audio",
             "audio/webm",
@@ -434,6 +495,7 @@ async def test_process_turn_llm_timing_captured():
             "mid-level",
             [],
             5,
+            mock_tts_cache,
         )
 
     # Verify LLM timing is captured
@@ -447,7 +509,7 @@ async def test_process_turn_llm_timing_captured():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_stt_rate_limit_error():
+async def test_process_turn_stt_rate_limit_error(mock_tts_cache):
     """Test turn processing with STT rate limit error."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.side_effect = STTRateLimitError()
@@ -469,6 +531,7 @@ async def test_process_turn_stt_rate_limit_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -478,7 +541,7 @@ async def test_process_turn_stt_rate_limit_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_llm_rate_limit_error():
+async def test_process_turn_llm_rate_limit_error(mock_tts_cache):
     """Test turn processing with LLM rate limit error."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Test transcript"
@@ -498,7 +561,12 @@ async def test_process_turn_llm_rate_limit_error():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
                 b"audio",
@@ -509,6 +577,7 @@ async def test_process_turn_llm_rate_limit_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -518,7 +587,7 @@ async def test_process_turn_llm_rate_limit_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_llm_content_filter_error():
+async def test_process_turn_llm_content_filter_error(mock_tts_cache):
     """Test turn processing with LLM content filter error."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Test transcript"
@@ -538,7 +607,12 @@ async def test_process_turn_llm_content_filter_error():
 
     with patch(
         "src.services.orchestrator.get_stt_provider", return_value=mock_stt
-    ), patch("src.services.orchestrator.get_llm_provider", return_value=mock_llm):
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+    ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
                 b"audio",
@@ -549,6 +623,7 @@ async def test_process_turn_llm_content_filter_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
             )
 
     error = exc_info.value
@@ -558,7 +633,7 @@ async def test_process_turn_llm_content_filter_error():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_request_id_propagation():
+async def test_process_turn_request_id_propagation(mock_tts_cache):
     """Test that request_id is propagated through error handling."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.side_effect = STTTimeoutError()
@@ -582,6 +657,7 @@ async def test_process_turn_request_id_propagation():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
                 request_id=test_request_id,
             )
 
@@ -590,7 +666,7 @@ async def test_process_turn_request_id_propagation():
 
 
 @pytest.mark.asyncio
-async def test_process_turn_request_id_in_llm_error():
+async def test_process_turn_request_id_in_llm_error(mock_tts_cache):
     """Test that request_id is included in LLM errors."""
     mock_stt = AsyncMock()
     mock_stt.transcribe_audio.return_value = "Test transcript"
@@ -623,6 +699,7 @@ async def test_process_turn_request_id_in_llm_error():
                 "mid-level",
                 [],
                 5,
+                mock_tts_cache,
                 request_id=test_request_id,
             )
 
@@ -630,3 +707,98 @@ async def test_process_turn_request_id_in_llm_error():
     assert error.request_id == test_request_id
     assert error.stage == "llm"
     assert error.code == "llm_timeout"
+
+
+@pytest.mark.asyncio
+async def test_process_turn_tts_retryable_error(mock_tts_cache):
+    """Test turn processing with retryable TTS error (graceful degradation)."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "Test transcript"
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.return_value = "Follow-up question"
+
+    # Mock TTS to raise retryable error
+    mock_tts = AsyncMock()
+    mock_tts.synthesize.side_effect = TTSTimeoutError()
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=0,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider", return_value=mock_tts
+    ):
+        result = await process_turn(
+            b"audio",
+            "audio/webm",
+            session,
+            "backend developer",
+            "technical interview",
+            "mid-level",
+            [],
+            5,
+            mock_tts_cache,
+        )
+
+    # Should succeed but with no audio URL
+    assert result.transcript == "Test transcript"
+    assert result.assistant_text == "Follow-up question"
+    assert result.tts_audio_url is None
+    assert "tts_ms" in result.timings
+    # assert result.timings["tts_ms"] == 0.0  # Or close to it, depending on implementation
+
+    # Verify session still updated
+    assert session.turn_count == 1
+
+
+@pytest.mark.asyncio
+async def test_process_turn_tts_non_retryable_error(mock_tts_cache):
+    """Test turn processing with non-retryable TTS error."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "Test transcript"
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.return_value = "Follow-up question"
+
+    # Mock TTS to raise non-retryable error
+    mock_tts = AsyncMock()
+    mock_tts.synthesize.side_effect = TTSAuthError()
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=0,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider", return_value=mock_tts
+    ):
+        with pytest.raises(TurnProcessingError) as exc_info:
+            await process_turn(
+                b"audio",
+                "audio/webm",
+                session,
+                "backend developer",
+                "technical interview",
+                "mid-level",
+                [],
+                5,
+                mock_tts_cache,
+            )
+
+    error = exc_info.value
+    assert error.stage == "tts"
+    assert error.code == "tts_auth_error"
+    assert error.retryable is False
+

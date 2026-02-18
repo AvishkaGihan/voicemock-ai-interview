@@ -31,6 +31,7 @@ class InterviewReady extends InterviewState {
     required this.questionText,
     this.previousTranscript,
     this.wasInterrupted = false,
+    this.lastTtsAudioUrl = '',
   });
 
   final int questionNumber;
@@ -38,6 +39,7 @@ class InterviewReady extends InterviewState {
   final String questionText;
   final String? previousTranscript;
   final bool wasInterrupted;
+  final String lastTtsAudioUrl;
 
   @override
   InterviewStage get stage => InterviewStage.ready;
@@ -49,6 +51,7 @@ class InterviewReady extends InterviewState {
     questionText,
     previousTranscript,
     wasInterrupted,
+    lastTtsAudioUrl,
   ];
 }
 
@@ -143,6 +146,7 @@ class InterviewTranscriptReview extends InterviewState {
     required this.audioPath,
     this.isLowConfidence = false,
     this.assistantText,
+    this.ttsAudioUrl = '',
     this.isComplete = false,
   });
 
@@ -153,6 +157,7 @@ class InterviewTranscriptReview extends InterviewState {
   final String audioPath;
   final bool isLowConfidence;
   final String? assistantText;
+  final String ttsAudioUrl;
   final bool isComplete;
 
   @override
@@ -167,6 +172,7 @@ class InterviewTranscriptReview extends InterviewState {
     audioPath,
     isLowConfidence,
     assistantText,
+    ttsAudioUrl,
     isComplete,
   ];
 }
@@ -209,6 +215,8 @@ class InterviewSpeaking extends InterviewState {
     required this.transcript,
     required this.responseText,
     required this.ttsAudioUrl,
+    this.isPaused = false,
+    this.isBuffering = false,
   });
 
   final int questionNumber;
@@ -217,6 +225,8 @@ class InterviewSpeaking extends InterviewState {
   final String transcript;
   final String responseText;
   final String ttsAudioUrl;
+  final bool isPaused;
+  final bool isBuffering;
 
   @override
   InterviewStage get stage => InterviewStage.speaking;
@@ -229,6 +239,8 @@ class InterviewSpeaking extends InterviewState {
     transcript,
     responseText,
     ttsAudioUrl,
+    isPaused,
+    isBuffering,
   ];
 }
 

@@ -10,10 +10,19 @@ import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_view.dart';
 
 /// Interview page providing the InterviewCubit.
-class InterviewPage extends StatelessWidget {
-  const InterviewPage({required this.session, super.key});
+class InterviewPage extends StatefulWidget {
+  const InterviewPage({
+    required this.session,
+    this.recordingServiceBuilder,
+    this.playbackServiceBuilder,
+    this.audioFocusServiceBuilder,
+    super.key,
+  });
 
   final Session session;
+  final RecordingService Function()? recordingServiceBuilder;
+  final PlaybackService Function()? playbackServiceBuilder;
+  final AudioFocusService Function()? audioFocusServiceBuilder;
 
   static Route<void> route(Session session) {
     return MaterialPageRoute<void>(
@@ -22,24 +31,52 @@ class InterviewPage extends StatelessWidget {
   }
 
   @override
+  State<InterviewPage> createState() => _InterviewPageState();
+}
+
+class _InterviewPageState extends State<InterviewPage> {
+  late final RecordingService _recordingService;
+  late final PlaybackService _playbackService;
+  late final AudioFocusService _audioFocusService;
+
+  @override
+  void initState() {
+    super.initState();
+    _recordingService =
+        widget.recordingServiceBuilder?.call() ?? RecordingService();
+    _playbackService =
+        widget.playbackServiceBuilder?.call() ?? PlaybackService();
+    _audioFocusService =
+        widget.audioFocusServiceBuilder?.call() ?? AudioFocusService();
+    unawaited(_audioFocusService.initialize());
+  }
+
+  @override
+  void dispose() {
+    // Dispose services when the page is closed
+    unawaited(_recordingService.dispose());
+    unawaited(_playbackService.dispose());
+    unawaited(_audioFocusService.dispose());
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final apiClient = context.read<ApiClient>();
-    final audioFocusService = AudioFocusService();
 
     return BlocProvider(
       create: (_) {
-        final cubit = InterviewCubit(
-          recordingService: RecordingService(),
+        return InterviewCubit(
+          recordingService: _recordingService,
+          playbackService: _playbackService,
           turnRemoteDataSource: TurnRemoteDataSource(apiClient),
-          sessionId: session.sessionId,
-          sessionToken: session.sessionToken,
-          audioFocusService: audioFocusService,
-          initialQuestionText: session.openingPrompt,
-          totalQuestions: session.totalQuestions,
+          sessionId: widget.session.sessionId,
+          sessionToken: widget.session.sessionToken,
+          audioFocusService: _audioFocusService,
+          apiBaseUrl: apiClient.baseUrl,
+          initialQuestionText: widget.session.openingPrompt,
+          totalQuestions: widget.session.totalQuestions,
         );
-        // Initialize audio focus service
-        unawaited(audioFocusService.initialize());
-        return cubit;
       },
       child: const InterviewView(),
     );

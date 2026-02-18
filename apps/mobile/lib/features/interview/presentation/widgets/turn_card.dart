@@ -12,6 +12,7 @@ class TurnCard extends StatelessWidget {
     super.key,
     this.transcript,
     this.responseText,
+    this.onReplay,
   });
 
   final int questionNumber;
@@ -19,6 +20,7 @@ class TurnCard extends StatelessWidget {
   final String questionText;
   final String? transcript;
   final String? responseText;
+  final VoidCallback? onReplay;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +81,19 @@ class TurnCard extends StatelessWidget {
               Text(
                 responseText!,
                 style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+
+            if (onReplay != null) ...[
+              const SizedBox(height: 16),
+              Semantics(
+                label: 'Replay last response',
+                button: true,
+                child: OutlinedButton.icon(
+                  onPressed: onReplay,
+                  icon: const Icon(Icons.replay),
+                  label: const Text('Replay response'),
+                ),
               ),
             ],
           ],

@@ -1,3 +1,6 @@
+// ignore_for_file: unnecessary_lambdas, reason: mocktail `when(...)` requires
+// closure syntax for stubbing methods/getters.
+
 import 'dart:async';
 
 import 'package:audio_session/audio_session.dart';
@@ -5,6 +8,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/audio/audio_focus_service.dart';
+import 'package:voicemock/core/audio/playback_service.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
 import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/models/models.dart';
@@ -21,6 +25,8 @@ class MockPermissionService extends Mock implements PermissionService {}
 class MockTurnRemoteDataSource extends Mock implements TurnRemoteDataSource {}
 
 class MockAudioFocusService extends Mock implements AudioFocusService {}
+
+class MockPlaybackService extends Mock implements PlaybackService {}
 
 // Stub functions for tearoffs
 Future<void> _disposeStub(Invocation _) => Future.value();
@@ -103,6 +109,31 @@ MockAudioFocusService createMockAudioFocusService() {
   final service = MockAudioFocusService();
   final controller = StreamController<AudioInterruptionEvent>.broadcast();
   when(() => service.interruptions).thenAnswer((_) => controller.stream);
+  when(() => service.dispose()).thenAnswer(_disposeStub);
+  return service;
+}
+
+MockPlaybackService createMockPlaybackService() {
+  final service = MockPlaybackService();
+  final controller = StreamController<PlaybackEvent>.broadcast();
+  when(() => service.events).thenAnswer((_) => controller.stream);
+  when(
+    () => service.playUrl(any(), bearerToken: any(named: 'bearerToken')),
+  ).thenAnswer((_) async {
+    // Simulate typical playback sequence
+    controller.add(const PlaybackBuffering());
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    controller.add(const PlaybackPlaying());
+  });
+  when(
+    () => service.replay(any(), bearerToken: any(named: 'bearerToken')),
+  ).thenAnswer((_) async {});
+  when(() => service.stop()).thenAnswer((_) async {});
+  when(() => service.pause()).thenAnswer((_) async {});
+  when(() => service.resume()).thenAnswer((_) async {});
+  when(() => service.dispose()).thenAnswer((_) async {});
+  when(() => service.isPlaying).thenReturn(false);
+  when(() => service.isPaused).thenReturn(false);
   return service;
 }
 
@@ -772,7 +803,7 @@ void main() {
           permissionService: createMockPermissionService(),
         );
         await cubit.close();
-        verify(service.dispose).called(1);
+        verifyNever(service.dispose);
       });
     });
 
@@ -883,6 +914,280 @@ void main() {
           questionText: 'Test question',
         ),
         act: (cubit) => cubit.onSpeakingComplete(),
+      );
+    });
+
+    group('playback controls', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'pausePlayback from Speaking emits Speaking(isPaused: true)',
+        build: () {
+          final playbackService = createMockPlaybackService();
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewSpeaking(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          transcript: 'User transcript',
+          responseText: 'Coach response',
+          ttsAudioUrl: '/tts/req-1',
+        ),
+        act: (cubit) => cubit.pausePlayback(),
+        expect: () => [
+          isA<InterviewSpeaking>().having(
+            (s) => s.isPaused,
+            'isPaused',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'resumePlayback from paused Speaking emits Speaking(isPaused: false)',
+        build: () {
+          final playbackService = createMockPlaybackService();
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewSpeaking(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          transcript: 'User transcript',
+          responseText: 'Coach response',
+          ttsAudioUrl: '/tts/req-1',
+          isPaused: true,
+        ),
+        act: (cubit) => cubit.resumePlayback(),
+        expect: () => [
+          isA<InterviewSpeaking>().having(
+            (s) => s.isPaused,
+            'isPaused',
+            false,
+          ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'stopPlayback from Speaking transitions to Ready',
+        build: () {
+          final playbackService = createMockPlaybackService();
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewSpeaking(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          transcript: 'User transcript',
+          responseText: 'Next question',
+          ttsAudioUrl: '/tts/req-1',
+        ),
+        act: (cubit) => cubit.stopPlayback(),
+        expect: () => [
+          isA<InterviewReady>().having((s) => s.questionNumber, 'next', 2),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'replayLastResponse from Ready emits Speaking then Ready on complete',
+        build: () {
+          final playbackService = MockPlaybackService();
+          final playbackEvents = StreamController<PlaybackEvent>.broadcast();
+          when(
+            () => playbackService.events,
+          ).thenAnswer((_) => playbackEvents.stream);
+          when(
+            () => playbackService.playUrl(
+              any(),
+              bearerToken: any(named: 'bearerToken'),
+            ),
+          ).thenAnswer((_) async {
+            playbackEvents.add(const PlaybackCompleted());
+          });
+          when(() => playbackService.stop()).thenAnswer((_) async {});
+          when(() => playbackService.pause()).thenAnswer((_) async {});
+          when(() => playbackService.resume()).thenAnswer((_) async {});
+          when(() => playbackService.dispose()).thenAnswer((_) async {});
+          when(() => playbackService.isPlaying).thenReturn(false);
+          when(() => playbackService.isPaused).thenReturn(false);
+
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Next question',
+          previousTranscript: 'Earlier answer',
+          lastTtsAudioUrl: '/tts/req-1',
+        ),
+        act: (cubit) async {
+          await cubit.replayLastResponse();
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        },
+        expect: () => [
+          isA<InterviewSpeaking>(),
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'same question', 2)
+              .having(
+                (s) => s.lastTtsAudioUrl,
+                'lastTtsAudioUrl',
+                '/tts/req-1',
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'replayLastResponse is rejected when Ready has empty url',
+        build: () {
+          final playbackService = createMockPlaybackService();
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Next question',
+        ),
+        act: (cubit) async {
+          await cubit.replayLastResponse();
+        },
+        expect: () => <InterviewState>[],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'pausePlayback is rejected from non-Speaking states',
+        build: () {
+          final playbackService = createMockPlaybackService();
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+        ),
+        act: (cubit) => cubit.pausePlayback(),
+        expect: () => <InterviewState>[],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'replayLastResponse handles expired URL gracefully',
+        build: () {
+          final playbackService = MockPlaybackService();
+          final playbackEvents = StreamController<PlaybackEvent>.broadcast();
+          when(
+            () => playbackService.events,
+          ).thenAnswer((_) => playbackEvents.stream);
+          when(
+            () => playbackService.playUrl(
+              any(),
+              bearerToken: any(named: 'bearerToken'),
+            ),
+          ).thenThrow(NetworkException(message: '404'));
+          when(() => playbackService.stop()).thenAnswer((_) async {});
+          when(() => playbackService.pause()).thenAnswer((_) async {});
+          when(() => playbackService.resume()).thenAnswer((_) async {});
+          when(() => playbackService.dispose()).thenAnswer((_) async {});
+          when(() => playbackService.isPlaying).thenReturn(false);
+          when(() => playbackService.isPaused).thenReturn(false);
+
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Next question',
+          previousTranscript: 'Earlier answer',
+          lastTtsAudioUrl: '/tts/expired',
+        ),
+        act: (cubit) async {
+          await cubit.replayLastResponse();
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        },
+        expect: () => [
+          isA<InterviewSpeaking>(),
+          isA<InterviewReady>(),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'canReplay is true when Ready has lastTtsAudioUrl',
+        build: () {
+          final playbackService = createMockPlaybackService();
+          return InterviewCubit(
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            audioFocusService: createMockAudioFocusService(),
+            permissionService: createMockPermissionService(),
+            playbackService: playbackService,
+          );
+        },
+        seed: () => const InterviewReady(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Next question',
+          lastTtsAudioUrl: '/tts/req-1',
+        ),
+        act: (cubit) {},
+        expect: () => <InterviewState>[],
+        verify: (cubit) {
+          expect(cubit.canReplay, isTrue);
+        },
       );
     });
 
@@ -1267,7 +1572,55 @@ void main() {
                 'responseText',
                 'Next question from LLM',
               )
-              .having((s) => s.ttsAudioUrl, 'ttsAudioUrl', ''), // No TTS yet
+              .having((s) => s.ttsAudioUrl, 'ttsAudioUrl', ''),
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 3)
+              .having(
+                (s) => s.questionText,
+                'questionText',
+                'Next question from LLM',
+              ),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'preserves ttsAudioUrl when accepting transcript',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => const InterviewTranscriptReview(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Question 2',
+          transcript: 'My answer',
+          audioPath: '/path/audio.m4a',
+          assistantText: 'Next question from LLM',
+          ttsAudioUrl: '/tts/request-123',
+        ),
+        act: (cubit) async {
+          await cubit.acceptTranscript();
+        },
+        expect: () => [
+          isA<InterviewThinking>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having((s) => s.transcript, 'transcript', 'My answer'),
+          isA<InterviewSpeaking>()
+              .having((s) => s.questionNumber, 'questionNumber', 2)
+              .having(
+                (s) => s.responseText,
+                'responseText',
+                'Next question from LLM',
+              )
+              .having(
+                (s) => s.ttsAudioUrl,
+                'ttsAudioUrl',
+                '/tts/request-123',
+              ),
         ],
       );
     });
@@ -2111,6 +2464,45 @@ void main() {
           isA<InterviewUploading>(),
           isA<InterviewTranscribing>(),
           isA<InterviewTranscriptReview>(),
+        ],
+      );
+    });
+    group('audio interruption', () {
+      blocTest<InterviewCubit, InterviewState>(
+        'pauses playback when audio focus is lost (pause/unknown)',
+        build: () {
+          final audioFocusService = createMockAudioFocusService();
+          when(() => audioFocusService.interruptions).thenAnswer((_) {
+            return Stream.fromIterable([
+              AudioInterruptionEvent(true, AudioInterruptionType.pause),
+            ]);
+          });
+
+          return InterviewCubit(
+            audioFocusService: audioFocusService,
+            recordingService: createMockRecordingService(),
+            turnRemoteDataSource: createMockTurnRemoteDataSource(),
+            sessionId: 'test-session-123',
+            sessionToken: 'test-token',
+            permissionService: createMockPermissionService(),
+            playbackService: createMockPlaybackService(),
+          );
+        },
+        seed: () => const InterviewSpeaking(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Q1',
+          transcript: 'T1',
+          responseText: 'R1',
+          ttsAudioUrl: 'url',
+        ),
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<InterviewSpeaking>().having(
+            (s) => s.isPaused,
+            'isPaused',
+            true,
+          ),
         ],
       );
     });

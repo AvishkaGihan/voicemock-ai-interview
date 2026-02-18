@@ -33,6 +33,8 @@ class ApiClient {
   final Dio _dio;
   final Uuid _uuid = const Uuid();
 
+  String get baseUrl => _dio.options.baseUrl;
+
   /// Makes POST request and returns envelope-wrapped response.
   ///
   /// Throws [NetworkException] on connectivity issues.

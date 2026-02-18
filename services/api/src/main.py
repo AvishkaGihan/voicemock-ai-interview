@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
 from src.api.models import ApiEnvelope, ApiError
-from src.api.routes import health, session, turn
+from src.api.routes import health, session, turn, tts
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -157,6 +157,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router, tags=["Health"])
     app.include_router(session.router, prefix="/session", tags=["Session Management"])
     app.include_router(turn.router, prefix="/turn", tags=["Turn Management"])
+    app.include_router(tts.router, prefix="/tts", tags=["TTS Audio"])
 
     return app
 

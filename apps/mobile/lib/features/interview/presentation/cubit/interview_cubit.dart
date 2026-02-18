@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voicemock/core/audio/audio_focus_service.dart';
+import 'package:voicemock/core/audio/playback_service.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
 import 'package:voicemock/core/http/exceptions.dart';
 import 'package:voicemock/core/models/models.dart';
@@ -28,6 +29,8 @@ class InterviewCubit extends Cubit<InterviewState> {
     required String sessionId,
     required String sessionToken,
     required AudioFocusService audioFocusService,
+    String apiBaseUrl = 'http://localhost:8080',
+    PlaybackService? playbackService,
     PermissionService? permissionService,
     int questionNumber = 1,
     int totalQuestions = 5,
@@ -38,6 +41,8 @@ class InterviewCubit extends Cubit<InterviewState> {
        _sessionId = sessionId,
        _sessionToken = sessionToken,
        _audioFocusService = audioFocusService,
+       _apiBaseUrl = apiBaseUrl,
+       _playbackService = playbackService ?? PlaybackService.noop(),
        _permissionService =
            permissionService ?? const MicrophonePermissionService(),
        _maxRecordingDuration = maxRecordingDuration,
@@ -65,17 +70,27 @@ class InterviewCubit extends Cubit<InterviewState> {
   final String _sessionId;
   final String _sessionToken;
   final AudioFocusService _audioFocusService;
+  final String _apiBaseUrl;
+  final PlaybackService _playbackService;
   final PermissionService _permissionService;
   final Duration _maxRecordingDuration;
   final int _totalQuestions;
   Timer? _maxDurationTimer;
   StreamSubscription<AudioInterruptionEvent>? _audioInterruptionSubscription;
+  StreamSubscription<PlaybackEvent>? _playbackEventSubscription;
+  String _lastTtsAudioUrl = '';
+  String _lastResponseText = '';
+  bool _isReplaying = false;
 
   /// Session diagnostics for timing and error tracking.
   late SessionDiagnostics _diagnostics;
 
   /// Public getter for diagnostics data.
   SessionDiagnostics get diagnostics => _diagnostics;
+
+  bool get canReplay =>
+      state is InterviewReady &&
+      (state as InterviewReady).lastTtsAudioUrl.isNotEmpty;
 
   /// Start recording - only valid from Ready state.
   ///
@@ -270,7 +285,7 @@ class InterviewCubit extends Cubit<InterviewState> {
     if (current.assistantText != null) {
       onResponseReady(
         responseText: current.assistantText!,
-        ttsAudioUrl: '', // No TTS yet (Story 3.1)
+        ttsAudioUrl: current.ttsAudioUrl,
       );
     }
   }
@@ -383,7 +398,11 @@ class InterviewCubit extends Cubit<InterviewState> {
       },
     );
 
-    // Only handle interruptions during recording
+    if (!event.begin) {
+      return;
+    }
+
+    // Handle interruptions during recording and speaking
     if (current is InterviewRecording) {
       developer.log(
         'InterviewCubit: Interruption occurred during recording - '
@@ -392,6 +411,13 @@ class InterviewCubit extends Cubit<InterviewState> {
       );
       // Use cancelRecording to stop + discard + return to Ready
       unawaited(cancelRecording(wasInterrupted: true));
+    } else if (current is InterviewSpeaking) {
+      developer.log(
+        'InterviewCubit: Interruption occurred during speaking - '
+        'stopping playback',
+        name: 'InterviewCubit',
+      );
+      unawaited(_handleSpeakingInterruption());
     } else {
       // Log but take no action for non-recording states
       developer.log(
@@ -423,6 +449,8 @@ class InterviewCubit extends Cubit<InterviewState> {
       return;
     }
 
+    _lastResponseText = responseText;
+
     emit(
       InterviewSpeaking(
         questionNumber: current.questionNumber,
@@ -434,6 +462,13 @@ class InterviewCubit extends Cubit<InterviewState> {
       ),
     );
     _logTransition('Speaking');
+
+    if (ttsAudioUrl.trim().isEmpty) {
+      onSpeakingComplete();
+      return;
+    }
+
+    unawaited(_startPlayback(ttsAudioUrl));
   }
 
   /// Speaking complete - transition back to Ready with next question.
@@ -444,6 +479,21 @@ class InterviewCubit extends Cubit<InterviewState> {
       return;
     }
 
+    if (_isReplaying) {
+      _isReplaying = false;
+      emit(
+        InterviewReady(
+          questionNumber: current.questionNumber,
+          totalQuestions: _totalQuestions,
+          questionText: current.questionText,
+          previousTranscript: current.transcript,
+          lastTtsAudioUrl: _lastTtsAudioUrl,
+        ),
+      );
+      _logTransition('Replay complete → Ready');
+      return;
+    }
+
     // The responseText IS the next question from the LLM
     emit(
       InterviewReady(
@@ -451,9 +501,111 @@ class InterviewCubit extends Cubit<InterviewState> {
         totalQuestions: _totalQuestions,
         questionText: current.responseText,
         previousTranscript: current.transcript,
+        lastTtsAudioUrl: _lastTtsAudioUrl,
       ),
     );
     _logTransition('Ready with next question');
+  }
+
+  void pausePlayback() {
+    final current = state;
+    if (current is! InterviewSpeaking || current.isPaused) {
+      _logInvalidTransition('pausePlayback', current);
+      return;
+    }
+    unawaited(_pausePlayback(current));
+  }
+
+  Future<void> _pausePlayback(InterviewSpeaking current) async {
+    await _playbackService.pause();
+    emit(
+      InterviewSpeaking(
+        questionNumber: current.questionNumber,
+        totalQuestions: current.totalQuestions,
+        questionText: current.questionText,
+        transcript: current.transcript,
+        responseText: current.responseText,
+        ttsAudioUrl: current.ttsAudioUrl,
+        isPaused: true,
+      ),
+    );
+  }
+
+  void resumePlayback() {
+    final current = state;
+    if (current is! InterviewSpeaking || !current.isPaused) {
+      _logInvalidTransition('resumePlayback', current);
+      return;
+    }
+    unawaited(_resumePlayback(current));
+  }
+
+  Future<void> _resumePlayback(InterviewSpeaking current) async {
+    await _playbackService.resume();
+    emit(
+      InterviewSpeaking(
+        questionNumber: current.questionNumber,
+        totalQuestions: current.totalQuestions,
+        questionText: current.questionText,
+        transcript: current.transcript,
+        responseText: current.responseText,
+        ttsAudioUrl: current.ttsAudioUrl,
+      ),
+    );
+  }
+
+  void stopPlayback() {
+    final current = state;
+    if (current is! InterviewSpeaking) {
+      _logInvalidTransition('stopPlayback', current);
+      return;
+    }
+    unawaited(_stopPlayback());
+  }
+
+  Future<void> _stopPlayback() async {
+    await _playbackService.stop();
+    if (state is InterviewSpeaking) {
+      onSpeakingComplete();
+    }
+  }
+
+  Future<bool> replayLastResponse() async {
+    final current = state;
+    if (current is! InterviewReady || current.lastTtsAudioUrl.isEmpty) {
+      _logInvalidTransition('replayLastResponse', current);
+      return false;
+    }
+
+    _lastTtsAudioUrl = current.lastTtsAudioUrl;
+    if (_lastResponseText.isEmpty) {
+      _lastResponseText = current.questionText;
+    }
+
+    _isReplaying = true;
+    emit(
+      InterviewSpeaking(
+        questionNumber: current.questionNumber,
+        totalQuestions: current.totalQuestions,
+        questionText: current.questionText,
+        transcript: current.previousTranscript ?? '',
+        responseText: _lastResponseText,
+        ttsAudioUrl: _lastTtsAudioUrl,
+      ),
+    );
+
+    final started = await _startPlayback(_lastTtsAudioUrl);
+    if (!started) {
+      _isReplaying = false;
+      developer.log(
+        'Replay URL may be expired: $_lastTtsAudioUrl',
+        name: 'InterviewCubit',
+        level: 900,
+      );
+      return false;
+    }
+
+    return true;
   }
 
   /// Handle error - can occur from any active state.
@@ -774,6 +926,10 @@ class InterviewCubit extends Cubit<InterviewState> {
   ///
   /// Cleans up any retained audio files from error state.
   Future<void> cancel() async {
+    await _playbackEventSubscription?.cancel();
+    _playbackEventSubscription = null;
+    await _playbackService.stop();
+
     // Clean up retained audio in error state
     if (state is InterviewError) {
       final errorState = state as InterviewError;
@@ -798,17 +954,127 @@ class InterviewCubit extends Cubit<InterviewState> {
       }
     }
     _maxDurationTimer?.cancel();
-    emit(const InterviewIdle());
+    _lastTtsAudioUrl = '';
+    _lastResponseText = '';
+    _isReplaying = false;
+    if (!isClosed) {
+      emit(const InterviewIdle());
+    }
     _logTransition('Cancelled → Idle');
   }
 
   @override
   Future<void> close() async {
     _maxDurationTimer?.cancel();
+    await _playbackEventSubscription?.cancel();
     await _audioInterruptionSubscription?.cancel();
-    await _audioFocusService.dispose(); // Fix: dispose service to prevent leaks
-    await _recordingService.dispose();
-    return super.close();
+    await super.close();
+  }
+
+  Future<bool> _startPlayback(String ttsAudioUrl) async {
+    _lastTtsAudioUrl = ttsAudioUrl;
+    final requestId = _extractRequestId(ttsAudioUrl);
+    final fullUrl = _resolveTtsUrl(ttsAudioUrl);
+
+    await _playbackEventSubscription?.cancel();
+    _playbackEventSubscription = _playbackService.events.listen((event) {
+      final current = state;
+      if (current is! InterviewSpeaking) {
+        return;
+      }
+
+      switch (event) {
+        case PlaybackPlaying():
+          // Ensure buffering state is cleared when playing starts
+          if (current.isBuffering) {
+            emit(
+              InterviewSpeaking(
+                questionNumber: current.questionNumber,
+                totalQuestions: current.totalQuestions,
+                questionText: current.questionText,
+                transcript: current.transcript,
+                responseText: current.responseText,
+                ttsAudioUrl: current.ttsAudioUrl,
+                isPaused: current.isPaused,
+              ),
+            );
+          }
+        case PlaybackPaused():
+          break;
+        case PlaybackBuffering():
+          if (!current.isBuffering) {
+            emit(
+              InterviewSpeaking(
+                questionNumber: current.questionNumber,
+                totalQuestions: current.totalQuestions,
+                questionText: current.questionText,
+                transcript: current.transcript,
+                responseText: current.responseText,
+                ttsAudioUrl: current.ttsAudioUrl,
+                isPaused: current.isPaused,
+                isBuffering: true,
+              ),
+            );
+          }
+        case PlaybackCompleted():
+          onSpeakingComplete();
+        case PlaybackError(:final message):
+          developer.log(
+            'TTS playback failed: $message',
+            name: 'InterviewCubit',
+            error: {'request_id': requestId, 'tts_url': ttsAudioUrl},
+            level: 900,
+          );
+          onSpeakingComplete();
+      }
+    });
+
+    try {
+      await _playbackService.playUrl(
+        fullUrl,
+        bearerToken: _sessionToken,
+      );
+      return true;
+    } on Object catch (error) {
+      developer.log(
+        'TTS playback start failed: $error',
+        name: 'InterviewCubit',
+        error: {'request_id': requestId, 'tts_url': ttsAudioUrl},
+        level: 900,
+      );
+
+      if (state is InterviewSpeaking) {
+        onSpeakingComplete();
+      }
+      return false;
+    }
+  }
+
+  Future<void> _handleSpeakingInterruption() async {
+    final current = state;
+    if (current is InterviewSpeaking && !current.isPaused) {
+      await _pausePlayback(current);
+    }
+  }
+
+  String _resolveTtsUrl(String ttsAudioUrl) {
+    final parsed = Uri.parse(ttsAudioUrl);
+    if (parsed.hasScheme) {
+      return ttsAudioUrl;
+    }
+
+    final base = Uri.parse(_apiBaseUrl);
+    return base.resolve(ttsAudioUrl).toString();
+  }
+
+  String? _extractRequestId(String ttsAudioUrl) {
+    final parsed = Uri.parse(ttsAudioUrl);
+    final segments = parsed.pathSegments;
+    if (segments.length >= 2 && segments[segments.length - 2] == 'tts') {
+      return segments.last;
+    }
+
+    return null;
   }
 
   void _logTransition(String to) {
@@ -866,6 +1132,7 @@ class InterviewCubit extends Cubit<InterviewState> {
             audioPath ?? '', // Empty string if no audio (transcript-only flow)
         isLowConfidence: isLowConfidence,
         assistantText: response.assistantText,
+        ttsAudioUrl: response.ttsAudioUrl ?? '',
         isComplete: response.isComplete,
       ),
     );
