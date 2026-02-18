@@ -20,8 +20,9 @@ from src.providers.tts_deepgram import (
     TTSAuthError,
     TTSTimeoutError,
 )
-from src.providers.llm_groq import LLMError
+from src.providers.llm_groq import LLMError, LLMResponse
 from unittest.mock import Mock
+from src.api.models.turn_models import CoachingFeedback, CoachingDimension
 
 
 @pytest.fixture
@@ -252,7 +253,7 @@ async def test_process_turn_captures_timing(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         result = await process_turn(
             b"audio",
@@ -296,7 +297,7 @@ async def test_process_turn_updates_session_state(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         await process_turn(
             b"audio",
@@ -338,7 +339,7 @@ async def test_process_turn_with_llm_success(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         result = await process_turn(
             b"audio",
@@ -372,6 +373,73 @@ async def test_process_turn_with_llm_success(mock_tts_cache):
 
 
 @pytest.mark.asyncio
+async def test_process_turn_propagates_structured_coaching_feedback(mock_tts_cache):
+    """Test coaching feedback is carried from LLMResponse into TurnResult."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "I have 5 years of Python experience."
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.return_value = LLMResponse(
+        follow_up_question="What databases have you worked with?",
+        coaching_feedback=CoachingFeedback(
+            dimensions=[
+                CoachingDimension(
+                    label="Clarity",
+                    score=4,
+                    tip="Lead with one concise point.",
+                ),
+                CoachingDimension(
+                    label="Relevance",
+                    score=5,
+                    tip="Tie examples to the role.",
+                ),
+                CoachingDimension(
+                    label="Structure",
+                    score=4,
+                    tip="Use problem-action-result.",
+                ),
+                CoachingDimension(
+                    label="Filler Words",
+                    score=3,
+                    tip="Pause instead of fillers.",
+                ),
+            ],
+            summary_tip="Open with your strongest example, then support it with one metric.",
+        ),
+    )
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=1,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
+    ):
+        result = await process_turn(
+            b"audio",
+            "audio/webm",
+            session,
+            "backend developer",
+            "technical interview",
+            "mid-level",
+            ["Tell me about yourself."],
+            5,
+            mock_tts_cache,
+        )
+
+    assert result.assistant_text == "What databases have you worked with?"
+    assert result.coaching_feedback is not None
+    assert result.coaching_feedback.dimensions[0].label == "Clarity"
+
+
+@pytest.mark.asyncio
 async def test_process_turn_llm_timeout_error(mock_tts_cache):
     """Test turn processing with LLM timeout."""
     mock_stt = AsyncMock()
@@ -396,7 +464,7 @@ async def test_process_turn_llm_timeout_error(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
@@ -442,7 +510,7 @@ async def test_process_turn_llm_error(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
@@ -484,7 +552,7 @@ async def test_process_turn_llm_timing_captured(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         result = await process_turn(
             b"audio",
@@ -565,7 +633,7 @@ async def test_process_turn_llm_rate_limit_error(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
@@ -611,7 +679,7 @@ async def test_process_turn_llm_content_filter_error(mock_tts_cache):
         "src.services.orchestrator.get_llm_provider", return_value=mock_llm
     ), patch(
         "src.services.orchestrator.get_tts_provider",
-        return_value=Mock(synthesize=AsyncMock(return_value=b"audio"))
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
     ):
         with pytest.raises(TurnProcessingError) as exc_info:
             await process_turn(
@@ -802,3 +870,100 @@ async def test_process_turn_tts_non_retryable_error(mock_tts_cache):
     assert error.code == "tts_auth_error"
     assert error.retryable is False
 
+
+@pytest.mark.asyncio
+async def test_process_turn_generates_session_summary_on_final_turn(mock_tts_cache):
+    """Final turn should invoke summary generation and attach payload."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "Final answer"
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.return_value = LLMResponse(
+        follow_up_question="Thanks for completing this interview.",
+        coaching_feedback=CoachingFeedback(
+            dimensions=[
+                CoachingDimension(label="Clarity", score=4, tip="Clear."),
+                CoachingDimension(label="Relevance", score=5, tip="Relevant."),
+                CoachingDimension(label="Structure", score=4, tip="Structured."),
+                CoachingDimension(label="Filler Words", score=3, tip="Pause."),
+            ],
+            summary_tip="Strong finish.",
+        ),
+    )
+    mock_llm.generate_session_summary.return_value = {
+        "overall_assessment": "Strong structure and relevance throughout.",
+        "strengths": ["Clear examples"],
+        "improvements": ["Use more metrics"],
+        "average_scores": {"clarity": 4.0},
+    }
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=4,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
+    ):
+        result = await process_turn(
+            b"audio",
+            "audio/webm",
+            session,
+            "backend developer",
+            "technical interview",
+            "mid-level",
+            ["Tell me about yourself."],
+            5,
+            mock_tts_cache,
+            turn_history=[],
+        )
+
+    assert result.session_summary is not None
+    assert result.session_summary["overall_assessment"].startswith("Strong")
+    mock_llm.generate_session_summary.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_turn_non_final_has_null_session_summary(mock_tts_cache):
+    """Non-final turns should not generate session summary."""
+    mock_stt = AsyncMock()
+    mock_stt.transcribe_audio.return_value = "Intermediate answer"
+
+    mock_llm = AsyncMock()
+    mock_llm.generate_follow_up.return_value = "Next question"
+
+    session = MockSessionState(
+        session_id="test-session",
+        turn_count=1,
+        last_activity_at=datetime.now(timezone.utc),
+    )
+
+    with patch(
+        "src.services.orchestrator.get_stt_provider", return_value=mock_stt
+    ), patch(
+        "src.services.orchestrator.get_llm_provider", return_value=mock_llm
+    ), patch(
+        "src.services.orchestrator.get_tts_provider",
+        return_value=Mock(synthesize=AsyncMock(return_value=b"audio")),
+    ):
+        result = await process_turn(
+            b"audio",
+            "audio/webm",
+            session,
+            "backend developer",
+            "technical interview",
+            "mid-level",
+            [],
+            5,
+            mock_tts_cache,
+            turn_history=[],
+        )
+
+    assert result.session_summary is None
+    mock_llm.generate_session_summary.assert_not_called()

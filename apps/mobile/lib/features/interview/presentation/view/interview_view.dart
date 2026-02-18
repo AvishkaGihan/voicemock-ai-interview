@@ -183,6 +183,7 @@ class _InterviewViewState extends State<InterviewView>
         :final totalQuestions,
         :final questionText,
         :final previousTranscript,
+        :final coachingFeedback,
         :final lastTtsAudioUrl,
       ) =>
         TurnCard(
@@ -190,6 +191,7 @@ class _InterviewViewState extends State<InterviewView>
           totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: previousTranscript,
+          coachingFeedback: coachingFeedback,
           onReplay: lastTtsAudioUrl.isNotEmpty
               ? () async {
                   final replayStarted = await context
@@ -257,12 +259,14 @@ class _InterviewViewState extends State<InterviewView>
         :final totalQuestions,
         :final questionText,
         :final transcript,
+        :final coachingFeedback,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
           totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: transcript,
+          coachingFeedback: coachingFeedback,
         ),
       InterviewSpeaking(
         :final questionNumber,
@@ -270,6 +274,7 @@ class _InterviewViewState extends State<InterviewView>
         :final questionText,
         :final transcript,
         :final responseText,
+        :final coachingFeedback,
         :final isPaused,
       ) =>
         Column(
@@ -280,6 +285,7 @@ class _InterviewViewState extends State<InterviewView>
               questionText: questionText,
               transcript: transcript,
               responseText: responseText,
+              coachingFeedback: coachingFeedback,
             ),
             PlaybackControlBar(
               isPaused: isPaused,
@@ -294,11 +300,13 @@ class _InterviewViewState extends State<InterviewView>
         :final totalQuestions,
         :final lastTranscript,
         :final lastResponseText,
+        :final sessionSummary,
       ) =>
         SessionCompleteCard(
           totalQuestions: totalQuestions,
           lastTranscript: lastTranscript,
           lastResponseText: lastResponseText,
+          sessionSummary: sessionSummary,
           onBackToHome: () => Navigator.pop(context),
           onStartNew: () {
             // Navigate to home then to setup (or directly to setup)

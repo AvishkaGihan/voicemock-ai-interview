@@ -6,7 +6,7 @@ from threading import Lock
 from typing import Optional
 
 from src.api.models.session_models import SessionStartRequest
-from src.domain.session_state import SessionState
+from src.domain.session_state import SessionState, TurnRecord
 
 
 class SessionStore:
@@ -46,6 +46,7 @@ class SessionStore:
             last_activity_at=now,
             turn_count=0,
             asked_questions=[],
+            turn_history=[],
             status="active",
         )
 
@@ -150,5 +151,18 @@ class SessionStore:
             turn_count=session.turn_count,
             # Create a new list copy
             asked_questions=list(session.asked_questions),
+            turn_history=[
+                TurnRecord(
+                    turn_number=turn.turn_number,
+                    transcript=turn.transcript,
+                    assistant_text=turn.assistant_text,
+                    coaching_feedback=(
+                        dict(turn.coaching_feedback)
+                        if turn.coaching_feedback is not None
+                        else None
+                    ),
+                )
+                for turn in session.turn_history
+            ],
             status=session.status,
         )

@@ -33,6 +33,73 @@ void main() {
       expect(result.totalQuestions, 5);
     });
 
+    test('should deserialize coaching feedback when present', () {
+      final json = {
+        'transcript': 'Hello world',
+        'assistant_text': 'Nice to meet you',
+        'tts_audio_url': 'https://example.com/audio.mp3',
+        'coaching_feedback': {
+          'dimensions': [
+            {
+              'label': 'Clarity',
+              'score': 4,
+              'tip': 'Start with your strongest point.',
+            },
+            {
+              'label': 'Relevance',
+              'score': 5,
+              'tip': 'Tie examples directly to the role.',
+            },
+          ],
+          'summary_tip':
+              'Lead with one clear thesis and support it with one metric.',
+        },
+        'timings': {
+          'upload_ms': 120.5,
+          'stt_ms': 820.3,
+          'total_ms': 940.8,
+        },
+        'is_complete': false,
+        'question_number': 1,
+        'total_questions': 5,
+      };
+
+      final result = TurnResponseData.fromJson(json);
+
+      expect(result.coachingFeedback, isNotNull);
+      expect(result.coachingFeedback!.summaryTip, contains('clear thesis'));
+      expect(result.coachingFeedback!.dimensions.first.label, 'Clarity');
+      expect(result.coachingFeedback!.dimensions.first.score, 4);
+    });
+
+    test('should deserialize session summary when present', () {
+      final json = {
+        'transcript': 'Final answer',
+        'assistant_text': 'Great completion!',
+        'tts_audio_url': null,
+        'session_summary': {
+          'overall_assessment': 'You were clear and focused.',
+          'strengths': ['Clear structure', 'Relevant examples'],
+          'improvements': ['Use more quantified impact'],
+          'average_scores': {'clarity': 4.0, 'relevance': 4.5},
+        },
+        'timings': {'total_ms': 1200.0},
+        'is_complete': true,
+        'question_number': 5,
+        'total_questions': 5,
+      };
+
+      final result = TurnResponseData.fromJson(json);
+
+      expect(result.sessionSummary, isNotNull);
+      expect(
+        result.sessionSummary!.overallAssessment,
+        'You were clear and focused.',
+      );
+      expect(result.sessionSummary!.strengths.length, 2);
+      expect(result.sessionSummary!.averageScores['clarity'], 4.0);
+    });
+
     test('should handle null optional fields', () {
       final json = {
         'transcript': 'Hello world',
@@ -77,6 +144,8 @@ void main() {
       expect(json['transcript'], 'Test transcript');
       expect(json['assistant_text'], 'Test response');
       expect(json['tts_audio_url'], 'https://example.com/test.mp3');
+      expect(json['coaching_feedback'], isNull);
+      expect(json['session_summary'], isNull);
       expect(json['timings'], {
         'upload_ms': 100.0,
         'stt_ms': 500.0,
@@ -100,7 +169,65 @@ void main() {
       expect(result.transcript, 'Test');
       expect(result.assistantText, null);
       expect(result.ttsAudioUrl, null);
+      expect(result.coachingFeedback, null);
+      expect(result.sessionSummary, null);
       expect(result.timings, <String, dynamic>{});
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Task 6.1 / 6.2: SessionSummary.recommendedActions field deserialization
+  // ---------------------------------------------------------------------------
+
+  group('SessionSummary.recommendedActions', () {
+    test('deserializes recommended_actions when present', () {
+      final json = {
+        'overall_assessment': 'You were clear and focused.',
+        'strengths': ['Strong structure'],
+        'improvements': ['Quantify impact'],
+        'average_scores': {'clarity': 4.0},
+        'recommended_actions': [
+          'Try using the STAR method for more structured answers.',
+          'Practice pausing instead of using filler words.',
+        ],
+      };
+
+      final result = SessionSummary.fromJson(json);
+
+      expect(result.recommendedActions.length, 2);
+      expect(result.recommendedActions.first, contains('STAR'));
+    });
+
+    test('defaults recommendedActions to empty list when field is missing', () {
+      final json = {
+        'overall_assessment': 'You were clear and focused.',
+        'strengths': ['Strong structure'],
+        'improvements': ['Quantify impact'],
+        'average_scores': {'clarity': 4.0},
+        // no recommended_actions key
+      };
+
+      final result = SessionSummary.fromJson(json);
+
+      expect(result.recommendedActions, isEmpty);
+    });
+
+    test('includes recommendedActions in toJson output', () {
+      const summary = SessionSummary(
+        overallAssessment: 'Good performance.',
+        strengths: ['Clear'],
+        improvements: ['Quantify'],
+        averageScores: {},
+        recommendedActions: [
+          'Try using the STAR method for more structured answers.',
+          'Focus on quantifying your impact with specific numbers.',
+        ],
+      );
+
+      final json = summary.toJson();
+
+      expect(json['recommended_actions'], isA<List<dynamic>>());
+      expect((json['recommended_actions'] as List).length, 2);
     });
   });
 }

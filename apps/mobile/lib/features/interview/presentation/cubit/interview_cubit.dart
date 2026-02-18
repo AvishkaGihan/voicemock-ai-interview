@@ -263,6 +263,7 @@ class InterviewCubit extends Cubit<InterviewState> {
           totalQuestions: _totalQuestions,
           lastTranscript: current.transcript,
           lastResponseText: current.assistantText,
+          sessionSummary: current.sessionSummary,
         ),
       );
       _logTransition('Session complete');
@@ -277,6 +278,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         questionText: current.questionText,
         transcript: current.transcript,
         startTime: DateTime.now(),
+        coachingFeedback: current.coachingFeedback,
       ),
     );
     _logTransition('Transcript accepted → Thinking');
@@ -286,6 +288,7 @@ class InterviewCubit extends Cubit<InterviewState> {
       onResponseReady(
         responseText: current.assistantText!,
         ttsAudioUrl: current.ttsAudioUrl,
+        coachingFeedback: current.coachingFeedback,
       );
     }
   }
@@ -307,6 +310,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         questionNumber: current.questionNumber,
         totalQuestions: _totalQuestions,
         questionText: current.questionText,
+        coachingFeedback: current.coachingFeedback,
       ),
     );
 
@@ -442,6 +446,7 @@ class InterviewCubit extends Cubit<InterviewState> {
   void onResponseReady({
     required String responseText,
     required String ttsAudioUrl,
+    CoachingFeedback? coachingFeedback,
   }) {
     final current = state;
     if (current is! InterviewThinking) {
@@ -459,6 +464,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         transcript: current.transcript,
         responseText: responseText,
         ttsAudioUrl: ttsAudioUrl,
+        coachingFeedback: coachingFeedback ?? current.coachingFeedback,
       ),
     );
     _logTransition('Speaking');
@@ -487,6 +493,7 @@ class InterviewCubit extends Cubit<InterviewState> {
           totalQuestions: _totalQuestions,
           questionText: current.questionText,
           previousTranscript: current.transcript,
+          coachingFeedback: current.coachingFeedback,
           lastTtsAudioUrl: _lastTtsAudioUrl,
         ),
       );
@@ -501,6 +508,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         totalQuestions: _totalQuestions,
         questionText: current.responseText,
         previousTranscript: current.transcript,
+        coachingFeedback: current.coachingFeedback,
         lastTtsAudioUrl: _lastTtsAudioUrl,
       ),
     );
@@ -526,6 +534,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         transcript: current.transcript,
         responseText: current.responseText,
         ttsAudioUrl: current.ttsAudioUrl,
+        coachingFeedback: current.coachingFeedback,
         isPaused: true,
       ),
     );
@@ -550,6 +559,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         transcript: current.transcript,
         responseText: current.responseText,
         ttsAudioUrl: current.ttsAudioUrl,
+        coachingFeedback: current.coachingFeedback,
       ),
     );
   }
@@ -591,6 +601,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         transcript: current.previousTranscript ?? '',
         responseText: _lastResponseText,
         ttsAudioUrl: _lastTtsAudioUrl,
+        coachingFeedback: current.coachingFeedback,
       ),
     );
 
@@ -995,6 +1006,7 @@ class InterviewCubit extends Cubit<InterviewState> {
                 transcript: current.transcript,
                 responseText: current.responseText,
                 ttsAudioUrl: current.ttsAudioUrl,
+                coachingFeedback: current.coachingFeedback,
                 isPaused: current.isPaused,
               ),
             );
@@ -1011,6 +1023,7 @@ class InterviewCubit extends Cubit<InterviewState> {
                 transcript: current.transcript,
                 responseText: current.responseText,
                 ttsAudioUrl: current.ttsAudioUrl,
+                coachingFeedback: current.coachingFeedback,
                 isPaused: current.isPaused,
                 isBuffering: true,
               ),
@@ -1133,6 +1146,8 @@ class InterviewCubit extends Cubit<InterviewState> {
         isLowConfidence: isLowConfidence,
         assistantText: response.assistantText,
         ttsAudioUrl: response.ttsAudioUrl ?? '',
+        coachingFeedback: response.coachingFeedback,
+        sessionSummary: response.sessionSummary,
         isComplete: response.isComplete,
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 
 /// Sealed class representing all possible states of the interview flow.
@@ -30,6 +31,7 @@ class InterviewReady extends InterviewState {
     required this.totalQuestions,
     required this.questionText,
     this.previousTranscript,
+    this.coachingFeedback,
     this.wasInterrupted = false,
     this.lastTtsAudioUrl = '',
   });
@@ -38,6 +40,7 @@ class InterviewReady extends InterviewState {
   final int totalQuestions;
   final String questionText;
   final String? previousTranscript;
+  final CoachingFeedback? coachingFeedback;
   final bool wasInterrupted;
   final String lastTtsAudioUrl;
 
@@ -50,6 +53,7 @@ class InterviewReady extends InterviewState {
     totalQuestions,
     questionText,
     previousTranscript,
+    coachingFeedback,
     wasInterrupted,
     lastTtsAudioUrl,
   ];
@@ -147,6 +151,8 @@ class InterviewTranscriptReview extends InterviewState {
     this.isLowConfidence = false,
     this.assistantText,
     this.ttsAudioUrl = '',
+    this.coachingFeedback,
+    this.sessionSummary,
     this.isComplete = false,
   });
 
@@ -158,6 +164,8 @@ class InterviewTranscriptReview extends InterviewState {
   final bool isLowConfidence;
   final String? assistantText;
   final String ttsAudioUrl;
+  final CoachingFeedback? coachingFeedback;
+  final SessionSummary? sessionSummary;
   final bool isComplete;
 
   @override
@@ -173,6 +181,8 @@ class InterviewTranscriptReview extends InterviewState {
     isLowConfidence,
     assistantText,
     ttsAudioUrl,
+    coachingFeedback,
+    sessionSummary,
     isComplete,
   ];
 }
@@ -185,6 +195,7 @@ class InterviewThinking extends InterviewState {
     required this.questionText,
     required this.transcript,
     required this.startTime,
+    this.coachingFeedback,
   });
 
   final int questionNumber;
@@ -192,6 +203,7 @@ class InterviewThinking extends InterviewState {
   final String questionText;
   final String transcript;
   final DateTime startTime;
+  final CoachingFeedback? coachingFeedback;
 
   @override
   InterviewStage get stage => InterviewStage.thinking;
@@ -203,6 +215,7 @@ class InterviewThinking extends InterviewState {
     questionText,
     transcript,
     startTime,
+    coachingFeedback,
   ];
 }
 
@@ -215,6 +228,7 @@ class InterviewSpeaking extends InterviewState {
     required this.transcript,
     required this.responseText,
     required this.ttsAudioUrl,
+    this.coachingFeedback,
     this.isPaused = false,
     this.isBuffering = false,
   });
@@ -225,6 +239,7 @@ class InterviewSpeaking extends InterviewState {
   final String transcript;
   final String responseText;
   final String ttsAudioUrl;
+  final CoachingFeedback? coachingFeedback;
   final bool isPaused;
   final bool isBuffering;
 
@@ -239,6 +254,7 @@ class InterviewSpeaking extends InterviewState {
     transcript,
     responseText,
     ttsAudioUrl,
+    coachingFeedback,
     isPaused,
     isBuffering,
   ];
@@ -250,11 +266,13 @@ class InterviewSessionComplete extends InterviewState {
     required this.totalQuestions,
     required this.lastTranscript,
     this.lastResponseText,
+    this.sessionSummary,
   });
 
   final int totalQuestions;
   final String lastTranscript;
   final String? lastResponseText;
+  final SessionSummary? sessionSummary;
 
   @override
   InterviewStage get stage => InterviewStage.sessionComplete;
@@ -264,6 +282,7 @@ class InterviewSessionComplete extends InterviewState {
     totalQuestions,
     lastTranscript,
     lastResponseText,
+    sessionSummary,
   ];
 }
 

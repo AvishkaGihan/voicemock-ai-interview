@@ -1524,6 +1524,12 @@ void main() {
           audioPath: '/path/audio.m4a',
           isComplete: true,
           assistantText: 'Great job completing all questions!',
+          sessionSummary: SessionSummary(
+            overallAssessment: 'Strong communication and focus.',
+            strengths: ['Clear structure'],
+            improvements: ['Use more metrics'],
+            averageScores: {'clarity': 4.0},
+          ),
         ),
         act: (cubit) async {
           await cubit.acceptTranscript();
@@ -1536,6 +1542,11 @@ void main() {
                 (s) => s.lastResponseText,
                 'lastResponseText',
                 'Great job completing all questions!',
+              )
+              .having(
+                (s) => s.sessionSummary?.overallAssessment,
+                'sessionSummary.overallAssessment',
+                'Strong communication and focus.',
               ),
         ],
       );

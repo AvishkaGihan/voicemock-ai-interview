@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicemock/core/connectivity/connectivity.dart';
+import 'package:voicemock/core/storage/disclosure_prefs.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_state.dart';
@@ -15,6 +16,8 @@ import 'package:voicemock/features/interview/presentation/view/permission_ration
 import 'package:voicemock/features/interview/presentation/widgets/configuration_summary_card.dart';
 import 'package:voicemock/features/interview/presentation/widgets/connectivity_banner.dart';
 import 'package:voicemock/features/interview/presentation/widgets/difficulty_selector.dart';
+import 'package:voicemock/features/interview/presentation/widgets/disclosure_banner.dart';
+import 'package:voicemock/features/interview/presentation/widgets/disclosure_detail_sheet.dart';
 import 'package:voicemock/features/interview/presentation/widgets/permission_denied_banner.dart';
 import 'package:voicemock/features/interview/presentation/widgets/question_count_selector.dart';
 import 'package:voicemock/features/interview/presentation/widgets/role_selector.dart';
@@ -37,10 +40,31 @@ class SetupView extends StatefulWidget {
 class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
   bool _bannerDismissed = false;
 
+  // Disclosure state
+  bool _disclosureAcknowledged = true;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadDisclosureState());
+  }
+
+  Future<void> _loadDisclosureState() async {
+    final disclosurePrefs = context.read<DisclosurePrefs>();
+    final acknowledged = await disclosurePrefs.hasAcknowledgedDisclosure();
+    if (mounted) {
+      setState(() {
+        _disclosureAcknowledged = acknowledged;
+      });
+    }
+  }
+
+  Future<void> _acknowledgeDisclosure() async {
+    await context.read<DisclosurePrefs>().acknowledgeDisclosure();
+    if (mounted) {
+      setState(() => _disclosureAcknowledged = true);
+    }
   }
 
   @override
@@ -122,6 +146,14 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
                 style: VoiceMockTypography.h2,
               ),
               centerTitle: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  color: VoiceMockColors.textMuted,
+                  tooltip: 'Settings',
+                  onPressed: () => context.push('/settings'),
+                ),
+              ],
             ),
             body: SafeArea(
               child: Column(
@@ -215,8 +247,26 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
                     ),
                   ),
 
+                  // Disclosure banner - shown above Start Interview button
+                  // when user has not yet acknowledged the disclosure.
+                  if (!_disclosureAcknowledged)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: VoiceMockSpacing.md,
+                        vertical: VoiceMockSpacing.sm,
+                      ),
+                      child: DisclosureBanner(
+                        onGotIt: _acknowledgeDisclosure,
+                        onLearnMore: () => DisclosureDetailSheet.show(context),
+                      ),
+                    ),
+
                   // Start Interview button - anchored at bottom
-                  const _StartInterviewButton(),
+                  _StartInterviewButton(
+                    onBeforeStart: _disclosureAcknowledged
+                        ? null
+                        : _acknowledgeDisclosure,
+                  ),
                 ],
               ),
             ),
@@ -240,7 +290,11 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
 }
 
 class _StartInterviewButton extends StatelessWidget {
-  const _StartInterviewButton();
+  const _StartInterviewButton({this.onBeforeStart});
+
+  /// Optional callback invoked before the interview starts.
+  /// Used to auto-acknowledge the disclosure when the banner is still visible.
+  final VoidCallback? onBeforeStart;
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +357,9 @@ class _StartInterviewButton extends StatelessWidget {
   }
 
   void _handleStartInterview(BuildContext context) {
+    // Auto-acknowledge disclosure if still visible (AC 5)
+    onBeforeStart?.call();
+
     // Check connectivity immediately before starting
     unawaited(context.read<ConnectivityCubit>().checkConnectivity());
 

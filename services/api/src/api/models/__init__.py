@@ -9,6 +9,9 @@ from src.api.models.session_models import (
     SessionStartResponse,
 )
 from src.api.models.turn_models import (
+    CoachingDimension,
+    CoachingFeedback,
+    SessionSummary,
     TurnResponseData,
     TurnResponse,
 )
@@ -21,6 +24,9 @@ __all__ = [
     "SessionStartRequest",
     "SessionData",
     "SessionStartResponse",
+    "CoachingDimension",
+    "CoachingFeedback",
+    "SessionSummary",
     "TurnResponseData",
     "TurnResponse",
 ]

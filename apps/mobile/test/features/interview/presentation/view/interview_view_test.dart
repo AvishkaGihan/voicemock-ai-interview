@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/'
     'interview_view.dart';
@@ -461,6 +462,12 @@ void main() {
             totalQuestions: 5,
             lastTranscript: 'My final answer',
             lastResponseText: 'Great job! Session complete.',
+            sessionSummary: SessionSummary(
+              overallAssessment: 'Strong clarity and composure.',
+              strengths: ['Clear examples'],
+              improvements: ['Add metrics'],
+              averageScores: {'clarity': 4.0},
+            ),
           ),
         );
 

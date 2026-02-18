@@ -46,6 +46,7 @@ def mock_session():
     session.interview_type = "technical"
     session.difficulty = "medium"
     session.asked_questions = []
+    session.turn_history = []
     session.question_count = 5
     session.status = "active"
     return session
@@ -59,6 +60,7 @@ def mock_turn_result():
         timings={"stt_ms": 820.5, "llm_ms": 150.3, "total_ms": 940.8},
         assistant_text=None,
         tts_audio_url=None,
+        coaching_feedback=None,
     )
 
 
@@ -87,6 +89,7 @@ def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
         tts_cache,
         transcript=None,
         request_id=None,
+        **kwargs,
     ):
         return mock_turn_result
 
@@ -109,6 +112,7 @@ def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
         )
         assert json_resp["data"]["assistant_text"] is None
         assert json_resp["data"]["tts_audio_url"] is None
+        assert json_resp["data"]["coaching_feedback"] is None
 
         # AC #1: Validate all four timing keys are present
         assert "upload_ms" in json_resp["data"]["timings"]
@@ -235,6 +239,7 @@ def test_submit_turn_stt_error(client, mock_session, mock_app):
         tts_cache,
         transcript=None,
         request_id=None,
+        **kwargs,
     ):
         raise TurnProcessingError(
             message="STT timeout",
@@ -288,6 +293,7 @@ def test_submit_turn_stt_rate_limit_error(client, mock_session, mock_app):
         tts_cache,
         transcript=None,
         request_id=None,
+        **kwargs,
     ):
         raise TurnProcessingError(
             message="Rate limit exceeded",
@@ -342,6 +348,7 @@ def test_submit_turn_llm_rate_limit_error(client, mock_session, mock_app):
         tts_cache,
         transcript=None,
         request_id=None,
+        **kwargs,
     ):
         raise TurnProcessingError(
             message="LLM rate limit exceeded",
@@ -396,6 +403,7 @@ def test_submit_turn_llm_content_filter_error(client, mock_session, mock_app):
         tts_cache,
         transcript=None,
         request_id=None,
+        **kwargs,
     ):
         raise TurnProcessingError(
             message="Content blocked by policy",
@@ -450,6 +458,7 @@ def test_submit_turn_empty_transcript_error(client, mock_session, mock_app):
         tts_cache,
         transcript=None,
         request_id=None,
+        **kwargs,
     ):
         raise TurnProcessingError(
             message="Empty transcript",
@@ -477,3 +486,59 @@ def test_submit_turn_empty_transcript_error(client, mock_session, mock_app):
         assert json_resp["error"]["code"] == "stt_empty_transcript"
         assert json_resp["error"]["retryable"] is False  # Should NOT be retryable
         assert json_resp["request_id"] == "test-request-id"
+
+
+def test_submit_turn_returns_session_summary_on_final_turn(
+    client,
+    mock_session,
+    mock_app,
+):
+    """Test final turn response includes session_summary payload when available."""
+    from src.api.dependencies.shared_services import (
+        get_session_store,
+        get_token_service,
+    )
+
+    mock_session.turn_count = 4
+
+    mock_store = Mock()
+    mock_store.get_session.return_value = mock_session
+
+    mock_token_service = Mock()
+    mock_token_service.verify_token.return_value = "test-session-123"
+
+    async def mock_process_turn(*args, **kwargs):
+        session = args[2]
+        session.turn_count += 1
+        return TurnResult(
+            transcript="Final answer",
+            timings={"stt_ms": 100.0, "llm_ms": 150.0, "total_ms": 300.0},
+            assistant_text="Thanks for completing the interview.",
+            tts_audio_url=None,
+            coaching_feedback=None,
+            session_summary={
+                "overall_assessment": "You communicated clearly and stayed focused.",
+                "strengths": ["Clear examples", "Strong structure"],
+                "improvements": ["Quantify impact"],
+                "average_scores": {"clarity": 4.0},
+            },
+        )
+
+    mock_app.dependency_overrides[get_session_store] = lambda: mock_store
+    mock_app.dependency_overrides[get_token_service] = lambda: mock_token_service
+
+    with patch("src.api.routes.turn.process_turn", new=mock_process_turn):
+        files = {"audio": ("test.webm", b"fake_audio_data", "audio/webm")}
+        data = {"session_id": "test-session-123"}
+        headers = {"Authorization": "Bearer test_token"}
+
+        response = client.post("/turn", files=files, data=data, headers=headers)
+
+        assert response.status_code == 200
+        json_resp = response.json()
+        assert json_resp["data"]["is_complete"] is True
+        assert json_resp["data"]["session_summary"] is not None
+        assert (
+            json_resp["data"]["session_summary"]["overall_assessment"]
+            == "You communicated clearly and stayed focused."
+        )

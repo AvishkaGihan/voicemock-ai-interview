@@ -1,8 +1,105 @@
 """Turn-related Pydantic models for request/response validation."""
 
+from __future__ import annotations
+
+import re
+
 from pydantic import BaseModel, Field
+from pydantic import field_validator
 
 from src.api.models.envelope import ApiEnvelope
+
+
+def _word_count(text: str) -> int:
+    return len(re.findall(r"\S+", text.strip()))
+
+
+class CoachingDimension(BaseModel):
+    """Single rubric dimension in coaching feedback."""
+
+    label: str = Field(..., description="Rubric dimension label")
+    score: int = Field(..., ge=1, le=5, description="Score from 1 to 5")
+    tip: str = Field(..., description="Actionable short tip (<= 25 words)")
+
+    @field_validator("tip")
+    @classmethod
+    def validate_tip_length(cls, value: str) -> str:
+        if _word_count(value) > 25:
+            raise ValueError("tip must be 25 words or fewer")
+        return value
+
+
+class CoachingFeedback(BaseModel):
+    """Structured coaching feedback aligned to rubric dimensions."""
+
+    dimensions: list[CoachingDimension] = Field(
+        ..., description="List of rubric dimension scores and tips"
+    )
+    summary_tip: str = Field(..., description="One-sentence summary tip (<= 30 words)")
+
+    @field_validator("summary_tip")
+    @classmethod
+    def validate_summary_tip_length(cls, value: str) -> str:
+        if _word_count(value) > 30:
+            raise ValueError("summary_tip must be 30 words or fewer")
+        return value
+
+
+class SessionSummary(BaseModel):
+    """Structured end-of-session summary returned on final turn."""
+
+    overall_assessment: str = Field(
+        ...,
+        description="2-3 sentence overall assessment (<= 60 words)",
+    )
+    strengths: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=3,
+        description="Concrete strengths (1-3 items, <= 20 words each)",
+    )
+    improvements: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=3,
+        description="Concrete improvements (1-3 items, <= 20 words each)",
+    )
+    average_scores: dict[str, float] = Field(
+        ...,
+        description="Deterministic per-dimension average rubric scores",
+    )
+    recommended_actions: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Actionable next steps tied to rubric weaknesses "
+            "(2-4 items when present, ≤ 25 words each)"
+        ),
+    )
+
+    @field_validator("overall_assessment")
+    @classmethod
+    def validate_assessment_length(cls, value: str) -> str:
+        if _word_count(value) > 60:
+            raise ValueError("overall_assessment must be 60 words or fewer")
+        return value
+
+    @field_validator("strengths", "improvements")
+    @classmethod
+    def validate_item_lengths(cls, values: list[str]) -> list[str]:
+        for value in values:
+            if _word_count(value) > 20:
+                raise ValueError("each list item must be 20 words or fewer")
+        return values
+
+    @field_validator("recommended_actions")
+    @classmethod
+    def validate_recommended_actions(cls, values: list[str]) -> list[str]:
+        if not (0 <= len(values) <= 4):
+            raise ValueError("recommended_actions must contain 0-4 items")
+        for value in values:
+            if _word_count(value) > 25:
+                raise ValueError("each recommended action must be 25 words or fewer")
+        return values
 
 
 class TurnResponseData(BaseModel):
@@ -30,6 +127,16 @@ class TurnResponseData(BaseModel):
         default=None,
         description="URL to fetch TTS audio of assistant_text",
         examples=["/tts/550e8400-e29b-41d4-a716-446655440000"],
+    )
+
+    coaching_feedback: CoachingFeedback | None = Field(
+        default=None,
+        description="Structured per-turn coaching feedback aligned to rubric",
+    )
+
+    session_summary: SessionSummary | None = Field(
+        default=None,
+        description="End-of-session summary payload (final turn only)",
     )
 
     timings: dict[str, float] = Field(
