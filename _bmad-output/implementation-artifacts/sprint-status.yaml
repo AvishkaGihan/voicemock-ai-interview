@@ -63,12 +63,12 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Hear the Interviewer (Voice Output + Playback Control)
-  epic-3: in-progress
+  epic-3: done
   3-1-generate-tts-and-return-tts-audio-url-in-post-turn: done
   3-2-implement-get-tts-request-id-short-lived-audio-fetch: done
   3-3-android-playback-queue-with-no-overlap: done
   3-4-playback-controls-pause-stop-replay: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4: Get Coaching Feedback & End-of-Session Summary
   epic-4: backlog
