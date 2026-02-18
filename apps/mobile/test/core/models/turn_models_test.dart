@@ -226,7 +226,7 @@ void main() {
 
       final json = summary.toJson();
 
-      expect(json['recommended_actions'], isA<List>());
+      expect(json['recommended_actions'], isA<List<dynamic>>());
       expect((json['recommended_actions'] as List).length, 2);
     });
   });

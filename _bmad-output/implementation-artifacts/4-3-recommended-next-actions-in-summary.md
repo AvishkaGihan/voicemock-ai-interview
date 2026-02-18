@@ -219,3 +219,4 @@ No blockers encountered. Build runner warning about `defaultValue: <String>[]` v
 ### Change Log
 
 - 2026-02-18: Implemented Story 4.3 — Recommended Next Actions in Summary. Added `recommended_actions` field to `SessionSummary` (backend + mobile), updated LLM prompt to target weakest rubric dimensions, rendered "What to Practice Next" section in `SessionCompleteCard`. 9 backend tests + 5 mobile tests added. Backend: 146/146 pass. Mobile: 413/413 pass.
+- 2026-02-18 (Post-Implementation): Fixed generic type warning in `turn_models_test.dart` and line length violation in `session_summary_test.dart`. Analysis and tests pass.

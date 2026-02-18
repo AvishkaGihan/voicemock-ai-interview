@@ -70,7 +70,8 @@ void main() {
 
   group('SessionCompleteCard recommended actions', () {
     testWidgets(
-      'renders What to Practice Next section when recommendedActions is non-empty',
+      'renders What to Practice Next section when '
+      'recommendedActions is non-empty',
       (tester) async {
         const summaryWithActions = SessionSummary(
           overallAssessment: 'Strong performance with room to grow.',
