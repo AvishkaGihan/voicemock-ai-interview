@@ -59,6 +59,7 @@ def mock_turn_result():
         timings={"stt_ms": 820.5, "llm_ms": 150.3, "total_ms": 940.8},
         assistant_text=None,
         tts_audio_url=None,
+        coaching_feedback=None,
     )
 
 
@@ -109,6 +110,7 @@ def test_submit_turn_success(client, mock_session, mock_turn_result, mock_app):
         )
         assert json_resp["data"]["assistant_text"] is None
         assert json_resp["data"]["tts_audio_url"] is None
+        assert json_resp["data"]["coaching_feedback"] is None
 
         # AC #1: Validate all four timing keys are present
         assert "upload_ms" in json_resp["data"]["timings"]

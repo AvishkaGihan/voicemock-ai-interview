@@ -21,6 +21,7 @@ def test_turn_response_data_valid():
     assert data.transcript == "I would approach this problem by breaking it down."
     assert data.assistant_text is None
     assert data.tts_audio_url is None
+    assert data.coaching_feedback is None
     assert data.timings["upload_ms"] == 120.5
     assert data.timings["stt_ms"] == 820.3
     assert data.timings["total_ms"] == 940.8
@@ -96,6 +97,8 @@ def test_turn_response_data_json_serialization():
     assert json_data["transcript"] == "Test"
     assert json_data["assistant_text"] == "Response"
     assert json_data["tts_audio_url"] == "http://example.com/audio"
+    assert "coaching_feedback" in json_data
+    assert json_data["coaching_feedback"] is None
     assert json_data["timings"]["upload_ms"] == 100.0
     assert json_data["is_complete"] is True
     assert json_data["question_number"] == 5

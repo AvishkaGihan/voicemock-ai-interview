@@ -29,7 +29,7 @@ class Settings(BaseSettings):
         groq_api_key: Groq API key for LLM (REQUIRED at runtime for /turn)
         llm_model: Groq model to use (default: llama-3.3-70b-versatile)
         llm_timeout_seconds: Timeout for LLM requests in seconds (default: 30)
-        llm_max_tokens: Maximum tokens for LLM response (default: 256)
+        llm_max_tokens: Maximum tokens for LLM response (default: 400)
         tts_timeout_seconds: Timeout for TTS requests in seconds (default: 30)
         tts_model: Deepgram Aura voice model (default: aura-2-thalia-en)
         tts_cache_ttl_seconds: TTL for cached TTS audio (default: 300 = 5 min)
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     groq_api_key: str = Field(default="")  # REQUIRED at runtime for /turn endpoint
     llm_model: str = "llama-3.3-70b-versatile"
     llm_timeout_seconds: int = 30
-    llm_max_tokens: int = 256
+    llm_max_tokens: int = 400
     tts_timeout_seconds: int = 30
     tts_model: str = "aura-2-thalia-en"
     tts_cache_ttl_seconds: int = 300

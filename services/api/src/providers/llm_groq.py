@@ -1,9 +1,17 @@
 """Groq LLM provider for generating interview follow-up questions."""
 
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from typing import Any
+
 from groq import AsyncGroq
 from groq import APIError
 from groq import APITimeoutError
 from groq import RateLimitError
+
+from src.api.models.turn_models import CoachingFeedback
 
 
 class LLMError(Exception):
@@ -14,6 +22,35 @@ class LLMError(Exception):
         self.stage = "llm"
         self.code = code
         self.retryable = retryable
+
+
+@dataclass(frozen=True)
+class LLMResponse:
+    """Structured response from LLM generation."""
+
+    follow_up_question: str
+    coaching_feedback: CoachingFeedback | None = None
+
+
+# Rubric definitions for dynamic prompt generation
+RUBRIC_DIMENSIONS = [
+    {
+        "label": "Clarity",
+        "description": "Clear articulation of ideas",
+    },
+    {
+        "label": "Relevance",
+        "description": "Answer directly addresses the question and role",
+    },
+    {
+        "label": "Structure",
+        "description": "Logical flow (e.g., STAR method)",
+    },
+    {
+        "label": "Filler Words",
+        "description": "Minimal use of fillers like 'um', 'uh', 'like'",
+    },
+]
 
 
 class GroqLLMProvider:
@@ -28,7 +65,7 @@ class GroqLLMProvider:
         api_key: str,
         model: str = "llama-3.3-70b-versatile",
         timeout_seconds: int = 30,
-        max_tokens: int = 256,
+        max_tokens: int = 400,
     ):
         """Initialize Groq LLM provider.
 
@@ -36,7 +73,7 @@ class GroqLLMProvider:
             api_key: Groq API key
             model: Groq model to use (default: llama-3.3-70b-versatile)
             timeout_seconds: Timeout for LLM requests (default: 30s)
-            max_tokens: Maximum tokens in LLM response (default: 256)
+            max_tokens: Maximum tokens in LLM response (default: 400)
         """
         self._client = AsyncGroq(api_key=api_key, timeout=timeout_seconds)
         self._model = model
@@ -51,7 +88,7 @@ class GroqLLMProvider:
         asked_questions: list[str],
         question_number: int,
         total_questions: int,
-    ) -> str:
+    ) -> LLMResponse:
         """Generate the next interview question based on context.
 
         Args:
@@ -64,7 +101,7 @@ class GroqLLMProvider:
             total_questions: Total configured questions for the session
 
         Returns:
-            Next interview question text, or closing acknowledgment if last question
+            Structured response containing next question and optional coaching feedback
 
         Raises:
             LLMError: If LLM request fails with timeout or API error
@@ -104,7 +141,7 @@ class GroqLLMProvider:
                     retryable=False,
                 )
 
-            return content
+            return self._parse_llm_response(content)
 
         except APITimeoutError as e:
             raise LLMError(
@@ -119,7 +156,7 @@ class GroqLLMProvider:
                 retryable=True,
             ) from e
         except APIError as e:
-            # Check if it's a content filter error
+            # Check if it's be content filter error
             error_msg = str(e).lower()
             if "content" in error_msg and (
                 "filter" in error_msg or "policy" in error_msg
@@ -135,6 +172,39 @@ class GroqLLMProvider:
                 code="llm_provider_error",
                 retryable=True,
             ) from e
+
+    def _parse_llm_response(self, content: str) -> LLMResponse:
+        """Parse LLM output JSON with graceful fallback to plain text."""
+        try:
+            parsed = json.loads(content)
+        except json.JSONDecodeError:
+            return LLMResponse(follow_up_question=content, coaching_feedback=None)
+
+        if not isinstance(parsed, dict):
+            return LLMResponse(follow_up_question=content, coaching_feedback=None)
+
+        follow_up_question = parsed.get("follow_up_question")
+        if not isinstance(follow_up_question, str) or not follow_up_question.strip():
+            follow_up_question = content
+        else:
+            follow_up_question = follow_up_question.strip()
+
+        coaching_feedback_raw = parsed.get("coaching_feedback")
+        if coaching_feedback_raw is None:
+            return LLMResponse(
+                follow_up_question=follow_up_question,
+                coaching_feedback=None,
+            )
+
+        try:
+            coaching_feedback = CoachingFeedback.model_validate(coaching_feedback_raw)
+        except Exception:
+            coaching_feedback = None
+
+        return LLMResponse(
+            follow_up_question=follow_up_question,
+            coaching_feedback=coaching_feedback,
+        )
 
     def _build_system_prompt(
         self,
@@ -167,6 +237,22 @@ class GroqLLMProvider:
                 + "\n".join(f"- {q}" for q in asked_questions)
             )
 
+        # Build rubric JSON structure explanation dynamically
+        rubric_labels = ", ".join([d["label"] for d in RUBRIC_DIMENSIONS])
+        rubric_json_fields = ", ".join(
+            [
+                f'{{"label": "{d["label"]}", "score": 1-5 integer, "tip": <=25 words}}'
+                for d in RUBRIC_DIMENSIONS
+            ]
+        )
+
+        schema_instruction = (
+            f'Return ONLY valid JSON with this exact schema: '
+            f'{{"follow_up_question": string, "coaching_feedback": {{"dimensions": '
+            f'[{rubric_json_fields}], "summary_tip": <=30 words}}}}. '
+            f"Use these exact rubric labels in order: {rubric_labels}."
+        )
+
         if is_last_question:
             return (
                 f"You are an interview coach conducting a {difficulty} "
@@ -174,7 +260,8 @@ class GroqLLMProvider:
                 f"This is the FINAL question (question {question_number} of "
                 f"{total_questions}). The candidate just answered. "
                 f"Provide a brief, positive closing acknowledgment of their answer. "
-                f"Do NOT ask another question. Keep it to 1-2 sentences."
+                f"Do NOT ask another question. Keep it to 1-2 sentences. "
+                f"{schema_instruction}"
                 f"{asked_section}"
             )
         else:
@@ -185,6 +272,7 @@ class GroqLLMProvider:
                 f"Based on the candidate's answer, generate a relevant "
                 f"follow-up question. The question should be natural, "
                 f"conversational, and appropriate for the difficulty level. "
-                f"Output ONLY the question text, nothing else."
+                f"{schema_instruction} "
+                f"Keep coaching tone supportive, specific, and skimmable."
                 f"{asked_section}"
             )
