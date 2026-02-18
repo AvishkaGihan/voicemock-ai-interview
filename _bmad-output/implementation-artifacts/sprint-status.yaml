@@ -71,14 +71,14 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Get Coaching Feedback & End-of-Session Summary
-  epic-4: in-progress
+  epic-4: done
   4-1-coaching-rubric-feedback-returned-in-turn-response: done
   4-2-end-of-session-summary-generation-and-display: done
   4-3-recommended-next-actions-in-summary: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
 
   # Epic 5: Trust, Safety, Privacy & Demo Diagnostics
-  epic-5: backlog
+  epic-5: in-progress
   5-1-third-party-processing-disclosure: backlog
   5-2-delete-session-artifacts: backlog
   5-3-safety-constraints-and-refusal-behavior: backlog
