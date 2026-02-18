@@ -8,6 +8,7 @@ import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_page.dart';
 import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
 import 'package:voicemock/features/interview/presentation/view/setup_page.dart';
+import 'package:voicemock/features/settings/presentation/view/settings_page.dart';
 
 /// App router configuration using go_router.
 final GoRouter appRouter = GoRouter(
@@ -51,6 +52,11 @@ final GoRouter appRouter = GoRouter(
           child: const DiagnosticsPage(),
         );
       },
+    ),
+    GoRoute(
+      path: SettingsPage.routeName,
+      name: 'settings',
+      builder: (context, state) => const SettingsPage(),
     ),
   ],
   errorBuilder: (context, state) => Scaffold(

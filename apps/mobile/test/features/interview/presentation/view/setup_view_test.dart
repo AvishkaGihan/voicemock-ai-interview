@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/connectivity/connectivity.dart';
 import 'package:voicemock/core/permissions/permission_service.dart';
+import 'package:voicemock/core/storage/disclosure_prefs.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/configuration_state.dart';
@@ -29,6 +30,8 @@ class MockConfigurationCubit extends MockCubit<ConfigurationState>
 class MockPermissionCubit extends MockCubit<PermissionState>
     implements PermissionCubit {}
 
+class MockDisclosurePrefs extends Mock implements DisclosurePrefs {}
+
 Future<void> pumpVoicemockApp(
   WidgetTester tester,
   Widget widget, {
@@ -36,13 +39,15 @@ Future<void> pumpVoicemockApp(
   SessionCubit? sessionCubit,
   ConfigurationCubit? configurationCubit,
   PermissionCubit? permissionCubit,
+  DisclosurePrefs? disclosurePrefs,
   GoRouter? router,
-}) {
+}) async {
   // Set up default mocks if not provided
   final mockConnectivityCubit = connectivityCubit ?? MockConnectivityCubit();
   final mockSessionCubit = sessionCubit ?? MockSessionCubit();
   final mockConfigurationCubit = configurationCubit ?? MockConfigurationCubit();
   final mockPermissionCubit = permissionCubit ?? MockPermissionCubit();
+  final mockDisclosurePrefs = disclosurePrefs ?? MockDisclosurePrefs();
 
   // Set default states
   if (connectivityCubit == null) {
@@ -71,33 +76,45 @@ Future<void> pumpVoicemockApp(
     );
   }
 
-  return tester.pumpWidget(
-    MultiBlocProvider(
+  if (disclosurePrefs == null) {
+    when(
+      mockDisclosurePrefs.hasAcknowledgedDisclosure,
+    ).thenAnswer((_) async => true);
+    when(mockDisclosurePrefs.acknowledgeDisclosure).thenAnswer((_) async {});
+  }
+
+  await tester.pumpWidget(
+    MultiRepositoryProvider(
       providers: [
-        BlocProvider<ConnectivityCubit>.value(
-          value: mockConnectivityCubit,
-        ),
-        BlocProvider<SessionCubit>.value(
-          value: mockSessionCubit,
-        ),
-        BlocProvider<ConfigurationCubit>.value(
-          value: mockConfigurationCubit,
-        ),
-        BlocProvider<PermissionCubit>.value(
-          value: mockPermissionCubit,
-        ),
+        RepositoryProvider<DisclosurePrefs>.value(value: mockDisclosurePrefs),
       ],
-      child: router != null
-          ? MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: router,
-            )
-          : MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: widget,
-            ),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<ConnectivityCubit>.value(
+            value: mockConnectivityCubit,
+          ),
+          BlocProvider<SessionCubit>.value(
+            value: mockSessionCubit,
+          ),
+          BlocProvider<ConfigurationCubit>.value(
+            value: mockConfigurationCubit,
+          ),
+          BlocProvider<PermissionCubit>.value(
+            value: mockPermissionCubit,
+          ),
+        ],
+        child: router != null
+            ? MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              )
+            : MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: widget,
+              ),
+      ),
     ),
   );
 }

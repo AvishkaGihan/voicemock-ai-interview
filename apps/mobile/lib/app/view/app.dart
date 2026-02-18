@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voicemock/app/router.dart';
 import 'package:voicemock/core/http/http.dart';
+import 'package:voicemock/core/storage/disclosure_prefs.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/l10n/l10n.dart';
 
@@ -19,6 +20,7 @@ class App extends StatelessWidget {
       providers: [
         RepositoryProvider.value(value: prefs),
         RepositoryProvider.value(value: apiClient),
+        RepositoryProvider(create: (_) => DisclosurePrefs(prefs)),
       ],
       child: MaterialApp.router(
         theme: ThemeData(

@@ -79,7 +79,7 @@ development_status:
 
   # Epic 5: Trust, Safety, Privacy & Demo Diagnostics
   epic-5: in-progress
-  5-1-third-party-processing-disclosure: backlog
+  5-1-third-party-processing-disclosure: done
   5-2-delete-session-artifacts: backlog
   5-3-safety-constraints-and-refusal-behavior: backlog
   5-4-diagnostics-screen-request-id-timings-last-error: backlog
