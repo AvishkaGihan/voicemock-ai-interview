@@ -1,6 +1,8 @@
 export 'configuration_summary_card.dart';
 export 'connectivity_banner.dart';
 export 'difficulty_selector.dart';
+export 'disclosure_banner.dart';
+export 'disclosure_detail_sheet.dart';
 export 'error_recovery_sheet.dart';
 export 'hold_to_talk_button.dart';
 export 'permission_denied_banner.dart';

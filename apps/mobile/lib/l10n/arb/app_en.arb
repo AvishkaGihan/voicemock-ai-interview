@@ -23,5 +23,69 @@
     "noInternetConnection": "No Internet Connection",
     "@noInternetConnection": {
         "description": "Label for start interview button when offline"
+    },
+    "disclosureBannerText": "Your audio and responses are processed by third-party AI services to generate transcripts, questions, and feedback. Audio is not stored after processing.",
+    "@disclosureBannerText": {
+        "description": "Short two-sentence summary shown in the disclosure banner"
+    },
+    "disclosureBannerGotIt": "Got it",
+    "@disclosureBannerGotIt": {
+        "description": "Label for the dismiss action on the banner"
+    },
+    "disclosureBannerLearnMore": "Learn more",
+    "@disclosureBannerLearnMore": {
+        "description": "Label for the expand action on the banner"
+    },
+    "disclosureDetailTitle": "Data & Privacy",
+    "@disclosureDetailTitle": {
+        "description": "Title shown at the top of the detail bottom sheet"
+    },
+    "disclosureSection1Header": "What data is processed",
+    "@disclosureSection1Header": {
+        "description": "Header for section 1 of disclosure"
+    },
+    "disclosureSection1Body": "When you record a response, your audio is sent to a speech recognition service to generate a text transcript. That transcript is then sent to a language model to produce the next interview question and coaching feedback. A text-to-speech service converts the question text back into audio so you can hear it.",
+    "@disclosureSection1Body": {
+        "description": "Body for section 1 of disclosure"
+    },
+    "disclosureSection2Header": "How it's processed",
+    "@disclosureSection2Header": {
+        "description": "Header for section 2 of disclosure"
+    },
+    "disclosureSection2Body": "Third-party AI services handle speech recognition (STT), question and feedback generation (LLM), and voice output (TTS). These services process your data to deliver the interview experience. VoiceMock does not train models on your data.",
+    "@disclosureSection2Body": {
+        "description": "Body for section 2 of disclosure"
+    },
+    "disclosureSection3Header": "Data retention",
+    "@disclosureSection3Header": {
+        "description": "Header for section 3 of disclosure"
+    },
+    "disclosureSection3Body": "Audio is not persisted after it has been transcribed — it is processed in transit and discarded. Transcripts and session summaries are kept only for the duration of your current session.",
+    "@disclosureSection3Body": {
+        "description": "Body for section 3 of disclosure"
+    },
+    "disclosureSection4Header": "Your controls",
+    "@disclosureSection4Header": {
+        "description": "Header for section 4 of disclosure"
+    },
+    "disclosureSection4Body": "You can delete session data (transcripts and summaries) at any time from the app. Diagnostics information (request IDs and timing data) does not include audio recordings or full transcripts.",
+    "@disclosureSection4Body": {
+        "description": "Body for section 4 of disclosure"
+    },
+    "disclosureDetailClose": "Got it",
+    "@disclosureDetailClose": {
+        "description": "Close button label for disclosure detail"
+    },
+    "disclosureSettingsSectionTitle": "Data & Privacy",
+    "@disclosureSettingsSectionTitle": {
+        "description": "Section header shown in the Settings screen"
+    },
+    "disclosureSettingsTileTitle": "Processing Disclosure",
+    "@disclosureSettingsTileTitle": {
+        "description": "List tile label in the Settings screen"
+    },
+    "disclosureSettingsTileSubtitle": "How your audio and transcripts are handled",
+    "@disclosureSettingsTileSubtitle": {
+        "description": "Subtitle shown under the tile in Settings"
     }
 }
