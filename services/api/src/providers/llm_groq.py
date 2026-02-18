@@ -124,6 +124,7 @@ class GroqLLMProvider:
                 ],
                 max_tokens=self._max_tokens,
                 temperature=0.7,
+                response_format={"type": "json_object"},
             )
             raw_content = response.choices[0].message.content
             if raw_content is None:
@@ -228,7 +229,7 @@ class GroqLLMProvider:
         Returns:
             System prompt string
         """
-        is_last_question = question_number > total_questions
+        is_last_question = question_number >= total_questions
 
         asked_section = ""
         if asked_questions:
@@ -261,6 +262,9 @@ class GroqLLMProvider:
                 f"{total_questions}). The candidate just answered. "
                 f"Provide a brief, positive closing acknowledgment of their answer. "
                 f"Do NOT ask another question. Keep it to 1-2 sentences. "
+                f"For the 'follow_up_question' field, provide a purely declarative "
+                f"closing statement (e.g., 'Thank you for that answer. That concludes "
+                f"our interview.'). do NOT phrase it as a question. "
                 f"{schema_instruction}"
                 f"{asked_section}"
             )
@@ -309,6 +313,7 @@ class GroqLLMProvider:
                 ],
                 max_tokens=self._max_tokens,
                 temperature=0.5,
+                response_format={"type": "json_object"},
             )
             raw_content = response.choices[0].message.content
             if raw_content is None:
@@ -329,6 +334,8 @@ class GroqLLMProvider:
             if not required_keys.issubset(parsed.keys()):
                 return None
 
+            parsed.setdefault("recommended_actions", [])
+
             return parsed
 
         except Exception:
@@ -344,6 +351,11 @@ class GroqLLMProvider:
     ) -> str:
         rubric_labels = ", ".join([d["label"] for d in RUBRIC_DIMENSIONS])
 
+        # Identify the 2 weakest rubric dimensions deterministically from average_scores
+        sorted_dims = sorted(average_scores.items(), key=lambda x: x[1])
+        weakest_dims = [d[0] for d in sorted_dims[:2]]
+        weakest_text = ", ".join(weakest_dims) if weakest_dims else "all dimensions"
+
         return (
             f"You are an interview coach summarizing a completed {difficulty} "
             f"{interview_type} interview for role {role}. "
@@ -351,9 +363,19 @@ class GroqLLMProvider:
             '{"overall_assessment": string <=60 words, '
             '"strengths": array of 1-3 strings each <=20 words, '
             '"improvements": array of 1-3 strings each <=20 words, '
+            '"recommended_actions": array of 0-4 strings each <=25 words, '
             '"average_scores": object}. '
             f"Rubric dimensions are: {rubric_labels}. "
-            "Use supportive coaching tone. Do not include markdown. "
+            f"The candidate's weakest dimensions are: {weakest_text}. "
+            "For recommended_actions: provide 0-4 concrete, actionable "
+            "next steps. Each action MUST reference the candidate's actual "
+            f"performance and target the weakest dimensions ({weakest_text}). "
+            "Use specific techniques such as the STAR method, pausing instead of "
+            "filler words, or quantifying impact. "
+            "Do NOT give generic advice. Start each action with an active verb "
+            "(Try, Practice, Focus). Each action must be 25 words or fewer. "
+            "Use supportive coaching tone. If performance is perfect and no specific "
+            "actions are needed, return an empty array for recommended_actions. "
             "Use this deterministic average_scores exactly as provided without "
             f"changes: {json.dumps(average_scores)}. "
             f"Turn history JSON: {json.dumps(turn_history)}"

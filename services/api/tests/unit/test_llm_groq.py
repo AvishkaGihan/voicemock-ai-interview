@@ -57,6 +57,7 @@ async def test_generate_follow_up_success():
         assert call_args[1]["model"] == "llama-3.3-70b-versatile"
         assert call_args[1]["max_tokens"] == 256
         assert call_args[1]["temperature"] == 0.7
+        assert call_args[1]["response_format"] == {"type": "json_object"}
         assert len(call_args[1]["messages"]) == 2  # system + user
 
 
@@ -97,7 +98,7 @@ async def test_generate_follow_up_last_question():
                 "Describe your database experience.",
                 "What is your preferred architecture?",
             ],
-            question_number=6,
+            question_number=5,
             total_questions=5,
         )
 
@@ -114,6 +115,8 @@ async def test_generate_follow_up_last_question():
         assert "FINAL" in system_message
         assert "acknowledgment" in system_message.lower()
         assert "Do NOT ask another question" in system_message
+        assert "purely declarative" in system_message
+        assert "closing statement" in system_message
 
 
 @pytest.mark.asyncio
@@ -391,6 +394,10 @@ async def test_generate_session_summary_success():
         assert result["overall_assessment"] == "Strong performance overall."
         assert result["average_scores"]["clarity"] == 4.5
         assert result["average_scores"]["relevance"] == 3.0
+
+        # Verify LLM call
+        call_args = mock_client.chat.completions.create.call_args
+        assert call_args[1]["response_format"] == {"type": "json_object"}
 
 
 @pytest.mark.asyncio

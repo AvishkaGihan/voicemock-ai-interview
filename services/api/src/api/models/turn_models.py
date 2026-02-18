@@ -68,6 +68,13 @@ class SessionSummary(BaseModel):
         ...,
         description="Deterministic per-dimension average rubric scores",
     )
+    recommended_actions: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Actionable next steps tied to rubric weaknesses "
+            "(2-4 items when present, ≤ 25 words each)"
+        ),
+    )
 
     @field_validator("overall_assessment")
     @classmethod
@@ -82,6 +89,16 @@ class SessionSummary(BaseModel):
         for value in values:
             if _word_count(value) > 20:
                 raise ValueError("each list item must be 20 words or fewer")
+        return values
+
+    @field_validator("recommended_actions")
+    @classmethod
+    def validate_recommended_actions(cls, values: list[str]) -> list[str]:
+        if not (0 <= len(values) <= 4):
+            raise ValueError("recommended_actions must contain 0-4 items")
+        for value in values:
+            if _word_count(value) > 25:
+                raise ValueError("each recommended action must be 25 words or fewer")
         return values
 
 

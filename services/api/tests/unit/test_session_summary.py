@@ -115,3 +115,134 @@ async def test_generate_session_summary_average_scores_empty_when_no_feedback():
 
         assert result is not None
         assert result["average_scores"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Task 5.3 / 5.4 / 5.5: recommended_actions in generate_session_summary
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_generate_session_summary_includes_recommended_actions_from_llm():
+    """Provider passes through recommended_actions from valid LLM output."""
+    mock_completion = Mock()
+    mock_completion.choices = [
+        Mock(
+            message=Mock(
+                content=(
+                    '{"overall_assessment":"Strong clarity and flow.",'
+                    '"strengths":["Clear examples"],'
+                    '"improvements":["Use more metrics"],'
+                    '"recommended_actions":['
+                    '"Try structuring answers with the STAR method for clearer narratives.",'
+                    '"Practice pausing instead of using filler words when thinking."],'
+                    '"average_scores":{}}'
+                )
+            )
+        )
+    ]
+
+    with patch("src.providers.llm_groq.AsyncGroq") as mock_groq_class:
+        mock_client = AsyncMock()
+        mock_groq_class.return_value = mock_client
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+
+        provider = GroqLLMProvider(api_key="test_key")
+        result = await provider.generate_session_summary(
+            turn_history=[],
+            role="product manager",
+            interview_type="behavioral",
+            difficulty="senior",
+        )
+
+        assert result is not None
+        assert "recommended_actions" in result
+        assert len(result["recommended_actions"]) == 2
+        assert "STAR" in result["recommended_actions"][0]
+
+
+@pytest.mark.asyncio
+async def test_generate_session_summary_defaults_recommended_actions_when_missing():
+    """Provider defaults recommended_actions to [] when absent from LLM output."""
+    mock_completion = Mock()
+    mock_completion.choices = [
+        Mock(
+            message=Mock(
+                content=(
+                    '{"overall_assessment":"Good finish.",'
+                    '"strengths":["Composure"],'
+                    '"improvements":["Add detail"],'
+                    '"average_scores":{}}'
+                )
+            )
+        )
+    ]
+
+    with patch("src.providers.llm_groq.AsyncGroq") as mock_groq_class:
+        mock_client = AsyncMock()
+        mock_groq_class.return_value = mock_client
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+
+        provider = GroqLLMProvider(api_key="test_key")
+        result = await provider.generate_session_summary(
+            turn_history=[],
+            role="backend developer",
+            interview_type="technical",
+            difficulty="medium",
+        )
+
+        assert result is not None
+        assert result.get("recommended_actions") == []
+
+
+@pytest.mark.asyncio
+async def test_session_summary_prompt_references_recommended_actions_and_weakest_dims():
+    """Summary prompt must include recommended_actions schema and weakest dimensions."""
+    mock_completion = Mock()
+    mock_completion.choices = [
+        Mock(
+            message=Mock(
+                content=(
+                    '{"overall_assessment":"Solid interview overall.",'
+                    '"strengths":["Clear structure"],'
+                    '"improvements":["Add metrics"],'
+                    '"recommended_actions":['
+                    '"Practice using STAR method for better structured answers.",'
+                    '"Focus on quantifying impact with specific numbers."],'
+                    '"average_scores":{}}'
+                )
+            )
+        )
+    ]
+
+    with patch("src.providers.llm_groq.AsyncGroq") as mock_groq_class:
+        mock_client = AsyncMock()
+        mock_groq_class.return_value = mock_client
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+
+        provider = GroqLLMProvider(api_key="test_key")
+        await provider.generate_session_summary(
+            turn_history=[
+                {
+                    "coaching_feedback": {
+                        "dimensions": [
+                            {"label": "Clarity", "score": 2, "tip": "Be clearer"},
+                            {"label": "Relevance", "score": 5, "tip": "Strong"},
+                            {"label": "Structure", "score": 1, "tip": "Improve"},
+                        ]
+                    }
+                }
+            ],
+            role="backend developer",
+            interview_type="technical",
+            difficulty="medium",
+        )
+
+        call_args = mock_client.chat.completions.create.call_args
+        system_message = call_args[1]["messages"][0]["content"]
+        # Prompt must include recommended_actions in the JSON schema instruction
+        assert "recommended_actions" in system_message
+        # Prompt must reference the weakest dimensions (structure=1 and clarity=2)
+        assert (
+            "structure" in system_message.lower() or "clarity" in system_message.lower()
+        )

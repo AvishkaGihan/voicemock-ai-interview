@@ -124,6 +124,37 @@ class SessionCompleteCard extends StatelessWidget {
                         .toList(),
                   ),
                 ),
+                if (sessionSummary!.recommendedActions.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _SummarySection(
+                    title: 'What to Practice Next',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: sessionSummary!.recommendedActions
+                          .map(
+                            (action) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 2),
+                                    child: Icon(
+                                      Icons.arrow_forward,
+                                      size: 16,
+                                      color: VoiceMockColors.secondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(action)),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 _SummarySection(
                   title: 'Average scores',

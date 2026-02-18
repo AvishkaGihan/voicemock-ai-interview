@@ -160,3 +160,114 @@ def test_turn_response_data_supports_session_summary_field():
     payload = data.model_dump()
     assert payload["session_summary"] is not None
     assert payload["session_summary"]["average_scores"]["clarity"] == 4.2
+
+
+# ---------------------------------------------------------------------------
+# Task 5.1 / 5.2: recommended_actions field on SessionSummary
+# ---------------------------------------------------------------------------
+
+
+def test_session_summary_recommended_actions_valid_2_items():
+    """recommended_actions accepts exactly 2 items each <= 25 words."""
+    summary = SessionSummary(
+        overall_assessment="Clear and structured responses throughout the session.",
+        strengths=["Strong examples"],
+        improvements=["Quantify impact"],
+        average_scores={"clarity": 3.5},
+        recommended_actions=[
+            "Try structuring answers with the STAR method for clearer narratives.",
+            "Practice pausing instead of using filler words when thinking.",
+        ],
+    )
+    assert len(summary.recommended_actions) == 2
+
+
+def test_session_summary_recommended_actions_valid_4_items():
+    """recommended_actions accepts up to 4 items."""
+    summary = SessionSummary(
+        overall_assessment="Solid performance with room to grow.",
+        strengths=["Clear examples"],
+        improvements=["Quantify impact"],
+        average_scores={},
+        recommended_actions=[
+            "Practice using the STAR method for a clear action-result narrative.",
+            "Reduce filler words by pausing briefly before each new thought.",
+            "Quantify your achievements with specific numbers or percentages.",
+            "Focus on linking your past experience directly to the target role.",
+        ],
+    )
+    assert len(summary.recommended_actions) == 4
+
+
+def test_session_summary_recommended_actions_defaults_to_empty_list():
+    """recommended_actions defaults to [] when omitted — backward compatibility."""
+    summary = SessionSummary(
+        overall_assessment="Clear and structured responses throughout the session.",
+        strengths=["Strong examples"],
+        improvements=["Quantify impact"],
+        average_scores={"clarity": 3.5},
+    )
+    assert summary.recommended_actions == []
+
+
+def test_session_summary_recommended_actions_allows_single_item():
+    """recommended_actions accepts 1 item."""
+    summary = SessionSummary(
+        overall_assessment="Good interview.",
+        strengths=["Strong examples"],
+        improvements=["Quantify impact"],
+        average_scores={},
+        recommended_actions=["Only one action here is now allowed."],
+    )
+    assert len(summary.recommended_actions) == 1
+
+
+def test_session_summary_recommended_actions_rejects_more_than_4_items():
+    """recommended_actions rejects lists with 5+ items."""
+    with pytest.raises(ValidationError):
+        SessionSummary(
+            overall_assessment="Good interview.",
+            strengths=["Strong examples"],
+            improvements=["Quantify impact"],
+            average_scores={},
+            recommended_actions=[
+                "Practice using the STAR method for structured answers.",
+                "Reduce filler words by pausing before each response.",
+                "Try quantifying your achievements with specific metrics.",
+                "Focus on connecting your experience to the role requirements.",
+                "Work on keeping responses concise and well-targeted.",
+            ],
+        )
+
+
+def test_session_summary_recommended_actions_rejects_item_over_25_words():
+    """Each recommended action must be 25 words or fewer."""
+    long_action = " ".join(["word"] * 26)
+    with pytest.raises(ValidationError):
+        SessionSummary(
+            overall_assessment="Good interview.",
+            strengths=["Strong examples"],
+            improvements=["Quantify impact"],
+            average_scores={},
+            recommended_actions=[
+                long_action,
+                "Practice pausing before speaking instead of using filler words.",
+            ],
+        )
+
+
+def test_session_summary_with_recommended_actions_serializes_correctly():
+    """SessionSummary with recommended_actions round-trips through model_dump."""
+    actions = [
+        "Try structuring answers with the STAR method for clearer narratives.",
+        "Practice pausing instead of using filler words when thinking.",
+    ]
+    summary = SessionSummary(
+        overall_assessment="Clear and structured responses throughout.",
+        strengths=["Strong examples"],
+        improvements=["Quantify impact"],
+        average_scores={"clarity": 4.0},
+        recommended_actions=actions,
+    )
+    payload = summary.model_dump()
+    assert payload["recommended_actions"] == actions
