@@ -119,17 +119,14 @@ class _InterviewViewState extends State<InterviewView>
                     failure: state.failure,
                     failedStage: state.failedStage,
                     onRetry: () {
-                      Navigator.pop(context); // Close sheet
                       unawaited(context.read<InterviewCubit>().retry());
                     },
                     onReRecord: () {
-                      Navigator.pop(context); // Close sheet
                       unawaited(
                         context.read<InterviewCubit>().reRecordFromError(),
                       );
                     },
                     onCancel: () {
-                      Navigator.pop(context); // Close sheet
                       unawaited(context.read<InterviewCubit>().cancel());
                     },
                   ),
@@ -186,12 +183,28 @@ class _InterviewViewState extends State<InterviewView>
         :final totalQuestions,
         :final questionText,
         :final previousTranscript,
+        :final lastTtsAudioUrl,
       ) =>
         TurnCard(
           questionNumber: questionNumber,
           totalQuestions: totalQuestions,
           questionText: questionText,
           transcript: previousTranscript,
+          onReplay: lastTtsAudioUrl.isNotEmpty
+              ? () async {
+                  final replayStarted = await context
+                      .read<InterviewCubit>()
+                      .replayLastResponse();
+                  if (!replayStarted && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Response audio expired'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              : null,
         ),
       InterviewRecording(
         :final questionNumber,
@@ -257,13 +270,25 @@ class _InterviewViewState extends State<InterviewView>
         :final questionText,
         :final transcript,
         :final responseText,
+        :final isPaused,
       ) =>
-        TurnCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
-          transcript: transcript,
-          responseText: responseText,
+        Column(
+          children: [
+            TurnCard(
+              questionNumber: questionNumber,
+              totalQuestions: totalQuestions,
+              questionText: questionText,
+              transcript: transcript,
+              responseText: responseText,
+            ),
+            PlaybackControlBar(
+              isPaused: isPaused,
+              isBuffering: state.isBuffering,
+              onPause: () => context.read<InterviewCubit>().pausePlayback(),
+              onResume: () => context.read<InterviewCubit>().resumePlayback(),
+              onStop: () => context.read<InterviewCubit>().stopPlayback(),
+            ),
+          ],
         ),
       InterviewSessionComplete(
         :final totalQuestions,
@@ -348,10 +373,9 @@ class _InterviewViewState extends State<InterviewView>
     );
 
     if ((confirmed ?? false) && context.mounted) {
-      await context.read<InterviewCubit>().cancel();
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      final cubit = context.read<InterviewCubit>();
+      Navigator.pop(context);
+      unawaited(cubit.cancel());
     }
   }
 }

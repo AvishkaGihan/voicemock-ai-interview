@@ -95,11 +95,17 @@ class ErrorRecoverySheet extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'ID: ${failure.requestId}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      Flexible(
+                        child: Text(
+                          'ID: ${failure.requestId}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontFamily: 'monospace',
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

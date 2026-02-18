@@ -190,7 +190,7 @@ void main() {
     );
 
     blocTest<InterviewCubit, InterviewState>(
-      'interruption during Speaking → transitions to Ready',
+      'interruption during Speaking → pauses playback',
       build: createCubit,
       seed: () => const InterviewSpeaking(
         questionNumber: 1,
@@ -211,9 +211,9 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 100));
       },
       expect: () => [
-        isA<InterviewReady>()
-            .having((s) => s.questionNumber, 'questionNumber', 2)
-            .having((s) => s.questionText, 'questionText', 'Test response'),
+        isA<InterviewSpeaking>()
+            .having((s) => s.questionNumber, 'questionNumber', 1)
+            .having((s) => s.isPaused, 'isPaused', true),
       ],
       verify: (_) {
         verifyNever(() => mockRecordingService.stopRecording());

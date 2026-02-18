@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 
 sealed class PlaybackEvent {
@@ -8,6 +9,14 @@ sealed class PlaybackEvent {
 
 final class PlaybackPlaying extends PlaybackEvent {
   const PlaybackPlaying();
+}
+
+final class PlaybackBuffering extends PlaybackEvent {
+  const PlaybackBuffering();
+}
+
+final class PlaybackPaused extends PlaybackEvent {
+  const PlaybackPaused();
 }
 
 final class PlaybackCompleted extends PlaybackEvent {
@@ -37,6 +46,18 @@ class PlaybackService {
 
   bool get isPlaying => _audioPlayer?.playing ?? false;
 
+  bool get isPaused {
+    final player = _audioPlayer;
+    if (player == null) {
+      return false;
+    }
+
+    final state = player.processingState;
+    return !player.playing &&
+        state != ja.ProcessingState.idle &&
+        state != ja.ProcessingState.completed;
+  }
+
   Stream<PlaybackEvent> get events => _eventsController.stream;
 
   Future<void> playUrl(String url, {String? bearerToken}) async {
@@ -54,6 +75,9 @@ class PlaybackService {
         if (bearerToken != null && bearerToken.isNotEmpty)
           'Authorization': 'Bearer $bearerToken',
       };
+
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.speech());
 
       await player.setAudioSource(
         ja.AudioSource.uri(
@@ -80,6 +104,30 @@ class PlaybackService {
     await player.stop();
   }
 
+  Future<void> pause() async {
+    final player = _audioPlayer;
+    if (!_enabled || player == null) {
+      return;
+    }
+
+    await player.pause();
+    _eventsController.add(const PlaybackPaused());
+  }
+
+  Future<void> resume() async {
+    final player = _audioPlayer;
+    if (!_enabled || player == null) {
+      return;
+    }
+
+    _eventsController.add(const PlaybackPlaying());
+    await player.play();
+  }
+
+  Future<void> replay(String url, {String? bearerToken}) {
+    return playUrl(url, bearerToken: bearerToken);
+  }
+
   Future<void> dispose() async {
     await _cancelPlayerSubscriptions();
 
@@ -99,6 +147,11 @@ class PlaybackService {
     _playerStateSubscription = player.playerStateStream.listen((state) {
       if (state.processingState == ja.ProcessingState.completed) {
         _eventsController.add(const PlaybackCompleted());
+      } else if (state.processingState == ja.ProcessingState.buffering) {
+        _eventsController.add(const PlaybackBuffering());
+      } else if (state.processingState == ja.ProcessingState.ready &&
+          state.playing) {
+        _eventsController.add(const PlaybackPlaying());
       }
     });
 
