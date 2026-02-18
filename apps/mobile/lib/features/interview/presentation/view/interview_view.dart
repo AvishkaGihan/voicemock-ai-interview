@@ -119,17 +119,14 @@ class _InterviewViewState extends State<InterviewView>
                     failure: state.failure,
                     failedStage: state.failedStage,
                     onRetry: () {
-                      Navigator.pop(context); // Close sheet
                       unawaited(context.read<InterviewCubit>().retry());
                     },
                     onReRecord: () {
-                      Navigator.pop(context); // Close sheet
                       unawaited(
                         context.read<InterviewCubit>().reRecordFromError(),
                       );
                     },
                     onCancel: () {
-                      Navigator.pop(context); // Close sheet
                       unawaited(context.read<InterviewCubit>().cancel());
                     },
                   ),
