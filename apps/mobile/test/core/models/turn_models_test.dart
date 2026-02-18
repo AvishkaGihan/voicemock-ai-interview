@@ -174,4 +174,60 @@ void main() {
       expect(result.timings, <String, dynamic>{});
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Task 6.1 / 6.2: SessionSummary.recommendedActions field deserialization
+  // ---------------------------------------------------------------------------
+
+  group('SessionSummary.recommendedActions', () {
+    test('deserializes recommended_actions when present', () {
+      final json = {
+        'overall_assessment': 'You were clear and focused.',
+        'strengths': ['Strong structure'],
+        'improvements': ['Quantify impact'],
+        'average_scores': {'clarity': 4.0},
+        'recommended_actions': [
+          'Try using the STAR method for more structured answers.',
+          'Practice pausing instead of using filler words.',
+        ],
+      };
+
+      final result = SessionSummary.fromJson(json);
+
+      expect(result.recommendedActions.length, 2);
+      expect(result.recommendedActions.first, contains('STAR'));
+    });
+
+    test('defaults recommendedActions to empty list when field is missing', () {
+      final json = {
+        'overall_assessment': 'You were clear and focused.',
+        'strengths': ['Strong structure'],
+        'improvements': ['Quantify impact'],
+        'average_scores': {'clarity': 4.0},
+        // no recommended_actions key
+      };
+
+      final result = SessionSummary.fromJson(json);
+
+      expect(result.recommendedActions, isEmpty);
+    });
+
+    test('includes recommendedActions in toJson output', () {
+      const summary = SessionSummary(
+        overallAssessment: 'Good performance.',
+        strengths: ['Clear'],
+        improvements: ['Quantify'],
+        averageScores: {},
+        recommendedActions: [
+          'Try using the STAR method for more structured answers.',
+          'Focus on quantifying your impact with specific numbers.',
+        ],
+      );
+
+      final json = summary.toJson();
+
+      expect(json['recommended_actions'], isA<List>());
+      expect((json['recommended_actions'] as List).length, 2);
+    });
+  });
 }

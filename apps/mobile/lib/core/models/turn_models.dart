@@ -62,6 +62,7 @@ class SessionSummary {
     required this.strengths,
     required this.improvements,
     required this.averageScores,
+    this.recommendedActions = const <String>[],
   });
 
   /// Creates a [SessionSummary] from JSON.
@@ -81,6 +82,10 @@ class SessionSummary {
   /// Per-dimension average scores.
   @JsonKey(name: 'average_scores')
   final Map<String, double> averageScores;
+
+  /// Concrete next steps tied to rubric weaknesses (2-4 items when present).
+  @JsonKey(name: 'recommended_actions', defaultValue: <String>[])
+  final List<String> recommendedActions;
 
   /// Converts this [SessionSummary] to JSON.
   Map<String, dynamic> toJson() => _$SessionSummaryToJson(this);

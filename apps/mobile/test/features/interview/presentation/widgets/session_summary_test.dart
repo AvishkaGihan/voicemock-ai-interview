@@ -63,4 +63,59 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // Task 6.3 / 6.4: "What to Practice Next" section in SessionCompleteCard
+  // ---------------------------------------------------------------------------
+
+  group('SessionCompleteCard recommended actions', () {
+    testWidgets(
+      'renders What to Practice Next section when recommendedActions is non-empty',
+      (tester) async {
+        const summaryWithActions = SessionSummary(
+          overallAssessment: 'Strong performance with room to grow.',
+          strengths: ['Clear communication'],
+          improvements: ['Quantify achievements'],
+          averageScores: {'clarity': 3.5},
+          recommendedActions: [
+            'Try structuring answers with the STAR method for clearer stories.',
+            'Practice pausing instead of using filler words when thinking.',
+          ],
+        );
+
+        await tester.pumpWidget(buildTestWidget(summaryWithActions));
+
+        expect(find.text('What to Practice Next'), findsOneWidget);
+        expect(
+          find.text(
+            'Try structuring answers with the STAR method for clearer stories.',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'Practice pausing instead of using filler words when thinking.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'hides What to Practice Next section when recommendedActions is empty',
+      (tester) async {
+        const summaryNoActions = SessionSummary(
+          overallAssessment: 'Strong performance.',
+          strengths: ['Clear communication'],
+          improvements: ['Quantify achievements'],
+          averageScores: {'clarity': 4.0},
+          // recommendedActions defaults to []
+        );
+
+        await tester.pumpWidget(buildTestWidget(summaryNoActions));
+
+        expect(find.text('What to Practice Next'), findsNothing);
+      },
+    );
+  });
 }
