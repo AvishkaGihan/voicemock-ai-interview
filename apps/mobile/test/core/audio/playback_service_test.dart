@@ -10,6 +10,7 @@ class MockAudioPlayer extends Mock implements ja.AudioPlayer {}
 class FakeAudioSource extends Fake implements ja.AudioSource {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() {
     registerFallbackValue(FakeAudioSource());
   });
