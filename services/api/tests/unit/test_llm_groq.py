@@ -98,7 +98,7 @@ async def test_generate_follow_up_last_question():
                 "Describe your database experience.",
                 "What is your preferred architecture?",
             ],
-            question_number=6,
+            question_number=5,
             total_questions=5,
         )
 
@@ -115,6 +115,8 @@ async def test_generate_follow_up_last_question():
         assert "FINAL" in system_message
         assert "acknowledgment" in system_message.lower()
         assert "Do NOT ask another question" in system_message
+        assert "purely declarative" in system_message
+        assert "closing statement" in system_message
 
 
 @pytest.mark.asyncio

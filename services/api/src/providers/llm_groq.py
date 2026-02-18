@@ -229,7 +229,7 @@ class GroqLLMProvider:
         Returns:
             System prompt string
         """
-        is_last_question = question_number > total_questions
+        is_last_question = question_number >= total_questions
 
         asked_section = ""
         if asked_questions:
@@ -262,6 +262,9 @@ class GroqLLMProvider:
                 f"{total_questions}). The candidate just answered. "
                 f"Provide a brief, positive closing acknowledgment of their answer. "
                 f"Do NOT ask another question. Keep it to 1-2 sentences. "
+                f"For the 'follow_up_question' field, provide a purely declarative "
+                f"closing statement (e.g., 'Thank you for that answer. That concludes "
+                f"our interview.'). do NOT phrase it as a question. "
                 f"{schema_instruction}"
                 f"{asked_section}"
             )
