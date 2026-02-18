@@ -152,6 +152,7 @@ class InterviewTranscriptReview extends InterviewState {
     this.assistantText,
     this.ttsAudioUrl = '',
     this.coachingFeedback,
+    this.sessionSummary,
     this.isComplete = false,
   });
 
@@ -164,6 +165,7 @@ class InterviewTranscriptReview extends InterviewState {
   final String? assistantText;
   final String ttsAudioUrl;
   final CoachingFeedback? coachingFeedback;
+  final SessionSummary? sessionSummary;
   final bool isComplete;
 
   @override
@@ -180,6 +182,7 @@ class InterviewTranscriptReview extends InterviewState {
     assistantText,
     ttsAudioUrl,
     coachingFeedback,
+    sessionSummary,
     isComplete,
   ];
 }
@@ -263,11 +266,13 @@ class InterviewSessionComplete extends InterviewState {
     required this.totalQuestions,
     required this.lastTranscript,
     this.lastResponseText,
+    this.sessionSummary,
   });
 
   final int totalQuestions;
   final String lastTranscript;
   final String? lastResponseText;
+  final SessionSummary? sessionSummary;
 
   @override
   InterviewStage get stage => InterviewStage.sessionComplete;
@@ -277,6 +282,7 @@ class InterviewSessionComplete extends InterviewState {
     totalQuestions,
     lastTranscript,
     lastResponseText,
+    sessionSummary,
   ];
 }
 

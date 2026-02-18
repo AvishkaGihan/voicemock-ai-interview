@@ -4,6 +4,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 
 from src.api.models.session_models import SessionStartRequest
+from src.domain.session_state import TurnRecord
 from src.services.session_store import SessionStore
 
 
@@ -145,3 +146,32 @@ def test_cleanup_expired_sessions_preserves_active_sessions(
 
     assert cleaned_count == 0
     assert session_store.get_session(session.session_id) is not None
+
+
+def test_turn_history_is_deep_copied(session_store, sample_request):
+    """Turn history should be copied deeply on get/update responses."""
+    session = session_store.create_session(sample_request)
+
+    updated = session_store.update_session(
+        session.session_id,
+        turn_history=[
+            TurnRecord(
+                turn_number=1,
+                transcript="Answer",
+                assistant_text="Follow-up",
+                coaching_feedback={"summary_tip": "Keep examples concrete."},
+            )
+        ],
+    )
+
+    assert updated is not None
+    first_copy = session_store.get_session(session.session_id)
+    second_copy = session_store.get_session(session.session_id)
+
+    assert first_copy is not None
+    assert second_copy is not None
+    assert first_copy.turn_history is not second_copy.turn_history
+    assert first_copy.turn_history[0] is not second_copy.turn_history[0]
+
+    first_copy.turn_history[0].transcript = "Mutated"
+    assert second_copy.turn_history[0].transcript == "Answer"

@@ -45,6 +45,46 @@ class CoachingFeedback(BaseModel):
         return value
 
 
+class SessionSummary(BaseModel):
+    """Structured end-of-session summary returned on final turn."""
+
+    overall_assessment: str = Field(
+        ...,
+        description="2-3 sentence overall assessment (<= 60 words)",
+    )
+    strengths: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=3,
+        description="Concrete strengths (1-3 items, <= 20 words each)",
+    )
+    improvements: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=3,
+        description="Concrete improvements (1-3 items, <= 20 words each)",
+    )
+    average_scores: dict[str, float] = Field(
+        ...,
+        description="Deterministic per-dimension average rubric scores",
+    )
+
+    @field_validator("overall_assessment")
+    @classmethod
+    def validate_assessment_length(cls, value: str) -> str:
+        if _word_count(value) > 60:
+            raise ValueError("overall_assessment must be 60 words or fewer")
+        return value
+
+    @field_validator("strengths", "improvements")
+    @classmethod
+    def validate_item_lengths(cls, values: list[str]) -> list[str]:
+        for value in values:
+            if _word_count(value) > 20:
+                raise ValueError("each list item must be 20 words or fewer")
+        return values
+
+
 class TurnResponseData(BaseModel):
     """Response data for a turn submission.
 
@@ -75,6 +115,11 @@ class TurnResponseData(BaseModel):
     coaching_feedback: CoachingFeedback | None = Field(
         default=None,
         description="Structured per-turn coaching feedback aligned to rubric",
+    )
+
+    session_summary: SessionSummary | None = Field(
+        default=None,
+        description="End-of-session summary payload (final turn only)",
     )
 
     timings: dict[str, float] = Field(

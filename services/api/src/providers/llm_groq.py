@@ -247,7 +247,7 @@ class GroqLLMProvider:
         )
 
         schema_instruction = (
-            f'Return ONLY valid JSON with this exact schema: '
+            f"Return ONLY valid JSON with this exact schema: "
             f'{{"follow_up_question": string, "coaching_feedback": {{"dimensions": '
             f'[{rubric_json_fields}], "summary_tip": <=30 words}}}}. '
             f"Use these exact rubric labels in order: {rubric_labels}."
@@ -276,3 +276,128 @@ class GroqLLMProvider:
                 f"Keep coaching tone supportive, specific, and skimmable."
                 f"{asked_section}"
             )
+
+    async def generate_session_summary(
+        self,
+        turn_history: list[dict[str, Any]],
+        role: str,
+        interview_type: str,
+        difficulty: str,
+    ) -> dict[str, Any] | None:
+        """Generate end-of-session summary JSON from all turn records.
+
+        Returns None if parsing fails or model output is invalid.
+        """
+        average_scores = self._compute_average_scores(turn_history)
+        prompt = self._build_session_summary_prompt(
+            turn_history=turn_history,
+            role=role,
+            interview_type=interview_type,
+            difficulty=difficulty,
+            average_scores=average_scores,
+        )
+
+        try:
+            response = await self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {
+                        "role": "user",
+                        "content": "Generate the session summary JSON now.",
+                    },
+                ],
+                max_tokens=self._max_tokens,
+                temperature=0.5,
+            )
+            raw_content = response.choices[0].message.content
+            if raw_content is None:
+                return None
+
+            parsed = json.loads(raw_content.strip())
+            if not isinstance(parsed, dict):
+                return None
+
+            parsed["average_scores"] = average_scores
+
+            required_keys = {
+                "overall_assessment",
+                "strengths",
+                "improvements",
+                "average_scores",
+            }
+            if not required_keys.issubset(parsed.keys()):
+                return None
+
+            return parsed
+
+        except Exception:
+            return None
+
+    def _build_session_summary_prompt(
+        self,
+        turn_history: list[dict[str, Any]],
+        role: str,
+        interview_type: str,
+        difficulty: str,
+        average_scores: dict[str, float],
+    ) -> str:
+        rubric_labels = ", ".join([d["label"] for d in RUBRIC_DIMENSIONS])
+
+        return (
+            f"You are an interview coach summarizing a completed {difficulty} "
+            f"{interview_type} interview for role {role}. "
+            "Return ONLY valid JSON with this exact schema: "
+            '{"overall_assessment": string <=60 words, '
+            '"strengths": array of 1-3 strings each <=20 words, '
+            '"improvements": array of 1-3 strings each <=20 words, '
+            '"average_scores": object}. '
+            f"Rubric dimensions are: {rubric_labels}. "
+            "Use supportive coaching tone. Do not include markdown. "
+            "Use this deterministic average_scores exactly as provided without "
+            f"changes: {json.dumps(average_scores)}. "
+            f"Turn history JSON: {json.dumps(turn_history)}"
+        )
+
+    def _compute_average_scores(
+        self,
+        turn_history: list[dict[str, Any]],
+    ) -> dict[str, float]:
+        score_totals: dict[str, int] = {}
+        score_counts: dict[str, int] = {}
+
+        for turn in turn_history:
+            coaching_feedback = turn.get("coaching_feedback")
+            if not isinstance(coaching_feedback, dict):
+                continue
+
+            dimensions = coaching_feedback.get("dimensions")
+            if not isinstance(dimensions, list):
+                continue
+
+            for dimension in dimensions:
+                if not isinstance(dimension, dict):
+                    continue
+
+                label = dimension.get("label")
+                score = dimension.get("score")
+                if not isinstance(label, str):
+                    continue
+                if not isinstance(score, (int, float)):
+                    continue
+
+                normalized_label = label.strip().lower().replace(" ", "_")
+                score_totals[normalized_label] = score_totals.get(
+                    normalized_label, 0
+                ) + int(score)
+                score_counts[normalized_label] = (
+                    score_counts.get(normalized_label, 0) + 1
+                )
+
+        if not score_totals:
+            return {}
+
+        return {
+            label: round(score_totals[label] / score_counts[label], 2)
+            for label in score_totals
+        }
