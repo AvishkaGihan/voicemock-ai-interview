@@ -263,6 +263,7 @@ class InterviewCubit extends Cubit<InterviewState> {
           totalQuestions: _totalQuestions,
           lastTranscript: current.transcript,
           lastResponseText: current.assistantText,
+          sessionSummary: current.sessionSummary,
         ),
       );
       _logTransition('Session complete');
@@ -1146,6 +1147,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         assistantText: response.assistantText,
         ttsAudioUrl: response.ttsAudioUrl ?? '',
         coachingFeedback: response.coachingFeedback,
+        sessionSummary: response.sessionSummary,
         isComplete: response.isComplete,
       ),
     );

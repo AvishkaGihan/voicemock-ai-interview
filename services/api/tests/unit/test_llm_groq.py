@@ -345,3 +345,71 @@ async def test_generate_follow_up_parses_valid_coaching_feedback_json():
         assert result.coaching_feedback is not None
         assert result.coaching_feedback.summary_tip.startswith("Lead with one clear")
         assert len(result.coaching_feedback.dimensions) == 4
+
+
+@pytest.mark.asyncio
+async def test_generate_session_summary_success():
+    """Test successful session summary generation with deterministic averages."""
+    mock_completion = Mock()
+    mock_completion.choices = [
+        Mock(
+            message=Mock(
+                content=(
+                    '{"overall_assessment":"Strong performance overall.",'
+                    '"strengths":["Clear communication"],'
+                    '"improvements":["Quantify impact"],'
+                    '"average_scores":{}}'
+                )
+            )
+        )
+    ]
+
+    with patch("src.providers.llm_groq.AsyncGroq") as mock_groq_class:
+        mock_client = AsyncMock()
+        mock_groq_class.return_value = mock_client
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+
+        provider = GroqLLMProvider(api_key="test_key")
+        result = await provider.generate_session_summary(
+            turn_history=[
+                {
+                    "coaching_feedback": {
+                        "dimensions": [
+                            {"label": "Clarity", "score": 4},
+                            {"label": "Clarity", "score": 5},
+                            {"label": "Relevance", "score": 3},
+                        ]
+                    }
+                }
+            ],
+            role="backend developer",
+            interview_type="technical interview",
+            difficulty="mid-level",
+        )
+
+        assert result is not None
+        assert result["overall_assessment"] == "Strong performance overall."
+        assert result["average_scores"]["clarity"] == 4.5
+        assert result["average_scores"]["relevance"] == 3.0
+
+
+@pytest.mark.asyncio
+async def test_generate_session_summary_malformed_json_returns_none():
+    """Test malformed summary output degrades gracefully to None."""
+    mock_completion = Mock()
+    mock_completion.choices = [Mock(message=Mock(content="not-json"))]
+
+    with patch("src.providers.llm_groq.AsyncGroq") as mock_groq_class:
+        mock_client = AsyncMock()
+        mock_groq_class.return_value = mock_client
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+
+        provider = GroqLLMProvider(api_key="test_key")
+        result = await provider.generate_session_summary(
+            turn_history=[],
+            role="backend developer",
+            interview_type="technical interview",
+            difficulty="mid-level",
+        )
+
+        assert result is None

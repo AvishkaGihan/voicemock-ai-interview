@@ -9,6 +9,16 @@ SessionStatus = Literal["active", "completed", "expired"]
 
 
 @dataclass
+class TurnRecord:
+    """Per-turn data required for end-of-session summary generation."""
+
+    turn_number: int
+    transcript: str
+    assistant_text: str
+    coaching_feedback: dict | None = None
+
+
+@dataclass
 class SessionState:
     """Domain model representing interview session state."""
 
@@ -21,4 +31,5 @@ class SessionState:
     last_activity_at: datetime
     turn_count: int = 0
     asked_questions: list[str] = field(default_factory=list)
+    turn_history: list[TurnRecord] = field(default_factory=list)
     status: SessionStatus = "active"

@@ -72,6 +72,7 @@ class TurnResult:
     assistant_text: str | None = None
     tts_audio_url: str | None = None
     coaching_feedback: CoachingFeedback | None = None
+    session_summary: dict[str, Any] | None = None
 
 
 class TurnProcessingError(Exception):
@@ -136,6 +137,7 @@ async def process_turn(
     tts_cache: Any,  # TTSCache instance
     transcript: str | None = None,
     request_id: str | None = None,
+    turn_history: list[dict[str, Any]] | None = None,
 ) -> TurnResult:
     """Process a turn through the STT → LLM → TTS pipeline.
 
@@ -147,6 +149,7 @@ async def process_turn(
         interview_type: Interview type (e.g., "Behavioral", "Technical")
         difficulty: Difficulty level (e.g., "Entry", "Mid", "Senior")
         asked_questions: List of previously asked questions (to avoid repeats)
+        turn_history: Existing session turn history records prior to current turn
         question_count: Total configured questions for the session
         tts_cache: TTSCache instance for storing generated audio
         transcript: Optional transcript (skips STT if provided)
@@ -161,6 +164,9 @@ async def process_turn(
     start_time = time.perf_counter()
 
     try:
+        if turn_history is None:
+            turn_history = []
+
         if transcript:
             # Skip STT if transcript provided (retry flow)
             stt_ms = 0.0
@@ -245,6 +251,38 @@ async def process_turn(
         session.turn_count += 1
         session.last_activity_at = datetime.now(timezone.utc)
 
+        is_complete = session.turn_count >= question_count
+        session_summary = None
+        if is_complete:
+            summary_turn_history = list(turn_history)
+            summary_turn_history.append(
+                {
+                    "turn_number": session.turn_count,
+                    "transcript": transcript,
+                    "assistant_text": assistant_text,
+                    "coaching_feedback": (
+                        coaching_feedback.model_dump()
+                        if coaching_feedback is not None
+                        else None
+                    ),
+                }
+            )
+
+            try:
+                session_summary = await llm_provider.generate_session_summary(
+                    turn_history=summary_turn_history,
+                    role=role,
+                    interview_type=interview_type,
+                    difficulty=difficulty,
+                )
+            except Exception as summary_exc:
+                logger.warning(
+                    "Session summary generation failed: %s (request_id=%s)",
+                    str(summary_exc),
+                    request_id,
+                )
+                session_summary = None
+
         # Calculate total time
         end_time = time.perf_counter()
         total_ms = (end_time - start_time) * 1000
@@ -262,6 +300,7 @@ async def process_turn(
             assistant_text=assistant_text,
             tts_audio_url=tts_audio_url,
             coaching_feedback=coaching_feedback,
+            session_summary=session_summary,
         )
 
     except STTError as e:

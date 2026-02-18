@@ -53,6 +53,39 @@ class CoachingFeedback {
   Map<String, dynamic> toJson() => _$CoachingFeedbackToJson(this);
 }
 
+/// Structured end-of-session summary returned on final turn.
+@JsonSerializable()
+class SessionSummary {
+  /// Creates a [SessionSummary].
+  const SessionSummary({
+    required this.overallAssessment,
+    required this.strengths,
+    required this.improvements,
+    required this.averageScores,
+  });
+
+  /// Creates a [SessionSummary] from JSON.
+  factory SessionSummary.fromJson(Map<String, dynamic> json) =>
+      _$SessionSummaryFromJson(json);
+
+  /// 2-3 sentence overall review.
+  @JsonKey(name: 'overall_assessment')
+  final String overallAssessment;
+
+  /// Concrete strengths (1-3 items).
+  final List<String> strengths;
+
+  /// Growth-oriented improvements (1-3 items).
+  final List<String> improvements;
+
+  /// Per-dimension average scores.
+  @JsonKey(name: 'average_scores')
+  final Map<String, double> averageScores;
+
+  /// Converts this [SessionSummary] to JSON.
+  Map<String, dynamic> toJson() => _$SessionSummaryToJson(this);
+}
+
 /// Response data from POST /turn containing transcript and metadata.
 @JsonSerializable()
 class TurnResponseData {
@@ -65,6 +98,7 @@ class TurnResponseData {
     this.assistantText,
     this.ttsAudioUrl,
     this.coachingFeedback,
+    this.sessionSummary,
     this.isComplete = false,
   });
 
@@ -86,6 +120,10 @@ class TurnResponseData {
   /// Structured coaching feedback for this turn.
   @JsonKey(name: 'coaching_feedback')
   final CoachingFeedback? coachingFeedback;
+
+  /// End-of-session summary (final turn only).
+  @JsonKey(name: 'session_summary')
+  final SessionSummary? sessionSummary;
 
   /// Timing information for each processing stage in milliseconds.
   final Map<String, double> timings;

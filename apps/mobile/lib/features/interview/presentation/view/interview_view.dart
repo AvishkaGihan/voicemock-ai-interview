@@ -300,11 +300,13 @@ class _InterviewViewState extends State<InterviewView>
         :final totalQuestions,
         :final lastTranscript,
         :final lastResponseText,
+        :final sessionSummary,
       ) =>
         SessionCompleteCard(
           totalQuestions: totalQuestions,
           lastTranscript: lastTranscript,
           lastResponseText: lastResponseText,
+          sessionSummary: sessionSummary,
           onBackToHome: () => Navigator.pop(context),
           onStartNew: () {
             // Navigate to home then to setup (or directly to setup)

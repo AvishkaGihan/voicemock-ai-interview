@@ -72,6 +72,34 @@ void main() {
       expect(result.coachingFeedback!.dimensions.first.score, 4);
     });
 
+    test('should deserialize session summary when present', () {
+      final json = {
+        'transcript': 'Final answer',
+        'assistant_text': 'Great completion!',
+        'tts_audio_url': null,
+        'session_summary': {
+          'overall_assessment': 'You were clear and focused.',
+          'strengths': ['Clear structure', 'Relevant examples'],
+          'improvements': ['Use more quantified impact'],
+          'average_scores': {'clarity': 4.0, 'relevance': 4.5},
+        },
+        'timings': {'total_ms': 1200.0},
+        'is_complete': true,
+        'question_number': 5,
+        'total_questions': 5,
+      };
+
+      final result = TurnResponseData.fromJson(json);
+
+      expect(result.sessionSummary, isNotNull);
+      expect(
+        result.sessionSummary!.overallAssessment,
+        'You were clear and focused.',
+      );
+      expect(result.sessionSummary!.strengths.length, 2);
+      expect(result.sessionSummary!.averageScores['clarity'], 4.0);
+    });
+
     test('should handle null optional fields', () {
       final json = {
         'transcript': 'Hello world',
@@ -117,6 +145,7 @@ void main() {
       expect(json['assistant_text'], 'Test response');
       expect(json['tts_audio_url'], 'https://example.com/test.mp3');
       expect(json['coaching_feedback'], isNull);
+      expect(json['session_summary'], isNull);
       expect(json['timings'], {
         'upload_ms': 100.0,
         'stt_ms': 500.0,
@@ -141,6 +170,7 @@ void main() {
       expect(result.assistantText, null);
       expect(result.ttsAudioUrl, null);
       expect(result.coachingFeedback, null);
+      expect(result.sessionSummary, null);
       expect(result.timings, <String, dynamic>{});
     });
   });

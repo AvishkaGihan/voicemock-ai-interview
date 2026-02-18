@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.api.models.turn_models import TurnResponseData
+from src.api.models.turn_models import SessionSummary, TurnResponseData
 
 
 def test_turn_response_data_valid():
@@ -113,3 +113,50 @@ def test_turn_response_data_json_serialization():
     assert reconstructed.is_complete == data.is_complete
     assert reconstructed.question_number == data.question_number
     assert reconstructed.total_questions == data.total_questions
+
+
+def test_session_summary_model_valid():
+    """SessionSummary accepts valid structured payload."""
+    summary = SessionSummary(
+        overall_assessment="You stayed concise and structured throughout the interview.",
+        strengths=["Clear structure", "Relevant examples"],
+        improvements=["Quantify impact more often"],
+        average_scores={"clarity": 4.0, "relevance": 4.5},
+    )
+
+    assert summary.average_scores["clarity"] == 4.0
+
+
+def test_session_summary_overall_assessment_word_limit():
+    """overall_assessment must be <= 60 words."""
+    too_long = " ".join(["word"] * 61)
+    with pytest.raises(ValidationError):
+        SessionSummary(
+            overall_assessment=too_long,
+            strengths=["Clear structure"],
+            improvements=["Use metrics"],
+            average_scores={},
+        )
+
+
+def test_turn_response_data_supports_session_summary_field():
+    """TurnResponseData includes nullable session_summary."""
+    data = TurnResponseData(
+        transcript="Final response",
+        assistant_text="Great work.",
+        tts_audio_url=None,
+        timings={"total_ms": 1000.0},
+        is_complete=True,
+        question_number=5,
+        total_questions=5,
+        session_summary={
+            "overall_assessment": "Strong clarity and composure.",
+            "strengths": ["Clear articulation"],
+            "improvements": ["Add more quantified outcomes"],
+            "average_scores": {"clarity": 4.2},
+        },
+    )
+
+    payload = data.model_dump()
+    assert payload["session_summary"] is not None
+    assert payload["session_summary"]["average_scores"]["clarity"] == 4.2

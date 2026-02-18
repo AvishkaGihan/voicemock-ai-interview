@@ -16,6 +16,7 @@ from src.api.models import (
     ApiEnvelope,
     ApiError,
 )
+from src.domain.session_state import TurnRecord
 from src.services import process_turn, TurnProcessingError, TTSCache
 from src.security import SessionTokenService
 from src.services import SessionStore
@@ -188,6 +189,15 @@ async def submit_turn(
             interview_type=session.interview_type,
             difficulty=session.difficulty,
             asked_questions=session.asked_questions,
+            turn_history=[
+                {
+                    "turn_number": turn.turn_number,
+                    "transcript": turn.transcript,
+                    "assistant_text": turn.assistant_text,
+                    "coaching_feedback": turn.coaching_feedback,
+                }
+                for turn in session.turn_history
+            ],
             question_count=session.question_count,
             tts_cache=tts_cache,
             transcript=transcript,
@@ -199,6 +209,20 @@ async def submit_turn(
         if result.assistant_text:
             new_asked_questions.append(result.assistant_text)
 
+        new_turn_history = list(session.turn_history)
+        new_turn_history.append(
+            TurnRecord(
+                turn_number=session.turn_count,
+                transcript=result.transcript,
+                assistant_text=result.assistant_text or "",
+                coaching_feedback=(
+                    result.coaching_feedback.model_dump()
+                    if result.coaching_feedback is not None
+                    else None
+                ),
+            )
+        )
+
         # Detect session completion
         is_complete = session.turn_count >= session.question_count
         new_status = "completed" if is_complete else session.status
@@ -209,6 +233,7 @@ async def submit_turn(
             turn_count=session.turn_count,
             last_activity_at=session.last_activity_at,
             asked_questions=new_asked_questions,
+            turn_history=new_turn_history,
             status=new_status,
         )
 
@@ -232,6 +257,7 @@ async def submit_turn(
             assistant_text=result.assistant_text,
             tts_audio_url=result.tts_audio_url,
             coaching_feedback=result.coaching_feedback,
+            session_summary=result.session_summary,
             timings=result.timings,
             is_complete=is_complete,
             question_number=session.turn_count,
