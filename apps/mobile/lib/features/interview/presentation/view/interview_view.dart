@@ -373,10 +373,9 @@ class _InterviewViewState extends State<InterviewView>
     );
 
     if ((confirmed ?? false) && context.mounted) {
-      await context.read<InterviewCubit>().cancel();
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      final cubit = context.read<InterviewCubit>();
+      Navigator.pop(context);
+      unawaited(cubit.cancel());
     }
   }
 }

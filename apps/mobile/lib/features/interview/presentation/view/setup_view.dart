@@ -66,7 +66,9 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
           listener: (context, sessionState) {
             if (sessionState is SessionSuccess) {
               // Navigate to interview screen with session
-              context.go('/interview', extra: sessionState.session);
+              unawaited(
+                context.push('/interview', extra: sessionState.session),
+              );
             } else if (sessionState is SessionFailure) {
               // Show error dialog with retry/cancel
               unawaited(

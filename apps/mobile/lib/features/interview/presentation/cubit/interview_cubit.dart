@@ -957,7 +957,9 @@ class InterviewCubit extends Cubit<InterviewState> {
     _lastTtsAudioUrl = '';
     _lastResponseText = '';
     _isReplaying = false;
-    emit(const InterviewIdle());
+    if (!isClosed) {
+      emit(const InterviewIdle());
+    }
     _logTransition('Cancelled → Idle');
   }
 
