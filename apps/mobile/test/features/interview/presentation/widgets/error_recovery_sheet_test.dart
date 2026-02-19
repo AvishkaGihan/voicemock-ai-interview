@@ -343,4 +343,34 @@ void main() {
       expect(find.text('Network connection lost'), findsNothing);
     });
   });
+
+  testWidgets(
+    'content_refused shows Try Again and End Session without Re-record',
+    (tester) async {
+      const refusalFailure = ServerFailure(
+        message: 'Raw backend refusal text',
+        code: 'content_refused',
+        stage: 'llm',
+        requestId: 'req-refused',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ErrorRecoverySheet(
+              failure: refusalFailure,
+              failedStage: InterviewStage.thinking,
+              onRetry: () {},
+              onReRecord: () {},
+              onCancel: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.widgetWithText(ElevatedButton, 'Try Again'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'End Session'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Re-record'), findsNothing);
+    },
+  );
 }

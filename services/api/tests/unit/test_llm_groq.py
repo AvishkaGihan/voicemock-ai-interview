@@ -50,6 +50,7 @@ async def test_generate_follow_up_success():
             "What programming languages are you most comfortable with?"
         )
         assert result.coaching_feedback is None
+        assert result.refused is False
 
         # Verify LLM call
         mock_client.chat.completions.create.assert_called_once()
@@ -348,6 +349,75 @@ async def test_generate_follow_up_parses_valid_coaching_feedback_json():
         assert result.coaching_feedback is not None
         assert result.coaching_feedback.summary_tip.startswith("Lead with one clear")
         assert len(result.coaching_feedback.dimensions) == 4
+
+
+@pytest.mark.asyncio
+async def test_generate_follow_up_parses_refused_flag():
+    """Test refused flag is propagated from LLM JSON output."""
+    mock_completion = Mock()
+    mock_completion.choices = [
+        Mock(
+            message=Mock(
+                content=(
+                    '{"follow_up_question":"Let\'s stay focused on the interview.",'
+                    '"coaching_feedback":null,"refused":true}'
+                )
+            )
+        )
+    ]
+
+    with patch("src.providers.llm_groq.AsyncGroq") as mock_groq_class:
+        mock_client = AsyncMock()
+        mock_groq_class.return_value = mock_client
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+
+        provider = GroqLLMProvider(api_key="test_key")
+        result = await provider.generate_follow_up(
+            transcript="off-topic prompt",
+            role="backend developer",
+            interview_type="technical interview",
+            difficulty="mid-level",
+            asked_questions=[],
+            question_number=1,
+            total_questions=5,
+        )
+
+        assert result.refused is True
+        assert result.follow_up_question.startswith("Let's stay focused")
+
+
+@pytest.mark.asyncio
+async def test_generate_follow_up_system_prompt_includes_safety_guardrails():
+    """Test system prompt includes required safety refusal instructions."""
+    mock_completion = Mock()
+    mock_completion.choices = [
+        Mock(
+            message=Mock(
+                content='{"follow_up_question":"Thanks","coaching_feedback":null,"refused":false}'
+            )
+        )
+    ]
+
+    with patch("src.providers.llm_groq.AsyncGroq") as mock_groq_class:
+        mock_client = AsyncMock()
+        mock_groq_class.return_value = mock_client
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_completion)
+
+        provider = GroqLLMProvider(api_key="test_key")
+        await provider.generate_follow_up(
+            transcript="Sample answer",
+            role="backend developer",
+            interview_type="technical interview",
+            difficulty="mid-level",
+            asked_questions=[],
+            question_number=1,
+            total_questions=5,
+        )
+
+        call_args = mock_client.chat.completions.create.call_args
+        system_message = call_args[1]["messages"][0]["content"]
+        assert "You are strictly an interview coach" in system_message
+        assert '"refused": true' in system_message
 
 
 @pytest.mark.asyncio

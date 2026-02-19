@@ -644,20 +644,32 @@ class InterviewCubit extends Cubit<InterviewState> {
       );
     }
 
+    var mappedFailure = failure;
+    if (failure is ServerFailure && failure.code == 'content_refused') {
+      mappedFailure = ServerFailure(
+        message:
+            "Let's stay focused on the interview. "
+            'Please try answering the question again.',
+        code: failure.code,
+        stage: failure.stage,
+        requestId: failure.requestId,
+      );
+    }
+
     // Record error in diagnostics if we have stage and request ID
-    if (failure is ServerFailure &&
-        failure.stage != null &&
-        failure.requestId != null) {
+    if (mappedFailure is ServerFailure &&
+        mappedFailure.stage != null &&
+        mappedFailure.requestId != null) {
       _diagnostics = _diagnostics.recordError(
-        failure.requestId!,
-        failure.stage!,
+        mappedFailure.requestId!,
+        mappedFailure.stage!,
       );
     }
 
     // Map failure stage to InterviewStage enum
     var failedStage = current.stage;
-    if (failure is ServerFailure && failure.stage != null) {
-      switch (failure.stage) {
+    if (mappedFailure is ServerFailure && mappedFailure.stage != null) {
+      switch (mappedFailure.stage) {
         case 'upload':
           failedStage = InterviewStage.uploading;
         case 'stt':
@@ -673,14 +685,14 @@ class InterviewCubit extends Cubit<InterviewState> {
 
     emit(
       InterviewError(
-        failure: failure,
+        failure: mappedFailure,
         previousState: state,
         failedStage: failedStage,
         audioPath: audioPath,
         transcript: transcript,
       ),
     );
-    _logTransition('Error: ${failure.message} at stage $failedStage');
+    _logTransition('Error: ${mappedFailure.message} at stage $failedStage');
   }
 
   /// Retry from error state with stage-aware retry logic.

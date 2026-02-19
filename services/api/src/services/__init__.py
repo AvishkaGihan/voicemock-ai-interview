@@ -8,6 +8,7 @@ from src.services.orchestrator import (
     TurnProcessingError,
 )
 from src.services.tts_cache import TTSCache
+from src.services.safety_filter import SafetyFilter, SafetyCheckResult
 
 __all__ = [
     "SessionStore",
@@ -16,4 +17,6 @@ __all__ = [
     "TurnResult",
     "TurnProcessingError",
     "TTSCache",
+    "SafetyFilter",
+    "SafetyCheckResult",
 ]
