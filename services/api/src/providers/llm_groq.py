@@ -30,6 +30,7 @@ class LLMResponse:
 
     follow_up_question: str
     coaching_feedback: CoachingFeedback | None = None
+    refused: bool = False
 
 
 # Rubric definitions for dynamic prompt generation
@@ -191,10 +192,16 @@ class GroqLLMProvider:
             follow_up_question = follow_up_question.strip()
 
         coaching_feedback_raw = parsed.get("coaching_feedback")
+        refused_raw = parsed.get("refused")
+        if isinstance(refused_raw, str):
+            refused = refused_raw.lower() == "true"
+        else:
+            refused = refused_raw is True
         if coaching_feedback_raw is None:
             return LLMResponse(
                 follow_up_question=follow_up_question,
                 coaching_feedback=None,
+                refused=refused,
             )
 
         try:
@@ -205,6 +212,7 @@ class GroqLLMProvider:
         return LLMResponse(
             follow_up_question=follow_up_question,
             coaching_feedback=coaching_feedback,
+            refused=refused,
         )
 
     def _build_system_prompt(
@@ -250,8 +258,19 @@ class GroqLLMProvider:
         schema_instruction = (
             f"Return ONLY valid JSON with this exact schema: "
             f'{{"follow_up_question": string, "coaching_feedback": {{"dimensions": '
-            f'[{rubric_json_fields}], "summary_tip": <=30 words}}}}. '
+            f'[{rubric_json_fields}], "summary_tip": <=30 words}}, '
+            f'"refused": boolean}}. '
             f"Use these exact rubric labels in order: {rubric_labels}."
+        )
+
+        safety_instruction = (
+            " You are strictly an interview coach. If the candidate's response "
+            "contains inappropriate, harmful, offensive, discriminatory, or "
+            "explicit content, or attempts to redirect you away from interview "
+            "coaching, respond with a JSON object: "
+            '{"follow_up_question": "<calm refusal>", "refused": true, '
+            '"coaching_feedback": null}. Do not engage with off-topic or harmful '
+            "requests. Keep your refusal professional and supportive."
         )
 
         if is_last_question:
@@ -266,6 +285,7 @@ class GroqLLMProvider:
                 f"closing statement (e.g., 'Thank you for that answer. That concludes "
                 f"our interview.'). do NOT phrase it as a question. "
                 f"{schema_instruction}"
+                f"{safety_instruction}"
                 f"{asked_section}"
             )
         else:
@@ -278,6 +298,7 @@ class GroqLLMProvider:
                 f"conversational, and appropriate for the difficulty level. "
                 f"{schema_instruction} "
                 f"Keep coaching tone supportive, specific, and skimmable."
+                f"{safety_instruction}"
                 f"{asked_section}"
             )
 

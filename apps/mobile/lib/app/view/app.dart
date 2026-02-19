@@ -5,6 +5,8 @@ import 'package:voicemock/app/router.dart';
 import 'package:voicemock/core/http/http.dart';
 import 'package:voicemock/core/storage/disclosure_prefs.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
+import 'package:voicemock/features/interview/data/data.dart';
+import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/l10n/l10n.dart';
 
 /// The main application widget.
@@ -21,6 +23,12 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: prefs),
         RepositoryProvider.value(value: apiClient),
         RepositoryProvider(create: (_) => DisclosurePrefs(prefs)),
+        RepositoryProvider<SessionRepository>(
+          create: (_) => SessionRepositoryImpl(
+            remoteDataSource: SessionRemoteDataSource(apiClient: apiClient),
+            localDataSource: SessionLocalDataSource(prefs: prefs),
+          ),
+        ),
       ],
       child: MaterialApp.router(
         theme: ThemeData(

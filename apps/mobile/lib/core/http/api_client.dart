@@ -152,6 +152,64 @@ class ApiClient {
     }
   }
 
+  /// Makes DELETE request and returns envelope-wrapped response.
+  ///
+  /// Throws [NetworkException] on connectivity issues.
+  /// Throws [ServerException] on API error responses.
+  Future<ApiEnvelope<T>> delete<T>(
+    String path, {
+    required T Function(Map<String, dynamic>) fromJson,
+    String? bearerToken,
+    Duration? timeout,
+  }) async {
+    try {
+      final options = Options(
+        headers: {
+          if (bearerToken != null) 'Authorization': 'Bearer $bearerToken',
+        },
+        receiveTimeout: timeout,
+        sendTimeout: timeout,
+      );
+
+      final response = await _dio.delete<dynamic>(
+        path,
+        options: options,
+      );
+
+      final responseData = response.data;
+      if (responseData is! Map<String, dynamic>) {
+        throw ServerException(
+          message: 'Invalid response format',
+          code: 'invalid_format',
+          requestId: response.headers.value('x-request-id'),
+        );
+      }
+
+      final envelope = ApiEnvelope<T>.fromJson(
+        responseData,
+        (json) => fromJson(json! as Map<String, dynamic>),
+      );
+
+      if (envelope.isError) {
+        throw ServerException(
+          message: envelope.error!.messageSafe,
+          code: envelope.error!.code,
+          stage: envelope.error!.stage,
+          retryable: envelope.error!.retryable,
+          requestId: envelope.requestId,
+        );
+      }
+
+      return envelope;
+    } on DioException catch (e) {
+      throw _mapDioException(e);
+    } on ServerException {
+      rethrow;
+    } on Exception catch (e) {
+      throw NetworkException(message: 'Unexpected error: $e');
+    }
+  }
+
   /// Maps Dio exceptions to domain exceptions.
   Exception _mapDioException(DioException e) {
     final requestId = e.response?.headers.value('x-request-id');

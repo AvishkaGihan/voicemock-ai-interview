@@ -1,21 +1,125 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
+import 'package:voicemock/features/interview/domain/domain.dart';
+import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/widgets/disclosure_detail_sheet.dart';
+import 'package:voicemock/features/settings/presentation/widgets/delete_session_dialog.dart';
 import 'package:voicemock/l10n/l10n.dart';
 
 /// Minimal settings page for MVP.
 ///
 /// Contains a "Data & Privacy" section exposing the processing disclosure.
 /// Additional settings sections are added as future epics require them.
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
   /// Route path for navigation.
   static const String routeName = '/settings';
 
   @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  Session? _storedSession;
+  bool _isDeleting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadStoredSession());
+  }
+
+  Future<void> _loadStoredSession() async {
+    final session = await context.read<SessionRepository>().getStoredSession();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _storedSession = session;
+    });
+  }
+
+  Future<void> _onDeleteTap() async {
+    final session = _storedSession;
+    if (session == null || _isDeleting) {
+      return;
+    }
+
+    final confirmed = await DeleteSessionDialog.show(context);
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await _deleteSession(session);
+  }
+
+  Future<void> _deleteSession(Session session) async {
+    setState(() {
+      _isDeleting = true;
+    });
+
+    final result = await context.read<SessionRepository>().deleteSession(
+      session.sessionId,
+      session.sessionToken,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    result.fold(
+      (failure) {
+        setState(() {
+          _isDeleting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failure.message),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () {
+                unawaited(_deleteSession(session));
+              },
+            ),
+          ),
+        );
+      },
+      (deleted) {
+        setState(() {
+          _isDeleting = false;
+          if (deleted) {
+            _storedSession = null;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session data deleted.')),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    InterviewCubit? interviewCubit;
+    try {
+      // Safe to use context.read() here as we are in build() but inside a
+      // try-catch block to handle the case where the provider is missing
+      // (e.g. during specific tests or if navigated incorrectly).
+      // Note: Ideally, this should be in didChangeDependencies or we should
+      // use context.watch() if we expected the provider existence to change,
+      // but for this optional dependency injection pattern, read() is
+      // acceptable.
+      interviewCubit = context.read<InterviewCubit>();
+    } on Exception {
+      interviewCubit = null;
+    }
     return Scaffold(
       backgroundColor: VoiceMockColors.background,
       appBar: AppBar(
@@ -68,6 +172,57 @@ class SettingsPage extends StatelessWidget {
               color: VoiceMockColors.textMuted,
             ),
             onTap: () => DisclosureDetailSheet.show(context),
+          ),
+          const Divider(height: 1),
+          if (interviewCubit != null) ...[
+            ListTile(
+              tileColor: VoiceMockColors.surface,
+              leading: const Icon(
+                Icons.analytics_outlined,
+                color: VoiceMockColors.secondary,
+              ),
+              title: const Text(
+                'Diagnostics',
+                style: VoiceMockTypography.body,
+              ),
+              subtitle: const Text(
+                'View timing metrics & error info',
+                style: VoiceMockTypography.small,
+              ),
+              trailing: const Icon(
+                Icons.chevron_right_rounded,
+                color: VoiceMockColors.textMuted,
+              ),
+              onTap: () => context.push('/diagnostics', extra: interviewCubit),
+            ),
+            const Divider(height: 1),
+          ],
+          ListTile(
+            tileColor: VoiceMockColors.surface,
+            enabled: _storedSession != null && !_isDeleting,
+            leading: const Icon(
+              Icons.delete_outline,
+              color: VoiceMockColors.secondary,
+            ),
+            title: const Text(
+              'Delete Session Data',
+              style: VoiceMockTypography.body,
+            ),
+            subtitle: const Text(
+              'Remove transcripts, feedback, and summary',
+              style: VoiceMockTypography.small,
+            ),
+            trailing: _isDeleting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(
+                    Icons.chevron_right_rounded,
+                    color: VoiceMockColors.textMuted,
+                  ),
+            onTap: _onDeleteTap,
           ),
           const Divider(height: 1),
         ],

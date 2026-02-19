@@ -78,4 +78,54 @@ class SessionRepositoryImpl implements SessionRepository {
       );
     }
   }
+
+  @override
+  Future<Either<InterviewFailure, bool>> deleteSession(
+    String sessionId,
+    String sessionToken,
+  ) async {
+    try {
+      final deleted = await _remoteDataSource.deleteSession(
+        sessionId: sessionId,
+        sessionToken: sessionToken,
+      );
+
+      if (deleted) {
+        await _localDataSource.clearSession();
+      }
+
+      return Right(deleted);
+    } on NetworkException catch (e) {
+      return Left(
+        NetworkFailure(
+          message: e.message,
+          requestId: e.requestId,
+        ),
+      );
+    } on ServerException catch (e) {
+      // 404 means session is already gone - treat as success (idempotent)
+      if (e.code == 'session_not_found') {
+        await _localDataSource.clearSession();
+        return const Right(true);
+      }
+
+      return Left(
+        ServerFailure(
+          message: e.message,
+          requestId: e.requestId,
+          stage: e.stage,
+          retryable: e.retryable ?? false,
+        ),
+      );
+    } on Exception catch (e) {
+      return Left(
+        UnknownFailure(
+          message: 'An unexpected error occurred: $e',
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Session?> getStoredSession() => _localDataSource.getSession();
 }

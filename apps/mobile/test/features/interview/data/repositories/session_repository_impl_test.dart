@@ -203,5 +203,77 @@ void main() {
       expect(captured.difficulty, 'medium');
       expect(captured.questionCount, 5);
     });
+
+    test(
+      'deleteSession returns Right(true) and clears local session',
+      () async {
+        when(
+          () => remoteDataSource.deleteSession(
+            sessionId: any(named: 'sessionId'),
+            sessionToken: any(named: 'sessionToken'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(localDataSource.clearSession).thenAnswer((_) async {});
+
+        final result = await repository.deleteSession(
+          'session-123',
+          'token-abc',
+        );
+
+        expect(result.isRight(), isTrue);
+        verify(
+          () => remoteDataSource.deleteSession(
+            sessionId: 'session-123',
+            sessionToken: 'token-abc',
+          ),
+        ).called(1);
+        verify(localDataSource.clearSession).called(1);
+      },
+    );
+
+    test(
+      'deleteSession maps 404 to success (idempotent) and clears local',
+      () async {
+        when(
+          () => remoteDataSource.deleteSession(
+            sessionId: any(named: 'sessionId'),
+            sessionToken: any(named: 'sessionToken'),
+          ),
+        ).thenThrow(
+          ServerException(
+            message: 'Session not found or already deleted.',
+            code: 'session_not_found',
+            requestId: 'req-delete-1',
+            retryable: false,
+          ),
+        );
+        when(localDataSource.clearSession).thenAnswer((_) async {});
+
+        final result = await repository.deleteSession('missing', 'token');
+
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (failure) => fail('Expected Right but got Left($failure)'),
+          (success) => expect(success, isTrue),
+        );
+        verify(localDataSource.clearSession).called(1);
+      },
+    );
+
+    test('getStoredSession proxies local data source', () async {
+      final session = Session(
+        sessionId: 'session-local',
+        sessionToken: 'token-local',
+        openingPrompt: 'Hello',
+        totalQuestions: 5,
+        createdAt: DateTime.now(),
+      );
+      when(localDataSource.getSession).thenAnswer((_) async => session);
+
+      final result = await repository.getStoredSession();
+
+      expect(result, session);
+      verify(localDataSource.getSession).called(1);
+    });
   });
 }

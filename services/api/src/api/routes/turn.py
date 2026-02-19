@@ -9,6 +9,7 @@ from src.api.dependencies.shared_services import (
     get_session_store,
     get_token_service,
     get_tts_cache,
+    get_safety_filter,
 )
 from src.api.models import (
     TurnResponseData,
@@ -17,7 +18,7 @@ from src.api.models import (
     ApiError,
 )
 from src.domain.session_state import TurnRecord
-from src.services import process_turn, TurnProcessingError, TTSCache
+from src.services import process_turn, TurnProcessingError, TTSCache, SafetyFilter
 from src.security import SessionTokenService
 from src.services import SessionStore
 
@@ -45,6 +46,7 @@ async def submit_turn(
     session_store: SessionStore = Depends(get_session_store),
     token_service: SessionTokenService = Depends(get_token_service),
     tts_cache: TTSCache = Depends(get_tts_cache),
+    safety_filter: SafetyFilter = Depends(get_safety_filter),
 ) -> TurnResponse:
     """
     Submit a turn (audio answer) for processing.
@@ -200,6 +202,7 @@ async def submit_turn(
             ],
             question_count=session.question_count,
             tts_cache=tts_cache,
+            safety_filter=safety_filter,
             transcript=transcript,
             request_id=ctx.request_id,
         )

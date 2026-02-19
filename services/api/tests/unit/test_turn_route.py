@@ -433,6 +433,62 @@ def test_submit_turn_llm_content_filter_error(client, mock_session, mock_app):
         assert json_resp["request_id"] == "test-request-id"
 
 
+def test_submit_turn_content_refused_error(client, mock_session, mock_app):
+    """Test content_refused envelope includes safe fields and request_id."""
+    from src.api.dependencies.shared_services import (
+        get_session_store,
+        get_token_service,
+    )
+
+    mock_store = Mock()
+    mock_store.get_session.return_value = mock_session
+
+    mock_token_service = Mock()
+    mock_token_service.verify_token.return_value = "test-session-123"
+
+    async def mock_process_turn_error(
+        audio_bytes,
+        mime_type,
+        session,
+        role,
+        interview_type,
+        difficulty,
+        asked_questions,
+        question_count,
+        tts_cache,
+        transcript=None,
+        request_id=None,
+        **kwargs,
+    ):
+        raise TurnProcessingError(
+            message="LLM refused content",
+            message_safe="Let's stay focused on the interview.",
+            stage="llm",
+            code="content_refused",
+            retryable=False,
+            request_id=request_id,
+        )
+
+    mock_app.dependency_overrides[get_session_store] = lambda: mock_store
+    mock_app.dependency_overrides[get_token_service] = lambda: mock_token_service
+
+    with patch("src.api.routes.turn.process_turn", new=mock_process_turn_error):
+        files = {"audio": ("test.webm", b"fake_audio_data", "audio/webm")}
+        data = {"session_id": "test-session-123"}
+        headers = {"Authorization": "Bearer test_token"}
+
+        response = client.post("/turn", files=files, data=data, headers=headers)
+
+        assert response.status_code == 200
+        json_resp = response.json()
+        assert json_resp["data"] is None
+        assert json_resp["error"]["stage"] == "llm"
+        assert json_resp["error"]["code"] == "content_refused"
+        assert json_resp["error"]["retryable"] is False
+        assert json_resp["error"]["message_safe"].startswith("Let's stay focused")
+        assert json_resp["request_id"] == "test-request-id"
+
+
 def test_submit_turn_empty_transcript_error(client, mock_session, mock_app):
     """Test STT empty transcript error returns correct retryable flag."""
     from src.api.dependencies.shared_services import (
