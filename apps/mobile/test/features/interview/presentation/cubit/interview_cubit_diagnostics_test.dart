@@ -6,8 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/audio/audio_focus_service.dart';
 import 'package:voicemock/core/audio/recording_service.dart';
+import 'package:voicemock/core/models/session_diagnostics.dart';
 import 'package:voicemock/core/models/turn_models.dart';
 import 'package:voicemock/features/interview/data/datasources/turn_remote_data_source.dart';
+import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/domain/failures.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/interview_state.dart';
@@ -17,6 +19,34 @@ class MockRecordingService extends Mock implements RecordingService {}
 class MockTurnRemoteDataSource extends Mock implements TurnRemoteDataSource {}
 
 class MockAudioFocusService extends Mock implements AudioFocusService {}
+
+class TestInterviewCubit extends InterviewCubit {
+  TestInterviewCubit({
+    required super.audioFocusService,
+    required super.recordingService,
+    required super.turnRemoteDataSource,
+    required super.sessionId,
+    required super.sessionToken,
+    super.initialQuestionText,
+  });
+
+  void seedState(InterviewState state) => emit(state);
+
+  SessionDiagnostics seedErrorFromThinking({
+    required InterviewThinking thinkingState,
+    required ServerFailure failure,
+    required String transcript,
+  }) {
+    seedState(thinkingState);
+    handleError(failure, transcript: transcript);
+    return diagnostics;
+  }
+
+  SessionDiagnostics clearAndSnapshotDiagnostics() {
+    clearDiagnostics();
+    return diagnostics;
+  }
+}
 
 void main() {
   late MockRecordingService mockRecordingService;
@@ -50,69 +80,87 @@ void main() {
       expect(cubit.diagnostics.lastErrorStage, isNull);
     });
 
-    // NOTE: Skipping this test due to async timing complexity in test
-    // environment. The feature works correctly - diagnostics are captured
-    // after submitTurn completes. Manual testing and other tests verify the
-    // functionality.
-    test(
-      'populates SessionDiagnostics on successful turn',
-      () async {
-        // Arrange
-        final cubit = InterviewCubit(
-          audioFocusService: mockAudioFocusService,
-          recordingService: mockRecordingService,
-          turnRemoteDataSource: mockTurnRemoteDataSource,
-          sessionId: 'test-session',
-          sessionToken: 'test-token',
-          initialQuestionText: 'Initial question',
-        );
+    test('accumulates diagnostics records across retryLLM turns', () async {
+      final cubit = TestInterviewCubit(
+        audioFocusService: mockAudioFocusService,
+        recordingService: mockRecordingService,
+        turnRemoteDataSource: mockTurnRemoteDataSource,
+        sessionId: 'test-session',
+        sessionToken: 'test-token',
+      );
 
-        when(
-          () => mockRecordingService.startRecording(),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockRecordingService.stopRecording(),
-        ).thenAnswer((_) async => '/fake/audio/path.m4a');
-
-        const mockResponse = TurnResponseWithId(
+      when(
+        () => mockTurnRemoteDataSource.submitTurn(
+          sessionId: any(named: 'sessionId'),
+          sessionToken: any(named: 'sessionToken'),
+          transcript: any(named: 'transcript'),
+        ),
+      ).thenAnswer((invocation) async {
+        final transcript = invocation.namedArguments[#transcript] as String;
+        final turn = transcript == 'first transcript' ? 1 : 2;
+        return TurnResponseWithId(
           data: TurnResponseData(
-            transcript: 'Test transcript',
+            transcript: transcript,
             timings: {
-              'upload_ms': 50.0,
-              'stt_ms': 800.0,
-              'llm_ms': 150.0,
-              'total_ms': 1000.0,
+              'upload_ms': 10.0 * turn,
+              'stt_ms': 20.0 * turn,
+              'llm_ms': 30.0 * turn,
+              'tts_ms': 40.0 * turn,
+              'total_ms': 100.0 * turn,
             },
-            questionNumber: 1,
+            questionNumber: turn,
             totalQuestions: 5,
-            assistantText: 'Next question',
+            assistantText: 'Assistant $turn',
           ),
-          requestId: 'req-123',
+          requestId: 'req-$turn',
         );
+      });
 
-        when(
-          () => mockTurnRemoteDataSource.submitTurn(
-            audioPath: any(named: 'audioPath'),
-            sessionId: any(named: 'sessionId'),
-            sessionToken: any(named: 'sessionToken'),
-          ),
-        ).thenAnswer((_) async => mockResponse);
+      cubit.seedErrorFromThinking(
+        thinkingState: InterviewThinking(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Question 1',
+          transcript: 'first transcript',
+          startTime: DateTime.now(),
+        ),
+        failure: const ServerFailure(
+          message: 'LLM failed',
+          requestId: 'req-error-1',
+          retryable: true,
+          stage: 'llm',
+          code: 'llm_timeout',
+        ),
+        transcript: 'first transcript',
+      );
+      await cubit.retryLLM('first transcript');
 
-        // Act - trigger recording flow
-        await cubit.startRecording();
-        await cubit.stopRecording();
+      cubit.seedErrorFromThinking(
+        thinkingState: InterviewThinking(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Question 2',
+          transcript: 'second transcript',
+          startTime: DateTime.now(),
+        ),
+        failure: const ServerFailure(
+          message: 'LLM failed again',
+          requestId: 'req-error-2',
+          retryable: true,
+          stage: 'llm',
+          code: 'llm_timeout',
+        ),
+        transcript: 'second transcript',
+      );
+      await cubit.retryLLM('second transcript');
 
-        // Wait for async submission to complete
-        await Future<void>.delayed(const Duration(milliseconds: 500));
-
-        // Assert - diagnostics should be populated
-        expect(cubit.diagnostics.turnRecords.length, greaterThanOrEqualTo(1));
-        // Skip assertions due to async timing issues in test
-        // Feature verified working via manual testing and integration tests
-      },
-      skip:
-          'Async timing makes this flaky - feature verified via manual/integration tests',
-    );
+      final diagnostics = cubit.diagnostics;
+      expect(diagnostics.turnRecords, hasLength(2));
+      expect(diagnostics.turnRecords[0].requestId, 'req-1');
+      expect(diagnostics.turnRecords[0].ttsMs, 40.0);
+      expect(diagnostics.turnRecords[1].requestId, 'req-2');
+      expect(diagnostics.turnRecords[1].ttsMs, 80.0);
+    });
 
     test('records error diagnostics on failed turn', () {
       // Arrange
@@ -137,8 +185,9 @@ void main() {
       cubit.handleError(failure);
 
       // Assert
-      expect(cubit.diagnostics.lastErrorRequestId, 'req-err-123');
-      expect(cubit.diagnostics.lastErrorStage, 'stt');
+      final diagnostics = cubit.diagnostics;
+      expect(diagnostics.lastErrorRequestId, 'req-err-123');
+      expect(diagnostics.lastErrorStage, 'stt');
       expect(cubit.state, isA<InterviewError>());
     });
 
@@ -163,9 +212,47 @@ void main() {
         cubit.handleError(failure);
 
         // Assert
-        expect(cubit.diagnostics.lastErrorRequestId, isNull);
-        expect(cubit.diagnostics.lastErrorStage, isNull);
+        final diagnostics = cubit.diagnostics;
+        expect(diagnostics.lastErrorRequestId, isNull);
+        expect(diagnostics.lastErrorStage, isNull);
       },
     );
+
+    test('clearDiagnostics resets turn records and error metadata', () {
+      final cubit = TestInterviewCubit(
+        audioFocusService: mockAudioFocusService,
+        recordingService: mockRecordingService,
+        turnRemoteDataSource: mockTurnRemoteDataSource,
+        sessionId: 'test-session',
+        sessionToken: 'test-token',
+      );
+
+      final diagnosticsBeforeClear = cubit.seedErrorFromThinking(
+        thinkingState: InterviewThinking(
+          questionNumber: 1,
+          totalQuestions: 5,
+          questionText: 'Question',
+          transcript: 'Transcript',
+          startTime: DateTime.now(),
+        ),
+        failure: const ServerFailure(
+          message: 'Failure',
+          requestId: 'req-clear-1',
+          retryable: true,
+          stage: 'llm',
+          code: 'llm_error',
+        ),
+        transcript: 'Transcript',
+      );
+
+      expect(diagnosticsBeforeClear.lastErrorRequestId, 'req-clear-1');
+
+      final diagnostics = cubit.clearAndSnapshotDiagnostics();
+
+      expect(diagnostics.sessionId, 'test-session');
+      expect(diagnostics.turnRecords, isEmpty);
+      expect(diagnostics.lastErrorRequestId, isNull);
+      expect(diagnostics.lastErrorStage, isNull);
+    });
   });
 }

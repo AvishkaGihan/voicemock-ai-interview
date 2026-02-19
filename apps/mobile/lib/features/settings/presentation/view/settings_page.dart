@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
+import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/widgets/disclosure_detail_sheet.dart';
 import 'package:voicemock/features/settings/presentation/widgets/delete_session_dialog.dart';
 import 'package:voicemock/l10n/l10n.dart';
@@ -105,6 +107,19 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    InterviewCubit? interviewCubit;
+    try {
+      // Safe to use context.read() here as we are in build() but inside a
+      // try-catch block to handle the case where the provider is missing
+      // (e.g. during specific tests or if navigated incorrectly).
+      // Note: Ideally, this should be in didChangeDependencies or we should
+      // use context.watch() if we expected the provider existence to change,
+      // but for this optional dependency injection pattern, read() is
+      // acceptable.
+      interviewCubit = context.read<InterviewCubit>();
+    } on Exception {
+      interviewCubit = null;
+    }
     return Scaffold(
       backgroundColor: VoiceMockColors.background,
       appBar: AppBar(
@@ -159,6 +174,29 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () => DisclosureDetailSheet.show(context),
           ),
           const Divider(height: 1),
+          if (interviewCubit != null) ...[
+            ListTile(
+              tileColor: VoiceMockColors.surface,
+              leading: const Icon(
+                Icons.analytics_outlined,
+                color: VoiceMockColors.secondary,
+              ),
+              title: const Text(
+                'Diagnostics',
+                style: VoiceMockTypography.body,
+              ),
+              subtitle: const Text(
+                'View timing metrics & error info',
+                style: VoiceMockTypography.small,
+              ),
+              trailing: const Icon(
+                Icons.chevron_right_rounded,
+                color: VoiceMockColors.textMuted,
+              ),
+              onTap: () => context.push('/diagnostics', extra: interviewCubit),
+            ),
+            const Divider(height: 1),
+          ],
           ListTile(
             tileColor: VoiceMockColors.surface,
             enabled: _storedSession != null && !_isDeleting,

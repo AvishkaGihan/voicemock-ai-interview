@@ -14,6 +14,7 @@ void main() {
         uploadMs: 50.5,
         sttMs: 820.3,
         llmMs: 150.7,
+        ttsMs: 220.4,
         totalMs: 1021.5,
         timestamp: timestamp,
       );
@@ -23,6 +24,7 @@ void main() {
       expect(record.uploadMs, 50.5);
       expect(record.sttMs, 820.3);
       expect(record.llmMs, 150.7);
+      expect(record.ttsMs, 220.4);
       expect(record.totalMs, 1021.5);
       expect(record.timestamp, timestamp);
     });
@@ -32,6 +34,7 @@ void main() {
         'upload_ms': 45.2,
         'stt_ms': 780.5,
         'llm_ms': 160.3,
+        'tts_ms': 240.6,
         'total_ms': 985.0,
       };
       final timestamp = DateTime.now();
@@ -42,6 +45,7 @@ void main() {
         uploadMs: timings['upload_ms'],
         sttMs: timings['stt_ms'],
         llmMs: timings['llm_ms'],
+        ttsMs: timings['tts_ms'],
         totalMs: timings['total_ms'],
         timestamp: timestamp,
       );
@@ -51,6 +55,7 @@ void main() {
       expect(record.uploadMs, 45.2);
       expect(record.sttMs, 780.5);
       expect(record.llmMs, 160.3);
+      expect(record.ttsMs, 240.6);
       expect(record.totalMs, 985.0);
     });
 
@@ -66,6 +71,7 @@ void main() {
       expect(record.uploadMs, isNull);
       expect(record.sttMs, isNull);
       expect(record.llmMs, isNull);
+      expect(record.ttsMs, isNull);
       expect(record.totalMs, isNull);
     });
 
@@ -77,6 +83,7 @@ void main() {
         uploadMs: 50,
         sttMs: 800,
         llmMs: 150,
+        ttsMs: 200,
         totalMs: 1000,
         timestamp: timestamp,
       );
@@ -91,6 +98,7 @@ void main() {
       expect(updated.uploadMs, 50.0); // Unchanged
       expect(updated.sttMs, 800.0); // Unchanged
       expect(updated.llmMs, 150.0); // Unchanged
+      expect(updated.ttsMs, 200.0); // Unchanged
       expect(updated.totalMs, 1000.0); // Unchanged
     });
 
@@ -102,6 +110,7 @@ void main() {
         uploadMs: 50,
         sttMs: 800,
         llmMs: 150,
+        ttsMs: 200,
         totalMs: 1000,
         timestamp: timestamp,
       );
@@ -111,6 +120,7 @@ void main() {
         uploadMs: 50,
         sttMs: 800,
         llmMs: 150,
+        ttsMs: 200,
         totalMs: 1000,
         timestamp: timestamp,
       );
