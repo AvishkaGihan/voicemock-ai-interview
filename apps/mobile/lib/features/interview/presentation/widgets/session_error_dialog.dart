@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/failures.dart';
 
 /// Dialog displaying session start errors with retry/cancel options.
@@ -17,24 +17,25 @@ class SessionErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AlertDialog(
-      title: const Text("Couldn't Start Session"),
+      title: const Text(
+        "Couldn't Start Session",
+        style: VoiceMockTypography.h3,
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             failure.message,
-            style: theme.textTheme.bodyMedium,
+            style: VoiceMockTypography.body,
           ),
           if (failure.requestId != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: VoiceMockSpacing.sm),
             Text(
               'Request ID: ${failure.requestId}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              style: VoiceMockTypography.small.copyWith(
+                color: VoiceMockColors.textMuted,
               ),
             ),
           ],
@@ -43,11 +44,18 @@ class SessionErrorDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: onCancel,
+          style: TextButton.styleFrom(
+            foregroundColor: VoiceMockColors.textMuted,
+          ),
           child: const Text('Cancel'),
         ),
         if (failure.retryable)
           FilledButton(
             onPressed: onRetry,
+            style: FilledButton.styleFrom(
+              backgroundColor: VoiceMockColors.primary,
+              foregroundColor: VoiceMockColors.surface,
+            ),
             child: const Text('Try Again'),
           ),
       ],

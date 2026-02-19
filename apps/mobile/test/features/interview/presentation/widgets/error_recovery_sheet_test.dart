@@ -44,7 +44,7 @@ void main() {
         ),
       );
 
-      final retryButton = find.widgetWithText(ElevatedButton, 'Retry');
+      final retryButton = find.widgetWithText(FilledButton, 'Retry');
       expect(retryButton, findsOneWidget);
 
       await tester.tap(retryButton);
@@ -68,7 +68,7 @@ void main() {
         ),
       );
 
-      final reRecordButton = find.widgetWithText(TextButton, 'Re-record');
+      final reRecordButton = find.widgetWithText(OutlinedButton, 'Re-record');
       expect(reRecordButton, findsOneWidget);
 
       await tester.tap(reRecordButton);
@@ -117,7 +117,7 @@ void main() {
         ),
       );
 
-      expect(find.widgetWithText(ElevatedButton, 'Retry'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Retry'), findsNothing);
     });
 
     testWidgets('shows stage-specific icon for upload error', (tester) async {
@@ -243,7 +243,7 @@ void main() {
         ),
       );
 
-      expect(find.widgetWithText(TextButton, 'Re-record'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Re-record'), findsOneWidget);
     });
 
     testWidgets('re-record button shown for STT error stage', (tester) async {
@@ -269,7 +269,7 @@ void main() {
         ),
       );
 
-      expect(find.widgetWithText(TextButton, 'Re-record'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Re-record'), findsOneWidget);
     });
 
     testWidgets('re-record button NOT shown for LLM error stage', (
@@ -297,7 +297,7 @@ void main() {
         ),
       );
 
-      expect(find.widgetWithText(TextButton, 'Re-record'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Re-record'), findsNothing);
     });
 
     testWidgets('can be shown as modal bottom sheet', (tester) async {
@@ -368,9 +368,9 @@ void main() {
         ),
       );
 
-      expect(find.widgetWithText(ElevatedButton, 'Try Again'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Try Again'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'End Session'), findsOneWidget);
-      expect(find.widgetWithText(TextButton, 'Re-record'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Re-record'), findsNothing);
     },
   );
 }

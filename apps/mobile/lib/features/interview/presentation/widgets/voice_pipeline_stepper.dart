@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 
 /// 5-step horizontal stepper showing voice pipeline progress.
@@ -83,9 +84,8 @@ class VoicePipelineStepper extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               'Usually ~5-15s',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.outline,
+              style: VoiceMockTypography.micro.copyWith(
+                color: VoiceMockColors.textMuted,
               ),
             ),
           ),
@@ -114,8 +114,8 @@ class VoicePipelineStepper extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
+          style: VoiceMockTypography.micro.copyWith(
+            fontSize: 11, // Overriding micro size from 12 to 11 as in original
             fontWeight: stepState == _StepState.active
                 ? FontWeight.w600
                 : FontWeight.w400,
@@ -130,7 +130,7 @@ class VoicePipelineStepper extends StatelessWidget {
     return Container(
       width: 24,
       height: 2,
-      color: Theme.of(context).colorScheme.outlineVariant,
+      color: const Color(0xFFE2E8F0), // Matching divider color
     );
   }
 
@@ -162,13 +162,13 @@ class VoicePipelineStepper extends StatelessWidget {
   Color _getStepColor(BuildContext context, _StepState state) {
     switch (state) {
       case _StepState.complete:
-        return Theme.of(context).colorScheme.primary;
+        return VoiceMockColors.primary;
       case _StepState.active:
-        return Theme.of(context).colorScheme.primary;
+        return VoiceMockColors.primary;
       case _StepState.error:
-        return Theme.of(context).colorScheme.error;
+        return VoiceMockColors.error;
       case _StepState.pending:
-        return Theme.of(context).colorScheme.outline;
+        return const Color(0xFFE2E8F0); // Matching divider/outline variant
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/connectivity/connectivity.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/presentation/widgets/connectivity_banner.dart';
 
 import '../../../../helpers/pump_app.dart';
@@ -85,10 +86,16 @@ void main() {
       );
 
       final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.color, equals(Colors.orange[100]));
+      expect(
+        decoration.color,
+        equals(VoiceMockColors.warning.withValues(alpha: 0.1)),
+      );
 
       final border = decoration.border! as Border;
-      expect(border.bottom.color, equals(Colors.orange[300]));
+      expect(
+        border.bottom.color,
+        equals(VoiceMockColors.warning.withValues(alpha: 0.3)),
+      );
       expect(border.bottom.width, equals(1));
     });
 

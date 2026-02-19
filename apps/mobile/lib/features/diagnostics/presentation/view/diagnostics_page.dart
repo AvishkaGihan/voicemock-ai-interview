@@ -52,9 +52,12 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
     // If no cubit is found, show empty state immediately.
     if (_cubit == null) {
       return Scaffold(
+        backgroundColor: VoiceMockColors.background,
         appBar: AppBar(
-          title: const Text('Diagnostics'),
-          backgroundColor: VoiceMockColors.primary,
+          title: const Text('Diagnostics', style: VoiceMockTypography.h2),
+          backgroundColor: VoiceMockColors.background,
+          elevation: 0,
+          centerTitle: true,
         ),
         body: _buildEmptyState(const SessionDiagnostics(sessionId: 'unknown')),
       );
@@ -75,12 +78,16 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
             diagnostics.lastErrorRequestId != null;
 
         return Scaffold(
+          backgroundColor: VoiceMockColors.background,
           appBar: AppBar(
-            title: const Text('Diagnostics'),
-            backgroundColor: VoiceMockColors.primary,
+            title: const Text('Diagnostics', style: VoiceMockTypography.h2),
+            backgroundColor: VoiceMockColors.background,
+            elevation: 0,
+            centerTitle: true,
             actions: [
               IconButton(
                 tooltip: 'Clear Diagnostics',
+                color: VoiceMockColors.textPrimary,
                 onPressed: canClear
                     ? () {
                         _cubit!.clearDiagnostics();

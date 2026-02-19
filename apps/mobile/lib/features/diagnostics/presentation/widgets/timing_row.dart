@@ -27,7 +27,9 @@ class TimingRow extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        side: BorderSide(
+          color: VoiceMockColors.textMuted.withValues(alpha: 0.2),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(VoiceMockSpacing.md),
@@ -157,14 +159,15 @@ class _TimingChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: VoiceMockColors.textMuted.withValues(alpha: 0.2),
+        ),
       ),
       child: Text(
         '$label: ${value.toStringAsFixed(0)}ms',
-        style: const TextStyle(
-          fontSize: 12,
+        style: VoiceMockTypography.small.copyWith(
           fontWeight: FontWeight.w500,
-          color: Color(0xFF475569),
+          color: VoiceMockColors.textMuted,
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 
 /// Large circular button for push-to-talk recording.
 ///
@@ -50,7 +51,7 @@ class HoldToTalkButton extends StatelessWidget {
             color: _getBackgroundColor(context),
             border: isRecording
                 ? Border.all(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: VoiceMockColors.primary,
                     width: 4,
                   )
                 : null,
@@ -77,10 +78,10 @@ class HoldToTalkButton extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   _formatDuration(recordingDuration!),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: VoiceMockColors.primary,
                   ),
                 ),
               ],
@@ -105,16 +106,18 @@ class HoldToTalkButton extends StatelessWidget {
 
   Color _getBackgroundColor(BuildContext context) {
     if (isRecording) {
-      return Theme.of(context).colorScheme.primary.withAlpha(51);
+      return VoiceMockColors.primary.withValues(alpha: 0.2); // 51/255 ~= 0.2
     }
-    if (!isEnabled) return Colors.grey[300]!;
-    return Theme.of(context).colorScheme.primaryContainer;
+    if (!isEnabled) {
+      return const Color(0xFFE2E8F0); // Light grey/outline variant
+    }
+    return VoiceMockColors.primary.withValues(alpha: 0.1); // Container-like
   }
 
   Color _getIconColor(BuildContext context) {
-    if (isRecording) return Theme.of(context).colorScheme.primary;
-    if (!isEnabled) return Colors.grey[600]!;
-    return Theme.of(context).colorScheme.onPrimaryContainer;
+    if (isRecording) return VoiceMockColors.primary;
+    if (!isEnabled) return VoiceMockColors.textMuted;
+    return VoiceMockColors.primary;
   }
 
   String _formatDuration(Duration duration) {

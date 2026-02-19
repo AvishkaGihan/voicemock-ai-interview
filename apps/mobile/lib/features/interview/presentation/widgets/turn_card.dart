@@ -39,72 +39,70 @@ class TurnCard extends StatelessWidget {
             // Question header
             Text(
               'Question $questionNumber of $totalQuestions',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
+              style: VoiceMockTypography.micro.copyWith(
+                color: VoiceMockColors.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: VoiceMockSpacing.sm),
 
             // Question text
             Text(
               questionText,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: VoiceMockTypography.h3,
             ),
 
             // Transcript section
             if (transcript != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: VoiceMockSpacing.md),
               Text(
                 'You said:',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.secondary,
+                style: VoiceMockTypography.micro.copyWith(
+                  color: VoiceMockColors.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: VoiceMockSpacing.xs),
               Text(
                 transcript!,
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: VoiceMockTypography.body,
               ),
             ],
 
             // Response section
             if (responseText != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: VoiceMockSpacing.md),
               Text(
                 'Coach says:',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.tertiary,
+                style: VoiceMockTypography.micro.copyWith(
+                  color: VoiceMockColors.textMuted,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: VoiceMockSpacing.xs),
               Text(
                 responseText!,
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: VoiceMockTypography.body,
               ),
             ],
 
             if (coachingFeedback != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: VoiceMockSpacing.md),
               Text(
                 'Top Tip',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.tertiary,
+                style: VoiceMockTypography.micro.copyWith(
+                  color: VoiceMockColors.warning,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: VoiceMockSpacing.xs),
               Text(
                 coachingFeedback!.summaryTip,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                style: VoiceMockTypography.body.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: VoiceMockSpacing.sm),
               ...coachingFeedback!.dimensions.map(
                 (dimension) => Padding(
                   padding: const EdgeInsets.only(bottom: 6),
@@ -113,8 +111,8 @@ class TurnCard extends StatelessWidget {
                     children: [
                       Text(
                         dimension.label,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
+                        style: VoiceMockTypography.small.copyWith(
+                          color: VoiceMockColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -127,15 +125,16 @@ class TurnCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: VoiceMockColors.secondary,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(
+                            VoiceMockRadius.lg,
+                          ),
                         ),
                         child: Text(
                           '${dimension.score}/5',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style: VoiceMockTypography.micro.copyWith(
+                            color: VoiceMockColors.surface,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       Expanded(
@@ -143,10 +142,9 @@ class TurnCard extends StatelessWidget {
                           '— ${dimension.tip}',
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                          style: VoiceMockTypography.small.copyWith(
+                            color: VoiceMockColors.textPrimary,
+                          ),
                         ),
                       ),
                     ],

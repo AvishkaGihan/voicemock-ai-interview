@@ -26,47 +26,45 @@ class SessionCompleteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(VoiceMockSpacing.md),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(VoiceMockSpacing.lg),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Success icon
-              Icon(
+              const Icon(
                 Icons.check_circle_outline,
                 size: 64,
-                color: Theme.of(context).colorScheme.primary,
+                color: VoiceMockColors.primary,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: VoiceMockSpacing.md),
 
               // Completion message
-              Text(
+              const Text(
                 'Session Complete',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: VoiceMockTypography.h2,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: VoiceMockSpacing.sm),
 
               Text(
                 'Great job! You completed all $totalQuestions questions.',
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: VoiceMockTypography.body,
                 textAlign: TextAlign.center,
               ),
 
               if (sessionSummary != null) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: VoiceMockSpacing.lg),
                 _SummarySection(
                   title: 'Overall assessment',
                   child: Text(
                     sessionSummary!.overallAssessment,
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: VoiceMockTypography.body,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: VoiceMockSpacing.md),
                 _SummarySection(
                   title: 'Strengths',
                   child: Column(
@@ -74,7 +72,9 @@ class SessionCompleteCard extends StatelessWidget {
                     children: sessionSummary!.strengths
                         .map(
                           (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.only(
+                              bottom: VoiceMockSpacing.sm,
+                            ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -86,8 +86,13 @@ class SessionCompleteCard extends StatelessWidget {
                                     color: VoiceMockColors.success,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text(item)),
+                                const SizedBox(width: VoiceMockSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    item,
+                                    style: VoiceMockTypography.body,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -95,7 +100,7 @@ class SessionCompleteCard extends StatelessWidget {
                         .toList(),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: VoiceMockSpacing.md),
                 _SummarySection(
                   title: 'Improvements',
                   child: Column(
@@ -103,7 +108,9 @@ class SessionCompleteCard extends StatelessWidget {
                     children: sessionSummary!.improvements
                         .map(
                           (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.only(
+                              bottom: VoiceMockSpacing.sm,
+                            ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -115,8 +122,13 @@ class SessionCompleteCard extends StatelessWidget {
                                     color: VoiceMockColors.secondary,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text(item)),
+                                const SizedBox(width: VoiceMockSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    item,
+                                    style: VoiceMockTypography.body,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -125,7 +137,7 @@ class SessionCompleteCard extends StatelessWidget {
                   ),
                 ),
                 if (sessionSummary!.recommendedActions.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: VoiceMockSpacing.md),
                   _SummarySection(
                     title: 'What to Practice Next',
                     child: Column(
@@ -133,7 +145,9 @@ class SessionCompleteCard extends StatelessWidget {
                       children: sessionSummary!.recommendedActions
                           .map(
                             (action) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.only(
+                                bottom: VoiceMockSpacing.sm,
+                              ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -145,8 +159,13 @@ class SessionCompleteCard extends StatelessWidget {
                                       color: VoiceMockColors.secondary,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(child: Text(action)),
+                                  const SizedBox(width: VoiceMockSpacing.sm),
+                                  Expanded(
+                                    child: Text(
+                                      action,
+                                      style: VoiceMockTypography.body,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -155,19 +174,22 @@ class SessionCompleteCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: VoiceMockSpacing.md),
                 _SummarySection(
                   title: 'Average scores',
                   child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: VoiceMockSpacing.sm,
+                    runSpacing: VoiceMockSpacing.sm,
                     children: sessionSummary!.averageScores.entries
                         .map(
                           (entry) => Chip(
                             label: Text(
                               '${_formatLabel(entry.key)}: '
                               '${entry.value.toStringAsFixed(1)}',
+                              style: VoiceMockTypography.small,
                             ),
+                            backgroundColor: VoiceMockColors.background,
+                            side: BorderSide.none,
                           ),
                         )
                         .toList(),
@@ -177,40 +199,49 @@ class SessionCompleteCard extends StatelessWidget {
 
               // Last response from coach
               if (lastResponseText != null) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: VoiceMockSpacing.lg),
                 Text(
                   'Final feedback:',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.tertiary,
+                  style: VoiceMockTypography.micro.copyWith(
+                    color: VoiceMockColors
+                        .textMuted, // Matching TurnCard "Coach says"
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: VoiceMockSpacing.xs),
                 Text(
                   lastResponseText!,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: VoiceMockTypography.body,
                   textAlign: TextAlign.center,
                 ),
               ],
 
-              const SizedBox(height: 32),
+              const SizedBox(height: VoiceMockSpacing.xl),
 
               // Primary action: Back to Home
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: onBackToHome,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VoiceMockColors.primary,
+                    foregroundColor: VoiceMockColors.surface,
+                  ),
                   child: const Text('Back to Home'),
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: VoiceMockSpacing.md),
 
               // Secondary action: Start New Session
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: onStartNew,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: VoiceMockColors.primary,
+                    side: const BorderSide(color: VoiceMockColors.primary),
+                  ),
                   child: const Text('Start New Session'),
                 ),
               ),
@@ -243,11 +274,9 @@ class _SummarySection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: VoiceMockTypography.h3,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: VoiceMockSpacing.sm),
         child,
       ],
     );
