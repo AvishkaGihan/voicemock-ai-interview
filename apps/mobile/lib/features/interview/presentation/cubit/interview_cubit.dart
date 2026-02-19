@@ -88,6 +88,11 @@ class InterviewCubit extends Cubit<InterviewState> {
   /// Public getter for diagnostics data.
   SessionDiagnostics get diagnostics => _diagnostics;
 
+  /// Clears diagnostics timing/error data while preserving session ID.
+  void clearDiagnostics() {
+    _diagnostics = SessionDiagnostics(sessionId: _sessionId);
+  }
+
   bool get canReplay =>
       state is InterviewReady &&
       (state as InterviewReady).lastTtsAudioUrl.isNotEmpty;
@@ -190,14 +195,9 @@ class InterviewCubit extends Cubit<InterviewState> {
       );
 
       // Create timing record from response
-      final timingRecord = TurnTimingRecord(
-        turnNumber: turnResponse.data.questionNumber,
+      final timingRecord = TurnTimingRecord.fromTurnResponseData(
+        turnResponse.data,
         requestId: turnResponse.requestId,
-        uploadMs: turnResponse.data.timings['upload_ms'],
-        sttMs: turnResponse.data.timings['stt_ms'],
-        llmMs: turnResponse.data.timings['llm_ms'],
-        totalMs: turnResponse.data.timings['total_ms'],
-        timestamp: DateTime.now(),
       );
 
       // Add timing record to diagnostics
@@ -907,6 +907,7 @@ class InterviewCubit extends Cubit<InterviewState> {
         uploadMs: response.data.timings['upload_ms'],
         sttMs: response.data.timings['stt_ms'],
         llmMs: response.data.timings['llm_ms'],
+        ttsMs: response.data.timings['tts_ms'],
         totalMs: response.data.timings['total_ms'],
         timestamp: DateTime.now(),
       );

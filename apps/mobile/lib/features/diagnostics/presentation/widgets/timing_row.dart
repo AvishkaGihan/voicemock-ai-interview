@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:voicemock/core/models/turn_timing_record.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 
 /// Displays a single turn's timing breakdown with copyable request ID.
 ///
@@ -22,14 +23,14 @@ class TimingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: const Color(0xFFF7F9FC),
+      color: VoiceMockColors.background,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(VoiceMockRadius.md),
         side: const BorderSide(color: Color(0xFFE2E8F0)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(VoiceMockSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -41,7 +42,7 @@ class TimingRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
+                    color: VoiceMockColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -51,12 +52,12 @@ class TimingRow extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+                      color: VoiceMockColors.textMuted,
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: VoiceMockSpacing.sm),
 
             // Request ID (tap to copy)
             if (record.requestId != null)
@@ -67,7 +68,7 @@ class TimingRow extends StatelessWidget {
                     const Icon(
                       Icons.tag,
                       size: 14,
-                      color: Color(0xFF94A3B8),
+                      color: VoiceMockColors.textMuted, // 0xFF94A3B8 -> approx
                     ),
                     const SizedBox(width: 4),
                     Flexible(
@@ -76,7 +77,8 @@ class TimingRow extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontFamily: 'monospace',
-                          color: Color(0xFF2F6FED),
+                          color:
+                              VoiceMockColors.primary, // 0xFF2F6FED -> Primary
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -85,7 +87,7 @@ class TimingRow extends StatelessWidget {
                     const Icon(
                       Icons.content_copy,
                       size: 14,
-                      color: Color(0xFF94A3B8),
+                      color: VoiceMockColors.textMuted,
                     ),
                   ],
                 ),
@@ -94,8 +96,8 @@ class TimingRow extends StatelessWidget {
 
             // Stage timings
             Wrap(
-              spacing: 16,
-              runSpacing: 8,
+              spacing: VoiceMockSpacing.md,
+              runSpacing: VoiceMockSpacing.sm,
               children: [
                 if (record.uploadMs != null)
                   _TimingChip(
@@ -111,6 +113,11 @@ class TimingRow extends StatelessWidget {
                   _TimingChip(
                     label: 'LLM',
                     value: record.llmMs!,
+                  ),
+                if (record.ttsMs != null)
+                  _TimingChip(
+                    label: 'TTS',
+                    value: record.ttsMs!,
                   ),
               ],
             ),
@@ -148,8 +155,8 @@ class _TimingChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(4),
+        color: VoiceMockColors.surface,
+        borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Text(

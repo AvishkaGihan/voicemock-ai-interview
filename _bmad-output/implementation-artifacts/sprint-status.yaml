@@ -82,5 +82,5 @@ development_status:
   5-1-third-party-processing-disclosure: done
   5-2-delete-session-artifacts: done
   5-3-safety-constraints-and-refusal-behavior: done
-  5-4-diagnostics-screen-request-id-timings-last-error: backlog
+  5-4-diagnostics-screen-request-id-timings-last-error: done
   epic-5-retrospective: optional
