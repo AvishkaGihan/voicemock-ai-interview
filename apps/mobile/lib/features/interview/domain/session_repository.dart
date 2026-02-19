@@ -5,7 +5,6 @@ import 'package:voicemock/features/interview/domain/interview_config.dart';
 import 'package:voicemock/features/interview/domain/session.dart';
 
 /// Repository interface for session management operations.
-// ignore: one_member_abstracts
 abstract class SessionRepository {
   /// Starts a new interview session with the given configuration.
   ///
@@ -19,4 +18,13 @@ abstract class SessionRepository {
   Future<Either<InterviewFailure, Session>> startSession(
     InterviewConfig config,
   );
+
+  /// Deletes a session's server-side artifacts and clears local session.
+  Future<Either<InterviewFailure, bool>> deleteSession(
+    String sessionId,
+    String sessionToken,
+  );
+
+  /// Returns the locally stored session, if available.
+  Future<Session?> getStoredSession();
 }
