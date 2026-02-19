@@ -7,13 +7,14 @@ visible to /turn.
 """
 
 from src.security import SessionTokenService
-from src.services import SessionStore, TTSCache
+from src.services import SessionStore, TTSCache, SafetyFilter
 from src.settings.config import get_settings
 
 
 _session_store: SessionStore | None = None
 _token_service: SessionTokenService | None = None
 _tts_cache: TTSCache | None = None
+_safety_filter: SafetyFilter | None = None
 
 
 def get_session_store() -> SessionStore:
@@ -44,3 +45,11 @@ def get_tts_cache() -> TTSCache:
         settings = get_settings()
         _tts_cache = TTSCache(ttl_seconds=settings.tts_cache_ttl_seconds)
     return _tts_cache
+
+
+def get_safety_filter() -> SafetyFilter:
+    """Dependency to get the safety filter singleton."""
+    global _safety_filter
+    if _safety_filter is None:
+        _safety_filter = SafetyFilter.from_settings()
+    return _safety_filter

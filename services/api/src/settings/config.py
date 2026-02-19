@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     tts_timeout_seconds: int = 30
     tts_model: str = "aura-2-thalia-en"
     tts_cache_ttl_seconds: int = 300
+    safety_enabled: bool = True
+    safety_patterns_file: str | None = None
 
     model_config = {
         "env_file": ".env",

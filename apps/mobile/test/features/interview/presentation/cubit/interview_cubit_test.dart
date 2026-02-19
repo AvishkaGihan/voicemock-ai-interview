@@ -2477,6 +2477,97 @@ void main() {
           isA<InterviewTranscriptReview>(),
         ],
       );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'content_refused is mapped to calm message and remains non-retryable',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(
+            throwsException: ServerException(
+              stage: 'llm',
+              code: 'content_refused',
+              message: 'flagged phrase from backend',
+              retryable: false,
+              requestId: 'req-refused-1',
+            ),
+          ),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => InterviewUploading(
+          questionNumber: 2,
+          totalQuestions: 5,
+          questionText: 'Q2',
+          audioPath: '/path/audio.m4a',
+          startTime: DateTime.now(),
+        ),
+        act: (cubit) async {
+          await cubit.submitTurn();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        expect: () => [
+          isA<InterviewError>()
+              .having(
+                (s) => s.failedStage,
+                'failedStage',
+                InterviewStage.thinking,
+              )
+              .having(
+                (s) => (s.failure as ServerFailure).code,
+                'failure.code',
+                'content_refused',
+              )
+              .having(
+                (s) => s.failure.message,
+                'failure.message',
+                "Let's stay focused on the interview. "
+                    'Please try answering the question again.',
+              )
+              .having((s) => s.failure.retryable, 'failure.retryable', false),
+        ],
+      );
+
+      blocTest<InterviewCubit, InterviewState>(
+        'retry from content_refused returns to Ready without incrementing '
+        'question',
+        build: () => InterviewCubit(
+          recordingService: createMockRecordingService(),
+          turnRemoteDataSource: createMockTurnRemoteDataSource(),
+          sessionId: 'test-session-123',
+          sessionToken: 'test-token',
+          audioFocusService: createMockAudioFocusService(),
+          permissionService: createMockPermissionService(),
+        ),
+        seed: () => InterviewError(
+          failure: const ServerFailure(
+            message:
+                "Let's stay focused on the interview. "
+                'Please try answering the question again.',
+            stage: 'llm',
+            code: 'content_refused',
+            requestId: 'req-refused-2',
+          ),
+          previousState: InterviewUploading(
+            questionNumber: 3,
+            totalQuestions: 5,
+            questionText: 'Q3',
+            audioPath: '/path/audio3.m4a',
+            startTime: DateTime.now(),
+          ),
+          failedStage: InterviewStage.thinking,
+          audioPath: '/path/audio3.m4a',
+        ),
+        act: (cubit) async {
+          await cubit.retry();
+        },
+        expect: () => [
+          isA<InterviewReady>()
+              .having((s) => s.questionNumber, 'questionNumber', 3)
+              .having((s) => s.questionText, 'questionText', 'Q3'),
+        ],
+      );
     });
     group('audio interruption', () {
       blocTest<InterviewCubit, InterviewState>(

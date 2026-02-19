@@ -52,6 +52,7 @@ from src.providers.tts_deepgram import (
     TTSBadRequestError,
 )
 from src.settings.config import get_settings
+from src.services.safety_filter import SafetyFilter
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,7 @@ async def process_turn(
     asked_questions: list[str],
     question_count: int,
     tts_cache: Any,  # TTSCache instance
+    safety_filter: SafetyFilter | None = None,
     transcript: str | None = None,
     request_id: str | None = None,
     turn_history: list[dict[str, Any]] | None = None,
@@ -189,6 +191,30 @@ async def process_turn(
 
             stt_ms = (stt_end - stt_start) * 1000
 
+        active_safety_filter = safety_filter or SafetyFilter.from_settings()
+        safety_result = active_safety_filter.check_transcript(transcript)
+        if not safety_result.is_safe:
+            logger.warning(
+                "Turn refused by transcript safety filter",
+                extra={
+                    "request_id": request_id,
+                    "stage": "llm",
+                    "code": "content_refused",
+                    "reason": safety_result.reason,
+                },
+            )
+            raise TurnProcessingError(
+                message="Transcript blocked by safety filter",
+                message_safe=(
+                    "Your response couldn't be processed. Please rephrase your "
+                    "answer to focus on the interview question."
+                ),
+                stage="llm",
+                code="content_refused",
+                retryable=False,
+                request_id=request_id,
+            )
+
         # LLM processing
         llm_provider = get_llm_provider()
         llm_start = time.perf_counter()
@@ -207,6 +233,28 @@ async def process_turn(
         else:
             assistant_text = llm_response.follow_up_question
             coaching_feedback = llm_response.coaching_feedback
+
+        if not isinstance(llm_response, str) and llm_response.refused:
+            logger.warning(
+                "Turn refused by LLM safety response",
+                extra={
+                    "request_id": request_id,
+                    "stage": "llm",
+                    "code": "content_refused",
+                },
+            )
+            raise TurnProcessingError(
+                message="LLM refused content",
+                message_safe=(
+                    assistant_text
+                    or "Let's stay focused on the interview. Please try answering "
+                    "the question again."
+                ),
+                stage="llm",
+                code="content_refused",
+                retryable=False,
+                request_id=request_id,
+            )
         llm_end = time.perf_counter()
 
         llm_ms = (llm_end - llm_start) * 1000

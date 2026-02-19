@@ -29,6 +29,14 @@ class ErrorRecoverySheet extends StatelessWidget {
 
     // Determine if re-record should be shown (hide for LLM/Thinking stage)
     final shouldShowReRecord = failedStage != InterviewStage.thinking;
+    final isContentRefused =
+        failure is ServerFailure &&
+        (failure as ServerFailure).code == 'content_refused';
+    final showPrimaryAction =
+        (failure.retryable && onRetry != null) ||
+        (isContentRefused && onRetry != null);
+    final primaryActionLabel = isContentRefused ? 'Try Again' : 'Retry';
+    final cancelLabel = isContentRefused ? 'End Session' : 'Cancel';
 
     return SingleChildScrollView(
       child: Padding(
@@ -116,26 +124,25 @@ class ErrorRecoverySheet extends StatelessWidget {
             ],
 
             // Action buttons
-            if (failure.retryable && onRetry != null)
+            if (showPrimaryAction)
               ElevatedButton(
                 onPressed: onRetry,
-                child: const Text('Retry'),
+                child: Text(primaryActionLabel),
               ),
-            if (failure.retryable && onRetry != null)
-              const SizedBox(height: 12),
+            if (showPrimaryAction) const SizedBox(height: 12),
 
-            if (shouldShowReRecord && onReRecord != null)
+            if (!isContentRefused && shouldShowReRecord && onReRecord != null)
               TextButton(
                 onPressed: onReRecord,
                 child: const Text('Re-record'),
               ),
-            if (shouldShowReRecord && onReRecord != null)
+            if (!isContentRefused && shouldShowReRecord && onReRecord != null)
               const SizedBox(height: 8),
 
             if (onCancel != null)
               TextButton(
                 onPressed: onCancel,
-                child: const Text('Cancel'),
+                child: Text(cancelLabel),
               ),
           ],
         ),
