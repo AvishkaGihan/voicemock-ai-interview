@@ -46,5 +46,12 @@ class SessionData(BaseModel):
     )
 
 
+class DeleteResult(BaseModel):
+    """Response data for session deletion."""
+
+    deleted: bool = Field(..., description="Whether the session data was deleted")
+
+
 # Type alias for the complete session start response with envelope
 SessionStartResponse = ApiEnvelope[SessionData]
+DeleteSessionResponse = ApiEnvelope[DeleteResult]

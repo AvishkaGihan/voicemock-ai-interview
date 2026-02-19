@@ -72,3 +72,19 @@ class SessionStartResponse extends Equatable {
   @override
   List<Object> get props => [sessionId, sessionToken, openingPrompt];
 }
+
+/// Response payload from DELETE /session/{session_id}.
+class DeleteSessionResponse extends Equatable {
+  const DeleteSessionResponse({required this.deleted});
+
+  factory DeleteSessionResponse.fromJson(Map<String, dynamic> json) {
+    return DeleteSessionResponse(
+      deleted: (json['deleted'] as bool?) ?? false,
+    );
+  }
+
+  final bool deleted;
+
+  @override
+  List<Object> get props => [deleted];
+}

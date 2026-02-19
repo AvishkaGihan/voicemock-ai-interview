@@ -22,4 +22,22 @@ class SessionRemoteDataSource {
 
     return envelope.data!;
   }
+
+  /// Calls DELETE /session/{session_id} endpoint.
+  ///
+  /// Throws [NetworkException] on connectivity issues.
+  /// Throws [ServerException] on API errors.
+  Future<bool> deleteSession({
+    required String sessionId,
+    required String sessionToken,
+  }) async {
+    final envelope = await _apiClient.delete<DeleteSessionResponse>(
+      '/session/$sessionId',
+      bearerToken: sessionToken,
+      fromJson: DeleteSessionResponse.fromJson,
+      timeout: const Duration(seconds: 30),
+    );
+
+    return envelope.data?.deleted ?? false;
+  }
 }
