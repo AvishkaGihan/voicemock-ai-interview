@@ -56,11 +56,11 @@ At the end of a 5-question session, you receive a detailed coaching summary cove
 
 | Home / Setup | Interview Screen | Session Summary |
 |:---:|:---:|:---:|
-| ![Setup screen](./docs/assets/screenshots/setup.png) | ![Interview screen](./docs/assets/screenshots/interview.png) | ![Summary screen](./docs/assets/screenshots/summary.png) |
+| ![Setup screen](./docs/assets/screenshots/setup.jpeg) | ![Interview screen](./docs/assets/screenshots/interview.jpeg) | ![Summary screen](./docs/assets/screenshots/summary.jpeg) |
 
 | Recording State | Error Recovery | Diagnostics |
 |:---:|:---:|:---:|
-| ![Recording](./docs/assets/screenshots/recording.png) | ![Error](./docs/assets/screenshots/error.png) | ![Diagnostics](./docs/assets/screenshots/diagnostics.png) |
+| ![Recording](./docs/assets/screenshots/recording.jpeg) | ![Error](./docs/assets/screenshots/error.jpeg) | ![Diagnostics](./docs/assets/screenshots/diagnostics.jpeg) |
 
 ---
 
