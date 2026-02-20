@@ -39,10 +39,10 @@ voicemock-ai-interview/
 - Pydantic v2 for validation
 - Docker deployment on Render.com
 
-**Third-Party Integrations** (Future)
+**Third-Party Integrations**
 - Deepgram for Speech-to-Text
-- OpenAI for LLM responses
-- ElevenLabs for Text-to-Speech
+- Groq for LLM responses
+- Deepgram for Text-to-Speech
 
 ## 🚀 Getting Started
 
