@@ -79,7 +79,7 @@ class _InterviewViewState extends State<InterviewView>
         centerTitle: true,
         title: GestureDetector(
           onTap: _onTitleTap,
-          child: const Text('Interview', style: VoiceMockTypography.h3),
+          child: Text('Interview', style: VoiceMockTypography.h3),
         ),
         actions: [
           // Diagnostics button (debug mode or unlocked via triple-tap)
@@ -151,7 +151,6 @@ class _InterviewViewState extends State<InterviewView>
                   // Voice Pipeline Stepper (shown during processing)
                   VoicePipelineStepper(
                     currentStage: state.stage,
-                    stageStartTime: _getStageStartTime(state),
                   ),
 
                   // Turn Card (question, transcript, response)
@@ -356,15 +355,6 @@ class _InterviewViewState extends State<InterviewView>
       onPressStart: cubit.startRecording,
       onPressEnd: cubit.stopRecording,
     );
-  }
-
-  DateTime? _getStageStartTime(InterviewState state) {
-    return switch (state) {
-      InterviewUploading(:final startTime) => startTime,
-      InterviewTranscribing(:final startTime) => startTime,
-      InterviewThinking(:final startTime) => startTime,
-      _ => null,
-    };
   }
 
   Future<void> _showEndSessionDialog(BuildContext context) async {

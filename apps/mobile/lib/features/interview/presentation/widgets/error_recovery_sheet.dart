@@ -47,10 +47,17 @@ class ErrorRecoverySheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Stage-specific error icon
-            Icon(
-              stageIcon,
-              size: 48,
-              color: VoiceMockColors.error.withValues(alpha: 0.8),
+            Container(
+              padding: const EdgeInsets.all(VoiceMockSpacing.md),
+              decoration: BoxDecoration(
+                color: VoiceMockColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                stageIcon,
+                size: 48,
+                color: VoiceMockColors.error.withValues(alpha: 0.8),
+              ),
             ),
             const SizedBox(height: VoiceMockSpacing.md),
 
@@ -121,13 +128,25 @@ class ErrorRecoverySheet extends StatelessWidget {
 
             // Action buttons
             if (showPrimaryAction)
-              FilledButton(
-                onPressed: onRetry,
-                style: FilledButton.styleFrom(
-                  backgroundColor: VoiceMockColors.primary,
-                  foregroundColor: VoiceMockColors.surface,
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                  boxShadow: [
+                    BoxShadow(
+                      color: VoiceMockColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                child: Text(primaryActionLabel),
+                child: FilledButton(
+                  onPressed: onRetry,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VoiceMockColors.primary,
+                    foregroundColor: VoiceMockColors.surface,
+                  ),
+                  child: Text(primaryActionLabel),
+                ),
               ),
             if (showPrimaryAction) const SizedBox(height: VoiceMockSpacing.sm),
 
@@ -148,6 +167,9 @@ class ErrorRecoverySheet extends StatelessWidget {
                 onPressed: onCancel,
                 style: TextButton.styleFrom(
                   foregroundColor: VoiceMockColors.textMuted,
+                  textStyle: VoiceMockTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 child: Text(cancelLabel),
               ),

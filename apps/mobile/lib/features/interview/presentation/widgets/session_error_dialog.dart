@@ -18,7 +18,7 @@ class SessionErrorDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text(
+      title: Text(
         "Couldn't Start Session",
         style: VoiceMockTypography.h3,
       ),

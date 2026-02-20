@@ -38,7 +38,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Question 3 of 10'), findsOneWidget);
+      expect(find.text('QUESTION 3 OF 10'), findsOneWidget);
       expect(
         find.text('Tell me about a challenging project'),
         findsOneWidget,
@@ -57,7 +57,7 @@ void main() {
         ),
       );
 
-      expect(find.text('What we heard:'), findsOneWidget);
+      expect(find.text('WHAT WE HEARD:'), findsOneWidget);
     });
 
     testWidgets('Accept & Continue button is visible and calls onAccept', (
@@ -108,7 +108,7 @@ void main() {
         ),
       );
 
-      final reRecordButton = find.widgetWithText(OutlinedButton, 'Re-record');
+      final reRecordButton = find.widgetWithText(TextButton, 'Re-record');
       expect(reRecordButton, findsOneWidget);
 
       await tester.tap(reRecordButton);
@@ -179,7 +179,7 @@ void main() {
       );
     });
 
-    testWidgets('buttons are arranged horizontally with Re-record first', (
+    testWidgets('buttons are arranged vertically with Accept first', (
       tester,
     ) async {
       await tester.pumpApp(
@@ -193,26 +193,26 @@ void main() {
         ),
       );
 
-      final reRecordButton = find.widgetWithText(
-        OutlinedButton,
-        'Re-record',
-      );
       final acceptButton = find.widgetWithText(
         FilledButton,
         'Accept & Continue',
       );
+      final reRecordButton = find.widgetWithText(
+        TextButton,
+        'Re-record',
+      );
 
-      expect(reRecordButton, findsOneWidget);
       expect(acceptButton, findsOneWidget);
+      expect(reRecordButton, findsOneWidget);
 
-      // Verify they're in a row and Re-record comes before Accept
-      final reRecordPos = tester.getCenter(reRecordButton);
+      // Verify they're in a column and Accept comes before Re-record
       final acceptPos = tester.getCenter(acceptButton);
+      final reRecordPos = tester.getCenter(reRecordButton);
 
       expect(
-        reRecordPos.dx < acceptPos.dx,
+        acceptPos.dy < reRecordPos.dy,
         isTrue,
-        reason: 'Re-record button should be to the left of Accept button',
+        reason: 'Accept button should be above the Re-record button',
       );
     });
   });

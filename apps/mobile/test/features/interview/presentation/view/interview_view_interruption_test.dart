@@ -56,7 +56,7 @@ void main() {
         );
 
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Trigger state change by pumping again
         await tester.pump();
@@ -92,7 +92,7 @@ void main() {
         );
 
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // No SnackBar should appear
         expect(
@@ -127,7 +127,7 @@ void main() {
         );
 
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Verify hold-to-talk button is still available
         expect(find.text('Hold to talk'), findsOneWidget);

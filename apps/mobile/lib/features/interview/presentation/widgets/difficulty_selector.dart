@@ -18,15 +18,26 @@ class DifficultySelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Difficulty Level',
-          style: VoiceMockTypography.micro,
+          style: VoiceMockTypography.label,
         ),
         const SizedBox(height: VoiceMockSpacing.sm),
-        Material(
-          color: VoiceMockColors.surface,
-          borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-          elevation: 1,
+        Container(
+          decoration: BoxDecoration(
+            color: VoiceMockColors.surface,
+            borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+            border: const Border(
+              left: BorderSide(color: VoiceMockColors.primary, width: 3),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: VoiceMockColors.accentGlow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.all(VoiceMockSpacing.xs),
             child: Row(
@@ -41,10 +52,18 @@ class DifficultySelector extends StatelessWidget {
                         vertical: VoiceMockSpacing.sm + 4,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? VoiceMockColors.primary
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
+                        color: isSelected ? null : Colors.transparent,
+                        gradient: isSelected
+                            ? const LinearGradient(
+                                colors: [
+                                  VoiceMockColors.primary,
+                                  VoiceMockColors.secondary,
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(
+                          VoiceMockRadius.full,
+                        ),
                       ),
                       child: Text(
                         difficulty.displayName,

@@ -43,9 +43,16 @@ class PermissionRationaleView extends StatelessWidget {
                 Container(
                   width: 120,
                   height: 120,
-                  decoration: BoxDecoration(
-                    color: VoiceMockColors.primary.withValues(alpha: 0.1),
+                  decoration: const BoxDecoration(
+                    color: VoiceMockColors.primaryContainer,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: VoiceMockColors.accentGlow,
+                        blurRadius: 24,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.mic_rounded,

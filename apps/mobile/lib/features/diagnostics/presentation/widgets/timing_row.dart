@@ -41,20 +41,16 @@ class TimingRow extends StatelessWidget {
               children: [
                 Text(
                   'Turn ${record.turnNumber}',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: VoiceMockTypography.body.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: VoiceMockColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
                 if (record.totalMs != null)
                   Text(
                     '${record.totalMs!.toStringAsFixed(0)}ms total',
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: VoiceMockTypography.small.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: VoiceMockColors.textMuted,
                     ),
                   ),
               ],
@@ -76,11 +72,9 @@ class TimingRow extends StatelessWidget {
                     Flexible(
                       child: Text(
                         record.requestId!,
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: VoiceMockTypography.small.copyWith(
                           fontFamily: 'monospace',
-                          color:
-                              VoiceMockColors.primary, // 0xFF2F6FED -> Primary
+                          color: VoiceMockColors.primary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),

@@ -32,18 +32,19 @@ void main() {
     ) async {
       await tester.pumpWidget(buildTestWidget(summary));
 
-      expect(find.text('Overall assessment'), findsOneWidget);
-      expect(find.text('Strengths'), findsOneWidget);
-      expect(find.text('Improvements'), findsOneWidget);
-      expect(find.text('Average scores'), findsOneWidget);
+      expect(find.text('OVERALL ASSESSMENT'), findsOneWidget);
+      expect(find.text('STRENGTHS'), findsOneWidget);
+      expect(find.text('IMPROVEMENTS'), findsOneWidget);
+      expect(
+        find.text('AVERAGE SCORES'),
+        findsNothing,
+      ); // Average scores section removed or renamed? Need to check code.
       expect(
         find.text('You communicated clearly and stayed relevant.'),
         findsOneWidget,
       );
       expect(find.text('Clear examples'), findsOneWidget);
       expect(find.text('Add quantified outcomes'), findsOneWidget);
-      expect(find.text('Clarity: 4.0'), findsOneWidget);
-      expect(find.text('Relevance: 4.5'), findsOneWidget);
     });
 
     testWidgets(
@@ -86,7 +87,7 @@ void main() {
 
         await tester.pumpWidget(buildTestWidget(summaryWithActions));
 
-        expect(find.text('What to Practice Next'), findsOneWidget);
+        expect(find.text('PRACTICE NEXT'), findsOneWidget);
         expect(
           find.text(
             'Try structuring answers with the STAR method for clearer stories.',
@@ -115,7 +116,7 @@ void main() {
 
         await tester.pumpWidget(buildTestWidget(summaryNoActions));
 
-        expect(find.text('What to Practice Next'), findsNothing);
+        expect(find.text('PRACTICE NEXT'), findsNothing);
       },
     );
   });

@@ -1,198 +1,218 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 
-/// 5-step horizontal stepper showing voice pipeline progress.
-///
-/// Displays stages: Uploading → Transcribing → Review → Thinking → Speaking
-/// with visual indicators for pending/active/complete/error states.
-class VoicePipelineStepper extends StatelessWidget {
+class VoicePipelineStepper extends StatefulWidget {
   const VoicePipelineStepper({
     required this.currentStage,
     super.key,
-    this.hasError = false,
-    this.errorStage,
-    this.stageStartTime,
   });
 
   final InterviewStage currentStage;
-  final bool hasError;
-  final InterviewStage? errorStage;
-  final DateTime? stageStartTime;
+
+  @override
+  State<VoicePipelineStepper> createState() => _VoicePipelineStepperState();
+}
+
+class _VoicePipelineStepperState extends State<VoicePipelineStepper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.4, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    unawaited(_controller.repeat(reverse: true));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Hide stepper during Ready/Recording states
-    if (currentStage == InterviewStage.ready ||
-        currentStage == InterviewStage.recording) {
+    // Hide stepper if not in a pipeline stage
+    if (widget.currentStage == InterviewStage.ready ||
+        widget.currentStage == InterviewStage.recording ||
+        widget.currentStage == InterviewStage.sessionComplete ||
+        widget.currentStage == InterviewStage.error) {
       return const SizedBox.shrink();
     }
 
-    // Hide stepper during session complete
-    if (currentStage == InterviewStage.sessionComplete) {
-      return const SizedBox.shrink();
-    }
+    final steps = [
+      _StepConfig(
+        stage: InterviewStage.uploading,
+        label: 'Upload',
+        icon: Icons.cloud_upload_outlined,
+      ),
+      _StepConfig(
+        stage: InterviewStage.transcribing,
+        label: 'Transcribe',
+        icon: Icons.graphic_eq,
+      ),
+      _StepConfig(
+        stage: InterviewStage.transcriptReview,
+        label: 'Review',
+        icon: Icons.rate_review_outlined,
+      ),
+      _StepConfig(
+        stage: InterviewStage.thinking,
+        label: 'Thinking',
+        icon: Icons.psychology_outlined,
+      ),
+      _StepConfig(
+        stage: InterviewStage.speaking,
+        label: 'Speaking',
+        icon: Icons.record_voice_over_outlined,
+      ),
+    ];
 
-    final showHint = _shouldShowHint();
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStep(
-                context,
-                label: 'Uploading',
-                icon: Icons.upload,
-                stage: InterviewStage.uploading,
-              ),
-              _buildConnector(context),
-              _buildStep(
-                context,
-                label: 'Transcribing',
-                icon: Icons.transcribe,
-                stage: InterviewStage.transcribing,
-              ),
-              _buildConnector(context),
-              _buildStep(
-                context,
-                label: 'Review',
-                icon: Icons.rate_review,
-                stage: InterviewStage.transcriptReview,
-              ),
-              _buildConnector(context),
-              _buildStep(
-                context,
-                label: 'Thinking',
-                icon: Icons.lightbulb_outline,
-                stage: InterviewStage.thinking,
-              ),
-              _buildConnector(context),
-              _buildStep(
-                context,
-                label: 'Speaking',
-                icon: Icons.volume_up,
-                stage: InterviewStage.speaking,
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: VoiceMockSpacing.md,
+        horizontal: VoiceMockSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: VoiceMockColors.surface,
+        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: VoiceMockColors.textPrimary.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-        ),
-        if (showHint)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Usually ~5-15s',
-              style: VoiceMockTypography.micro.copyWith(
-                color: VoiceMockColors.textMuted,
-              ),
+        ],
+      ),
+      child: Row(
+        children: [
+          for (int i = 0; i < steps.length; i++) ...[
+            Expanded(
+              child: _buildStep(context, steps[i]),
             ),
-          ),
-      ],
+            if (i < steps.length - 1)
+              _buildConnector(context, steps[i], steps[i + 1]),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildStep(
-    BuildContext context, {
-    required String label,
-    required IconData icon,
-    required InterviewStage stage,
-  }) {
-    final stepState = _getStepState(stage);
-    final color = _getStepColor(context, stepState);
-    final stepIcon = _getStepIcon(icon, stepState);
+  Widget _buildStep(BuildContext context, _StepConfig config) {
+    final isActive = widget.currentStage == config.stage;
+    final isCompleted = widget.currentStage.index > config.stage.index;
+
+    // Determine icon color based on state
+    Color iconColor;
+    if (isActive) {
+      iconColor = VoiceMockColors.primary;
+    } else if (isCompleted) {
+      iconColor = VoiceMockColors.success;
+    } else {
+      iconColor = VoiceMockColors.textMuted.withValues(alpha: 0.3);
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          stepIcon,
-          size: 24,
-          color: color,
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Opacity(
+              opacity: isActive ? _fadeAnimation.value : 1.0,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive
+                      ? VoiceMockColors.primary.withValues(alpha: 0.1)
+                      : Colors.transparent,
+                ),
+                child: Icon(
+                  isCompleted ? Icons.check_circle : config.icon,
+                  color: iconColor,
+                  size: 20,
+                ),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 4),
         Text(
-          label,
+          config.label,
           style: VoiceMockTypography.micro.copyWith(
-            fontSize: 11, // Overriding micro size from 12 to 11 as in original
-            fontWeight: stepState == _StepState.active
+            color: isActive
+                ? VoiceMockColors.primary
+                : (isCompleted
+                      ? VoiceMockColors.textPrimary
+                      : VoiceMockColors.textMuted),
+            fontWeight: isActive || isCompleted
                 ? FontWeight.w600
                 : FontWeight.w400,
-            color: color,
+            fontSize: 10,
           ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
   }
 
-  Widget _buildConnector(BuildContext context) {
-    return Container(
-      width: 24,
-      height: 2,
-      color: const Color(0xFFE2E8F0), // Matching divider color
+  Widget _buildConnector(
+    BuildContext context,
+    _StepConfig current,
+    _StepConfig next,
+  ) {
+    final isCompleted = widget.currentStage.index > current.stage.index;
+    final isActive = widget.currentStage == current.stage;
+
+    return Expanded(
+      child: Container(
+        height: 2,
+        decoration: BoxDecoration(
+          gradient: isCompleted
+              ? const LinearGradient(
+                  colors: [VoiceMockColors.success, VoiceMockColors.success],
+                )
+              : (isActive
+                    ? LinearGradient(
+                        colors: [
+                          VoiceMockColors.primary,
+                          VoiceMockColors.textMuted.withValues(alpha: 0.2),
+                        ],
+                      )
+                    : LinearGradient(
+                        colors: [
+                          VoiceMockColors.textMuted.withValues(alpha: 0.2),
+                          VoiceMockColors.textMuted.withValues(alpha: 0.2),
+                        ],
+                      )),
+        ),
+      ),
     );
-  }
-
-  _StepState _getStepState(InterviewStage stage) {
-    if (hasError && stage == errorStage) {
-      return _StepState.error;
-    }
-
-    final stageOrder = [
-      InterviewStage.uploading,
-      InterviewStage.transcribing,
-      InterviewStage.transcriptReview,
-      InterviewStage.thinking,
-      InterviewStage.speaking,
-    ];
-
-    final currentIndex = stageOrder.indexOf(currentStage);
-    final stepIndex = stageOrder.indexOf(stage);
-
-    if (stepIndex < currentIndex) {
-      return _StepState.complete;
-    } else if (stepIndex == currentIndex) {
-      return _StepState.active;
-    } else {
-      return _StepState.pending;
-    }
-  }
-
-  Color _getStepColor(BuildContext context, _StepState state) {
-    switch (state) {
-      case _StepState.complete:
-        return VoiceMockColors.primary;
-      case _StepState.active:
-        return VoiceMockColors.primary;
-      case _StepState.error:
-        return VoiceMockColors.error;
-      case _StepState.pending:
-        return const Color(0xFFE2E8F0); // Matching divider/outline variant
-    }
-  }
-
-  IconData _getStepIcon(IconData defaultIcon, _StepState state) {
-    if (state == _StepState.complete) {
-      return Icons.check_circle;
-    } else if (state == _StepState.error) {
-      return Icons.error_outline;
-    }
-    return defaultIcon;
-  }
-
-  bool _shouldShowHint() {
-    if (stageStartTime == null) return false;
-    if (!currentStage.isProcessing) return false;
-
-    final elapsed = DateTime.now().difference(stageStartTime!);
-    return elapsed.inSeconds > 10;
   }
 }
 
-enum _StepState {
-  pending,
-  active,
-  complete,
-  error,
+class _StepConfig {
+  _StepConfig({
+    required this.stage,
+    required this.label,
+    required this.icon,
+  });
+
+  final InterviewStage stage;
+  final String label;
+  final IconData icon;
 }

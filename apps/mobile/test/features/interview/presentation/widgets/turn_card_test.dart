@@ -18,7 +18,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Question 2 of 5'), findsOneWidget);
+      expect(find.text('2/5'), findsOneWidget);
       expect(find.text('What is your greatest strength?'), findsOneWidget);
     });
 
@@ -36,7 +36,7 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('You said'), findsOneWidget);
+      expect(find.textContaining('YOU SAID'), findsOneWidget);
       expect(find.text('I am a software engineer...'), findsOneWidget);
     });
 
@@ -55,7 +55,7 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Coach says'), findsOneWidget);
+      expect(find.textContaining('COACH SAYS'), findsOneWidget);
       expect(
         find.text('Great! Tell me more about your experience.'),
         findsOneWidget,
@@ -167,7 +167,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Top Tip'), findsOneWidget);
+      expect(find.text('TOP TIP'), findsOneWidget);
       expect(find.textContaining('clear thesis'), findsOneWidget);
       expect(find.textContaining('Clarity'), findsOneWidget);
       expect(find.textContaining('4/5'), findsOneWidget);

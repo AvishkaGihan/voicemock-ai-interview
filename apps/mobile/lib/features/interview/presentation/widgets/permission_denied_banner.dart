@@ -83,13 +83,13 @@ class PermissionDeniedBanner extends StatelessWidget {
                 onPressed: onEnableTap,
                 style: FilledButton.styleFrom(
                   backgroundColor: VoiceMockColors.warning,
-                  foregroundColor: Colors.white,
+                  foregroundColor: VoiceMockColors.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(VoiceMockRadius.md),
                   ),
                   textStyle: VoiceMockTypography.small.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: VoiceMockColors.surface,
                   ),
                 ),
                 child: Text(

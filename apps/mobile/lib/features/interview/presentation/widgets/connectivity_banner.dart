@@ -34,9 +34,8 @@ class ConnectivityBanner extends StatelessWidget {
           Expanded(
             child: Text(
               l10n.internetConnectionRequired,
-              style: const TextStyle(
+              style: VoiceMockTypography.small.copyWith(
                 color: VoiceMockColors.warning,
-                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
