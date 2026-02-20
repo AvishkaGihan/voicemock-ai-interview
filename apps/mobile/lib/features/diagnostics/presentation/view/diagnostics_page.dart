@@ -52,9 +52,13 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
     // If no cubit is found, show empty state immediately.
     if (_cubit == null) {
       return Scaffold(
+        backgroundColor: VoiceMockColors.background,
         appBar: AppBar(
-          title: const Text('Diagnostics'),
-          backgroundColor: VoiceMockColors.primary,
+          title: Text('Diagnostics', style: VoiceMockTypography.h2),
+          backgroundColor: VoiceMockColors.background,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: true,
         ),
         body: _buildEmptyState(const SessionDiagnostics(sessionId: 'unknown')),
       );
@@ -75,12 +79,17 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
             diagnostics.lastErrorRequestId != null;
 
         return Scaffold(
+          backgroundColor: VoiceMockColors.background,
           appBar: AppBar(
-            title: const Text('Diagnostics'),
-            backgroundColor: VoiceMockColors.primary,
+            title: Text('Diagnostics', style: VoiceMockTypography.h2),
+            backgroundColor: VoiceMockColors.background,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            centerTitle: true,
             actions: [
               IconButton(
                 tooltip: 'Clear Diagnostics',
+                color: VoiceMockColors.textPrimary,
                 onPressed: canClear
                     ? () {
                         _cubit!.clearDiagnostics();
@@ -106,36 +115,28 @@ class _DiagnosticsPageState extends State<DiagnosticsPage> {
     return Column(
       children: [
         _SessionIdCard(sessionId: diagnostics.sessionId),
-        const Expanded(
+        Expanded(
           child: Center(
             child: Padding(
-              padding: EdgeInsets.all(VoiceMockSpacing.lg),
+              padding: const EdgeInsets.all(VoiceMockSpacing.lg),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.analytics_outlined,
                     size: 64,
-                    color:
-                        VoiceMockColors.textMuted, // 0xFF94A3B8 in orig approx
+                    color: VoiceMockColors.textMuted,
                   ),
-                  SizedBox(height: VoiceMockSpacing.md),
+                  const SizedBox(height: VoiceMockSpacing.md),
                   Text(
                     'No timing data yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: VoiceMockColors.textPrimary,
-                    ),
+                    style: VoiceMockTypography.h3,
                   ),
-                  SizedBox(height: VoiceMockSpacing.sm),
+                  const SizedBox(height: VoiceMockSpacing.sm),
                   Text(
                     'No timing data yet — '
                     'Complete a turn to see timing metrics',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: VoiceMockColors.textMuted,
-                    ),
+                    style: VoiceMockTypography.small,
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -188,29 +189,33 @@ class _SessionIdCard extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9), // Very light grey, closer to surface
+        color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: VoiceMockColors.primaryContainer, width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: VoiceMockColors.accentGlow,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: GestureDetector(
         onTap: () => _copySessionId(context),
         child: Row(
           children: [
-            const Text(
+            Text(
               'Session ID: ',
-              style: TextStyle(
-                fontSize: 13,
+              style: VoiceMockTypography.small.copyWith(
                 fontWeight: FontWeight.w600,
-                color: VoiceMockColors.textMuted,
               ),
             ),
             Expanded(
               child: Text(
                 sessionId,
-                style: const TextStyle(
+                style: VoiceMockTypography.body.copyWith(
                   fontSize: 12,
                   fontFamily: 'monospace',
-                  color: VoiceMockColors.textPrimary,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),

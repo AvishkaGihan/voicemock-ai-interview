@@ -70,7 +70,7 @@ class _RoleBottomSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: VoiceMockSpacing.lg),
-            const Text(
+            Text(
               'Select Target Role',
               style: VoiceMockTypography.h3,
             ),
@@ -168,41 +168,54 @@ class _SelectorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: VoiceMockColors.surface,
-      borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-      elevation: 1,
-      child: InkWell(
-        onTap: onTap,
+    return Container(
+      decoration: BoxDecoration(
+        color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(VoiceMockSpacing.md),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: VoiceMockTypography.micro,
-                    ),
-                    const SizedBox(height: VoiceMockSpacing.xs),
-                    Text(
-                      value,
-                      style: VoiceMockTypography.body.copyWith(
-                        fontWeight: FontWeight.w500,
+        border: const Border(
+          left: BorderSide(color: VoiceMockColors.primary, width: 3),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: VoiceMockColors.accentGlow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+          child: Padding(
+            padding: const EdgeInsets.all(VoiceMockSpacing.md),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: VoiceMockTypography.label,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: VoiceMockSpacing.xs),
+                      Text(
+                        value,
+                        style: VoiceMockTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                color: VoiceMockColors.textMuted,
-              ),
-            ],
+                const Icon(
+                  Icons.chevron_right,
+                  color: VoiceMockColors.textMuted,
+                ),
+              ],
+            ),
           ),
         ),
       ),

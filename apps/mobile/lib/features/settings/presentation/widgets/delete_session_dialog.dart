@@ -14,11 +14,11 @@ class DeleteSessionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text(
+      title: Text(
         'Delete Session Data?',
         style: VoiceMockTypography.h3,
       ),
-      content: const Text(
+      content: Text(
         'This will permanently delete your transcripts, coaching feedback, and '
         'session summary. This cannot be undone.',
         style: VoiceMockTypography.body,

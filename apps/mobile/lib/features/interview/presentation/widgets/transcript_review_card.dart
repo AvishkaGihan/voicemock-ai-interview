@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 
 /// Card displaying transcript for user review.
 ///
@@ -26,90 +27,115 @@ class TranscriptReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Question header (same pattern as TurnCard)
+    return Container(
+      margin: const EdgeInsets.all(VoiceMockSpacing.md),
+      padding: const EdgeInsets.all(VoiceMockSpacing.md),
+      decoration: BoxDecoration(
+        color: VoiceMockColors.surface,
+        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+        border: Border.all(
+          color: VoiceMockColors.primaryContainer,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: VoiceMockColors.accentGlow,
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.stretch, // Make children full width
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Question header (same pattern as TurnCard)
+          Text(
+            'Question $questionNumber of $totalQuestions'.toUpperCase(),
+            style: VoiceMockTypography.label.copyWith(
+              color: VoiceMockColors.primary,
+            ),
+          ),
+          const SizedBox(height: VoiceMockSpacing.sm),
+
+          // Question text
+          Text(
+            questionText,
+            style: VoiceMockTypography.h3,
+          ),
+          const SizedBox(height: VoiceMockSpacing.md),
+
+          // Transcript section label
+          Text(
+            'What we heard:'.toUpperCase(),
+            style: VoiceMockTypography.label.copyWith(
+              color: VoiceMockColors.secondary,
+            ),
+          ),
+          const SizedBox(height: VoiceMockSpacing.sm),
+
+          // Transcript text in distinct container
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(VoiceMockSpacing.sm),
+            decoration: BoxDecoration(
+              color: VoiceMockColors.background,
+              borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+            ),
+            child: Text(
+              transcript,
+              style: VoiceMockTypography.body,
+            ),
+          ),
+
+          // Low-confidence hint (conditional, neutral styling)
+          if (isLowConfidence) ...[
+            const SizedBox(height: VoiceMockSpacing.sm),
             Text(
-              'Question $questionNumber of $totalQuestions',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w600,
+              "If this isn't right, re-record.",
+              style: VoiceMockTypography.small.copyWith(
+                color: VoiceMockColors.textMuted,
               ),
             ),
-            const SizedBox(height: 8),
+          ],
 
-            // Question text
-            Text(
-              questionText,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
+          const SizedBox(height: VoiceMockSpacing.lg),
 
-            // Transcript section label
-            Text(
-              'What we heard:',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.secondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Transcript text in distinct container
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                transcript,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-
-            // Low-confidence hint (conditional, neutral styling)
-            if (isLowConfidence) ...[
-              const SizedBox(height: 8),
-              Text(
-                "If this isn't right, re-record.",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-
-            // Action buttons (Re-record secondary, Accept primary)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onReRecord,
-                    child: const Text('Re-record'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: onAccept,
-                    child: const Text('Accept & Continue'),
-                  ),
+          // Primary Action (Accept)
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+              boxShadow: [
+                BoxShadow(
+                  color: VoiceMockColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
-          ],
-        ),
+            child: FilledButton(
+              onPressed: onAccept,
+              style: FilledButton.styleFrom(
+                backgroundColor: VoiceMockColors.primary,
+                foregroundColor: VoiceMockColors.surface,
+              ),
+              child: const Text('Accept & Continue'),
+            ),
+          ),
+          const SizedBox(height: VoiceMockSpacing.sm),
+
+          // Secondary Action (Re-record)
+          TextButton(
+            onPressed: onReRecord,
+            style: TextButton.styleFrom(
+              foregroundColor: VoiceMockColors.textMuted,
+              textStyle: VoiceMockTypography.body.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            child: const Text('Re-record'),
+          ),
+        ],
       ),
     );
   }

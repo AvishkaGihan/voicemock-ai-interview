@@ -141,9 +141,33 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
             appBar: AppBar(
               backgroundColor: VoiceMockColors.background,
               elevation: 0,
-              title: Text(
-                context.l10n.interviewSetupTitle,
-                style: VoiceMockTypography.h2,
+              title: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: VoiceMockColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                      border: const Border(
+                        left: BorderSide(
+                          color: VoiceMockColors.primary,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.mic,
+                      color: VoiceMockColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: VoiceMockSpacing.sm),
+                  Text(
+                    'VoiceMock',
+                    style: VoiceMockTypography.h2,
+                  ),
+                ],
               ),
               centerTitle: false,
               actions: [
@@ -158,6 +182,23 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
             body: SafeArea(
               child: Column(
                 children: [
+                  // Subtitle brand moment
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      VoiceMockSpacing.md,
+                      0,
+                      VoiceMockSpacing.md,
+                      VoiceMockSpacing.md,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Prepare smarter. Perform better.',
+                          style: VoiceMockTypography.small,
+                        ),
+                      ],
+                    ),
+                  ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(VoiceMockSpacing.md),
@@ -303,14 +344,16 @@ class _StartInterviewButton extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(VoiceMockSpacing.md),
       decoration: BoxDecoration(
-        color: VoiceMockColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            VoiceMockColors.background.withValues(alpha: 0),
+            VoiceMockColors.background,
+            VoiceMockColors.background,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
       ),
       child: BlocBuilder<ConnectivityCubit, ConnectivityState>(
         builder: (context, connectivityState) {
@@ -319,35 +362,59 @@ class _StartInterviewButton extends StatelessWidget {
               final isLoading = sessionState is SessionLoading;
               final isOffline = connectivityState is ConnectivityOffline;
 
-              return FilledButton(
-                onPressed: (isLoading || isOffline)
-                    ? null
-                    : () => _handleStartInterview(context),
-                style: FilledButton.styleFrom(
-                  backgroundColor: VoiceMockColors.primary,
-                  foregroundColor: VoiceMockColors.surface,
-                  minimumSize: const Size.fromHeight(56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-                  ),
-                  textStyle: VoiceMockTypography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                child: isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: VoiceMockColors.surface,
-                        ),
-                      )
-                    : Text(
-                        isOffline
-                            ? l10n.noInternetConnection
-                            : l10n.startInterview,
+              // Extract the button child
+              final Widget buttonChild = isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: VoiceMockColors.surface,
                       ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isOffline
+                              ? l10n.noInternetConnection
+                              : l10n.startInterview,
+                        ),
+                        if (!isOffline) ...[
+                          const SizedBox(width: VoiceMockSpacing.sm),
+                          const Icon(Icons.arrow_forward_rounded, size: 20),
+                        ],
+                      ],
+                    );
+
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                  boxShadow: [
+                    BoxShadow(
+                      color: VoiceMockColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: FilledButton(
+                  onPressed: (isLoading || isOffline)
+                      ? null
+                      : () => _handleStartInterview(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VoiceMockColors.primary,
+                    foregroundColor: VoiceMockColors.surface,
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                    ),
+                    textStyle: VoiceMockTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  child: buttonChild,
+                ),
               );
             },
           );

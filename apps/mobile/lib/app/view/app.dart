@@ -11,10 +11,16 @@ import 'package:voicemock/l10n/l10n.dart';
 
 /// The main application widget.
 class App extends StatelessWidget {
-  const App({required this.prefs, required this.apiClient, super.key});
+  const App({
+    required this.prefs,
+    required this.apiClient,
+    this.routerConfig,
+    super.key,
+  });
 
   final SharedPreferences prefs;
   final ApiClient apiClient;
+  final RouterConfig<Object>? routerConfig;
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +48,46 @@ class App extends StatelessWidget {
             foregroundColor: VoiceMockColors.textPrimary,
             elevation: 0,
           ),
+          cardTheme: CardThemeData(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+            ),
+          ),
+          filledButtonTheme: FilledButtonThemeData(
+            style: FilledButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+              ),
+            ),
+          ),
+          outlinedButtonTheme: OutlinedButtonThemeData(
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+              ),
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+              ),
+            ),
+          ),
+          dividerTheme: const DividerThemeData(
+            color: VoiceMockColors.primaryContainer,
+            space: VoiceMockSpacing.lg,
+            thickness: 1,
+          ),
+          progressIndicatorTheme: const ProgressIndicatorThemeData(
+            color: VoiceMockColors.primary,
+          ),
           useMaterial3: true,
         ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        routerConfig: appRouter,
+        routerConfig: routerConfig ?? appRouter,
       ),
     );
   }

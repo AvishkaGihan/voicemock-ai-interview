@@ -77,7 +77,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Uploading'), findsOneWidget);
+      expect(find.text('Upload'), findsOneWidget);
     });
 
     testWidgets('shows stepper during Transcribing state', (tester) async {
@@ -99,8 +99,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Transcribing'), findsOneWidget);
-      expect(find.text('Uploading'), findsOneWidget);
+      expect(find.text('Transcribe'), findsOneWidget);
+      expect(find.text('Upload'), findsOneWidget);
       expect(find.text('Thinking'), findsOneWidget);
       expect(find.text('Speaking'), findsOneWidget);
     });
@@ -125,7 +125,7 @@ void main() {
         ),
       );
 
-      expect(find.text('You said:'), findsOneWidget);
+      expect(find.text('YOU SAID'), findsOneWidget);
       expect(
         find.text('I faced a bug in production and fixed it quickly'),
         findsOneWidget,
@@ -177,7 +177,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Question 2 of 5'), findsOneWidget);
+      expect(find.text('2/5'), findsOneWidget);
       expect(find.text('What motivates you?'), findsOneWidget);
     });
 
@@ -209,7 +209,7 @@ void main() {
 
         // Simulate long press (calls both start and end)
         await tester.longPress(button);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         verify(() => mockCubit.startRecording()).called(1);
       });
@@ -303,7 +303,7 @@ void main() {
         );
 
         expect(find.byType(TranscriptReviewCard), findsOneWidget);
-        expect(find.text('What we heard:'), findsOneWidget);
+        expect(find.text('WHAT WE HEARD:'), findsOneWidget);
         expect(
           find.text('My greatest strength is problem solving'),
           findsOneWidget,
@@ -389,7 +389,7 @@ void main() {
           ),
         );
 
-        final reRecordButton = find.widgetWithText(OutlinedButton, 'Re-record');
+        final reRecordButton = find.widgetWithText(TextButton, 'Re-record');
         await tester.tap(reRecordButton);
         await tester.pump();
 
@@ -417,8 +417,8 @@ void main() {
         );
 
         expect(find.text('Review'), findsOneWidget);
-        expect(find.text('Uploading'), findsOneWidget);
-        expect(find.text('Transcribing'), findsOneWidget);
+        expect(find.text('Upload'), findsOneWidget);
+        expect(find.text('Transcribe'), findsOneWidget);
         expect(find.text('Thinking'), findsOneWidget);
         expect(find.text('Speaking'), findsOneWidget);
       });
@@ -561,7 +561,7 @@ void main() {
 
         // Tap the close button in the app bar
         await tester.tap(find.byIcon(Icons.close));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Dialog should be shown
         expect(find.text('End session?'), findsOneWidget);
@@ -596,11 +596,11 @@ void main() {
 
         // Tap the close button
         await tester.tap(find.byIcon(Icons.close));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Confirm end session
         await tester.tap(find.text('End'));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Verify cubit.cancel() was called
         verify(() => mockCubit.cancel()).called(1);
@@ -629,11 +629,11 @@ void main() {
 
         // Tap the close button
         await tester.tap(find.byIcon(Icons.close));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Cancel the dialog
         await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
         // Verify cubit.cancel() was NOT called
         verifyNever(() => mockCubit.cancel());

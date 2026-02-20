@@ -47,7 +47,7 @@ class DisclosureDetailSheet extends StatelessWidget {
                 height: 4,
                 decoration: BoxDecoration(
                   color: VoiceMockColors.textMuted.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
                 ),
               ),
             ),

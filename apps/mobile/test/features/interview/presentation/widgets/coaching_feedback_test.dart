@@ -55,7 +55,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Top Tip'), findsOneWidget);
+      expect(find.text('TOP TIP'), findsOneWidget);
       expect(find.textContaining('clear thesis'), findsOneWidget);
       expect(find.textContaining('Clarity'), findsOneWidget);
       expect(find.textContaining('4/5'), findsOneWidget);
@@ -76,7 +76,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Top Tip'), findsNothing);
+      expect(find.text('TOP TIP'), findsNothing);
     });
   });
 

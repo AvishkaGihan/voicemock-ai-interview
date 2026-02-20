@@ -1,9 +1,11 @@
 import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/widgets/widgets.dart';
 
@@ -70,10 +72,14 @@ class _InterviewViewState extends State<InterviewView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: VoiceMockColors.background,
       appBar: AppBar(
+        backgroundColor: VoiceMockColors.background,
+        elevation: 0,
+        centerTitle: true,
         title: GestureDetector(
           onTap: _onTitleTap,
-          child: const Text('Interview'),
+          child: Text('Interview', style: VoiceMockTypography.h3),
         ),
         actions: [
           // Diagnostics button (debug mode or unlocked via triple-tap)
@@ -81,6 +87,7 @@ class _InterviewViewState extends State<InterviewView>
             IconButton(
               icon: const Icon(Icons.analytics_outlined),
               tooltip: 'Diagnostics',
+              color: VoiceMockColors.textPrimary,
               onPressed: () => context.push(
                 '/diagnostics',
                 extra: context.read<InterviewCubit>(),
@@ -88,6 +95,7 @@ class _InterviewViewState extends State<InterviewView>
             ),
           IconButton(
             icon: const Icon(Icons.close),
+            color: VoiceMockColors.textPrimary,
             onPressed: () => _showEndSessionDialog(context),
           ),
         ],
@@ -143,7 +151,6 @@ class _InterviewViewState extends State<InterviewView>
                   // Voice Pipeline Stepper (shown during processing)
                   VoicePipelineStepper(
                     currentStage: state.stage,
-                    stageStartTime: _getStageStartTime(state),
                   ),
 
                   // Turn Card (question, transcript, response)
@@ -348,15 +355,6 @@ class _InterviewViewState extends State<InterviewView>
       onPressStart: cubit.startRecording,
       onPressEnd: cubit.stopRecording,
     );
-  }
-
-  DateTime? _getStageStartTime(InterviewState state) {
-    return switch (state) {
-      InterviewUploading(:final startTime) => startTime,
-      InterviewTranscribing(:final startTime) => startTime,
-      InterviewThinking(:final startTime) => startTime,
-      _ => null,
-    };
   }
 
   Future<void> _showEndSessionDialog(BuildContext context) async {

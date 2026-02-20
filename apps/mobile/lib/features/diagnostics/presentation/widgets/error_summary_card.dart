@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 
 /// Displays the last error's request ID and stage.
 ///
@@ -23,59 +24,58 @@ class ErrorSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(VoiceMockSpacing.md),
+      padding: const EdgeInsets.all(VoiceMockSpacing.md),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        color: VoiceMockColors.error.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+        border: Border.all(
+          color: VoiceMockColors.error.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.error_outline,
-                color: Color(0xFFEF4444),
+                color: VoiceMockColors.error,
                 size: 20,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: VoiceMockSpacing.sm),
               Text(
                 'Last Error',
-                style: TextStyle(
-                  fontSize: 14,
+                style: VoiceMockTypography.body.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFDC2626),
+                  color: VoiceMockColors.error,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: VoiceMockSpacing.sm),
 
           // Stage
           Row(
             children: [
-              const Text(
+              Text(
                 'Stage: ',
-                style: TextStyle(
-                  fontSize: 13,
+                style: VoiceMockTypography.small.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF991B1B),
+                  color: VoiceMockColors.error.withValues(alpha: 0.8),
                 ),
               ),
               Text(
                 stage.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 13,
+                style: VoiceMockTypography.small.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFFDC2626),
+                  color: VoiceMockColors.error,
                   fontFamily: 'monospace',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: VoiceMockSpacing.sm),
 
           // Request ID (tap to copy)
           GestureDetector(
@@ -85,16 +85,15 @@ class ErrorSummaryCard extends StatelessWidget {
                 const Icon(
                   Icons.tag,
                   size: 14,
-                  color: Color(0xFFDC2626),
+                  color: VoiceMockColors.error,
                 ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     requestId,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: VoiceMockTypography.small.copyWith(
                       fontFamily: 'monospace',
-                      color: Color(0xFFDC2626),
+                      color: VoiceMockColors.error,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -103,7 +102,7 @@ class ErrorSummaryCard extends StatelessWidget {
                 const Icon(
                   Icons.content_copy,
                   size: 14,
-                  color: Color(0xFFDC2626),
+                  color: VoiceMockColors.error,
                 ),
               ],
             ),

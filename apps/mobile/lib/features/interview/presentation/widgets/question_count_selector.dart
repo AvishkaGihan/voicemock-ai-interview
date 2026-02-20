@@ -21,9 +21,9 @@ class QuestionCountSelector extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Number of Questions',
-              style: VoiceMockTypography.micro,
+              style: VoiceMockTypography.label,
             ),
             Container(
               padding: const EdgeInsets.symmetric(
@@ -45,10 +45,21 @@ class QuestionCountSelector extends StatelessWidget {
           ],
         ),
         const SizedBox(height: VoiceMockSpacing.sm),
-        Material(
-          color: VoiceMockColors.surface,
-          borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-          elevation: 1,
+        Container(
+          decoration: BoxDecoration(
+            color: VoiceMockColors.surface,
+            borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+            border: const Border(
+              left: BorderSide(color: VoiceMockColors.primary, width: 3),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: VoiceMockColors.accentGlow,
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: VoiceMockSpacing.sm,
@@ -56,7 +67,7 @@ class QuestionCountSelector extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Text(
+                Text(
                   '${InterviewConfig.minQuestionCount}',
                   style: VoiceMockTypography.small,
                 ),
@@ -88,7 +99,7 @@ class QuestionCountSelector extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Text(
+                Text(
                   '${InterviewConfig.maxQuestionCount}',
                   style: VoiceMockTypography.small,
                 ),

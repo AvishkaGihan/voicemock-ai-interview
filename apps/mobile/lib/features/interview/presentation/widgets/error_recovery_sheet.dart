@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 
 /// Modal bottom sheet for error recovery.
@@ -46,28 +47,35 @@ class ErrorRecoverySheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Stage-specific error icon
-            Icon(
-              stageIcon,
-              size: 48,
-              color: Theme.of(context).colorScheme.error.withAlpha(204),
+            Container(
+              padding: const EdgeInsets.all(VoiceMockSpacing.md),
+              decoration: BoxDecoration(
+                color: VoiceMockColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                stageIcon,
+                size: 48,
+                color: VoiceMockColors.error.withValues(alpha: 0.8),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: VoiceMockSpacing.md),
 
             // Stage-specific header
             Text(
               stageTitle,
-              style: Theme.of(context).textTheme.titleLarge,
+              style: VoiceMockTypography.h2,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: VoiceMockSpacing.sm),
 
             // Error message
             Text(
               failure.message,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: VoiceMockTypography.body,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: VoiceMockSpacing.md),
 
             // Request ID (copyable)
             if (failure.requestId != null) ...[
@@ -86,33 +94,28 @@ class ErrorRecoverySheet extends StatelessWidget {
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(VoiceMockSpacing.sm),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
+                    color: VoiceMockColors.background,
+                    borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.copy,
                         size: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: VoiceMockColors.textMuted,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: VoiceMockSpacing.sm),
                       Flexible(
                         child: Text(
                           'ID: ${failure.requestId}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontFamily: 'monospace',
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                          style: VoiceMockTypography.small.copyWith(
+                            fontFamily: 'monospace',
+                            color: VoiceMockColors.textMuted,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -120,28 +123,54 @@ class ErrorRecoverySheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: VoiceMockSpacing.lg),
             ],
 
             // Action buttons
             if (showPrimaryAction)
-              ElevatedButton(
-                onPressed: onRetry,
-                child: Text(primaryActionLabel),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                  boxShadow: [
+                    BoxShadow(
+                      color: VoiceMockColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: FilledButton(
+                  onPressed: onRetry,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VoiceMockColors.primary,
+                    foregroundColor: VoiceMockColors.surface,
+                  ),
+                  child: Text(primaryActionLabel),
+                ),
               ),
-            if (showPrimaryAction) const SizedBox(height: 12),
+            if (showPrimaryAction) const SizedBox(height: VoiceMockSpacing.sm),
 
             if (!isContentRefused && shouldShowReRecord && onReRecord != null)
-              TextButton(
+              OutlinedButton(
                 onPressed: onReRecord,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: VoiceMockColors.primary,
+                  side: const BorderSide(color: VoiceMockColors.primary),
+                ),
                 child: const Text('Re-record'),
               ),
             if (!isContentRefused && shouldShowReRecord && onReRecord != null)
-              const SizedBox(height: 8),
+              const SizedBox(height: VoiceMockSpacing.sm),
 
             if (onCancel != null)
               TextButton(
                 onPressed: onCancel,
+                style: TextButton.styleFrom(
+                  foregroundColor: VoiceMockColors.textMuted,
+                  textStyle: VoiceMockTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 child: Text(cancelLabel),
               ),
           ],

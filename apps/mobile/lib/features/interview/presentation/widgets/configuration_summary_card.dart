@@ -19,21 +19,44 @@ class ConfigurationSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(VoiceMockSpacing.md),
       decoration: BoxDecoration(
-        color: VoiceMockColors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-        border: Border.all(
-          color: VoiceMockColors.primary.withValues(alpha: 0.2),
+        color: VoiceMockColors.surface,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            VoiceMockColors.surface,
+            VoiceMockColors.primaryContainer.withValues(alpha: 0.3),
+          ],
         ),
+        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+        border: Border.all(
+          color: VoiceMockColors.primaryContainer,
+          width: 2,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: VoiceMockColors.accentGlow,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.check_circle_outline,
-                color: VoiceMockColors.primary,
-                size: 20,
+              Container(
+                padding: const EdgeInsets.all(VoiceMockSpacing.xs),
+                decoration: const BoxDecoration(
+                  color: VoiceMockColors.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.assignment_turned_in_rounded,
+                  color: VoiceMockColors.primary,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: VoiceMockSpacing.sm),
               Text(
