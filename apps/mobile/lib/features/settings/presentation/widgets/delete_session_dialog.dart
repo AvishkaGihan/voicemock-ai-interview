@@ -14,6 +14,8 @@ class DeleteSessionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: VoiceMockColors.surface,
+      surfaceTintColor: Colors.transparent,
       title: Text(
         'Delete Session Data?',
         style: VoiceMockTypography.h3,
@@ -32,7 +34,7 @@ class DeleteSessionDialog extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor: VoiceMockColors.error,
-            foregroundColor: VoiceMockColors.surface,
+            foregroundColor: VoiceMockColors.background,
           ),
           child: const Text('Delete'),
         ),

@@ -96,7 +96,7 @@ class ErrorRecoverySheet extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(VoiceMockSpacing.sm),
                   decoration: BoxDecoration(
-                    color: VoiceMockColors.background,
+                    color: VoiceMockColors.surfaceElevated,
                     borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
                   ),
                   child: Row(
@@ -143,7 +143,7 @@ class ErrorRecoverySheet extends StatelessWidget {
                   onPressed: onRetry,
                   style: FilledButton.styleFrom(
                     backgroundColor: VoiceMockColors.primary,
-                    foregroundColor: VoiceMockColors.surface,
+                    foregroundColor: VoiceMockColors.background,
                   ),
                   child: Text(primaryActionLabel),
                 ),
@@ -200,6 +200,7 @@ class ErrorRecoverySheet extends StatelessWidget {
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      backgroundColor: VoiceMockColors.surface,
       builder: (sheetContext) => ErrorRecoverySheet(
         failure: failure,
         failedStage: failedStage,

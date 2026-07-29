@@ -87,13 +87,7 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
       decoration: BoxDecoration(
         color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
-        boxShadow: [
-          BoxShadow(
-            color: VoiceMockColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: VoiceMockColors.surfaceBorder),
       ),
       child: Row(
         children: [
@@ -118,7 +112,7 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
     if (isActive) {
       iconColor = VoiceMockColors.primary;
     } else if (isCompleted) {
-      iconColor = VoiceMockColors.success;
+      iconColor = VoiceMockColors.primary;
     } else {
       iconColor = VoiceMockColors.textMuted.withValues(alpha: 0.3);
     }
@@ -184,19 +178,19 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
         decoration: BoxDecoration(
           gradient: isCompleted
               ? const LinearGradient(
-                  colors: [VoiceMockColors.success, VoiceMockColors.success],
+                  colors: [VoiceMockColors.primary, VoiceMockColors.primary],
                 )
               : (isActive
-                    ? LinearGradient(
+                    ? const LinearGradient(
                         colors: [
                           VoiceMockColors.primary,
-                          VoiceMockColors.textMuted.withValues(alpha: 0.2),
+                          VoiceMockColors.surfaceBorder,
                         ],
                       )
-                    : LinearGradient(
+                    : const LinearGradient(
                         colors: [
-                          VoiceMockColors.textMuted.withValues(alpha: 0.2),
-                          VoiceMockColors.textMuted.withValues(alpha: 0.2),
+                          VoiceMockColors.surfaceBorder,
+                          VoiceMockColors.surfaceBorder,
                         ],
                       )),
         ),

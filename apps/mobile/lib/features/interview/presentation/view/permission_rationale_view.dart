@@ -95,41 +95,71 @@ class PermissionRationaleView extends StatelessWidget {
                 // Primary CTA - Allow Microphone Access
                 BlocBuilder<PermissionCubit, PermissionState>(
                   builder: (context, state) {
-                    return SizedBox(
+                    return Container(
                       width: double.infinity,
-                      child: FilledButton(
-                        onPressed: state.isLoading
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          VoiceMockRadius.full,
+                        ),
+                        gradient: state.isLoading
                             ? null
-                            : () {
-                                unawaited(
-                                  context
-                                      .read<PermissionCubit>()
-                                      .requestPermission(),
-                                );
-                              },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: VoiceMockColors.primary,
-                          foregroundColor: VoiceMockColors.surface,
-                          minimumSize: const Size.fromHeight(56),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              VoiceMockRadius.md,
-                            ),
+                            : const LinearGradient(
+                                colors: [
+                                  VoiceMockColors.gradientStart,
+                                  VoiceMockColors.gradientEnd,
+                                ],
+                              ),
+                        color: state.isLoading
+                            ? VoiceMockColors.surfaceBorder
+                            : null,
+                        boxShadow: state.isLoading
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: VoiceMockColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: state.isLoading
+                              ? null
+                              : () {
+                                  unawaited(
+                                    context
+                                        .read<PermissionCubit>()
+                                        .requestPermission(),
+                                  );
+                                },
+                          borderRadius: BorderRadius.circular(
+                            VoiceMockRadius.full,
                           ),
-                          textStyle: VoiceMockTypography.body.copyWith(
-                            fontWeight: FontWeight.w600,
+                          child: Container(
+                            height: 56,
+                            alignment: Alignment.center,
+                            child: state.isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: VoiceMockColors.background,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    'Allow Microphone Access',
+                                    style: VoiceMockTypography.body.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: VoiceMockColors.background,
+                                    ),
+                                  ),
                           ),
                         ),
-                        child: state.isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: VoiceMockColors.surface,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Allow Microphone Access'),
                       ),
                     );
                   },

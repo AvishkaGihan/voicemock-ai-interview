@@ -115,22 +115,15 @@ class _HoldToTalkButtonState extends State<HoldToTalkButton>
                     ),
                   );
                 } else {
-                  // Gentle idle pulse (just slight scale, no fade out)
-                  // We recycle the controller but map it differently here
-                  // if needed, or just use a simple scale breathe.
-                  // The logic in _updateAnimationState sets
-                  // repeat(reverse: true).
-                  // So _controller goes 0..1..0.
-                  // Let's map 0..1 to scale 1.0..1.05
                   final scale = 1.0 + (_controller.value * 0.05);
                   return Transform.scale(
                     scale: scale,
                     child: Container(
                       width: 120,
                       height: 120,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: VoiceMockColors.accentGlow,
+                        color: VoiceMockColors.primary.withValues(alpha: 0.08),
                       ),
                     ),
                   );
@@ -159,17 +152,20 @@ class _HoldToTalkButtonState extends State<HoldToTalkButton>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _getBackgroundColor(context),
-                border: widget.isRecording
-                    ? Border.all(
-                        color: VoiceMockColors.primary,
-                        width: 4,
-                      )
-                    : null,
+                border: Border.all(
+                  color: widget.isRecording
+                      ? VoiceMockColors.primary
+                      : (widget.isEnabled
+                          ? VoiceMockColors.primary.withValues(alpha: 0.3)
+                          : VoiceMockColors.surfaceBorder),
+                  width: widget.isRecording ? 4 : 2,
+                ),
                 boxShadow: widget.isEnabled
                     ? [
                         BoxShadow(
-                          color: VoiceMockColors.primary.withValues(alpha: 0.2),
-                          blurRadius: 12,
+                          color:
+                              VoiceMockColors.primary.withValues(alpha: 0.15),
+                          blurRadius: 20,
                           offset: const Offset(0, 4),
                         ),
                       ]
@@ -228,12 +224,12 @@ class _HoldToTalkButtonState extends State<HoldToTalkButton>
 
   Color _getBackgroundColor(BuildContext context) {
     if (widget.isRecording) {
-      return VoiceMockColors.primary.withValues(alpha: 0.2); // 51/255 ~= 0.2
+      return VoiceMockColors.primary.withValues(alpha: 0.15);
     }
     if (!widget.isEnabled) {
-      return const Color(0xFFE2E8F0); // Light grey/outline variant
+      return VoiceMockColors.surfaceElevated;
     }
-    return VoiceMockColors.surface; // White surface for contrast with pulse
+    return VoiceMockColors.surface;
   }
 
   Color _getIconColor(BuildContext context) {

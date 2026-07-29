@@ -33,23 +33,14 @@ class TurnCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+        border: Border.all(color: VoiceMockColors.surfaceBorder),
         boxShadow: [
           BoxShadow(
-            color: VoiceMockColors.textPrimary.withValues(alpha: 0.05),
+            color: VoiceMockColors.primary.withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
-          BoxShadow(
-            color: VoiceMockColors.textPrimary.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
         ],
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFFAFBFF), Colors.white],
-        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -65,9 +56,7 @@ class TurnCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(VoiceMockRadius.full),
                     child: LinearProgressIndicator(
                       value: questionNumber / totalQuestions,
-                      backgroundColor: VoiceMockColors.primary.withValues(
-                        alpha: 0.1,
-                      ),
+                      backgroundColor: VoiceMockColors.surfaceBorder,
                       color: VoiceMockColors.primary,
                       minHeight: 4,
                     ),
@@ -146,7 +135,7 @@ class TurnCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: VoiceMockColors.secondary.withValues(
+                          color: VoiceMockColors.primary.withValues(
                             alpha: 0.1,
                           ),
                           borderRadius: BorderRadius.circular(
@@ -156,7 +145,7 @@ class TurnCard extends StatelessWidget {
                         child: Text(
                           '${dimension.score}/5',
                           style: VoiceMockTypography.micro.copyWith(
-                            color: VoiceMockColors.secondary,
+                            color: VoiceMockColors.primary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -198,7 +187,9 @@ class TurnCard extends StatelessWidget {
                     label: const Text('Replay response'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: VoiceMockColors.textMuted),
+                      side: const BorderSide(
+                        color: VoiceMockColors.surfaceBorder,
+                      ),
                       foregroundColor: VoiceMockColors.textMuted,
                     ),
                   ),

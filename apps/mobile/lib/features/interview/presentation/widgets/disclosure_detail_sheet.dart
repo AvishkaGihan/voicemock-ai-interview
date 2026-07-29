@@ -46,7 +46,7 @@ class DisclosureDetailSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: VoiceMockColors.textMuted.withValues(alpha: 0.3),
+                  color: VoiceMockColors.surfaceBorder,
                   borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
                 ),
               ),
@@ -107,8 +107,8 @@ class DisclosureDetailSheet extends StatelessWidget {
               child: FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: FilledButton.styleFrom(
-                  backgroundColor: VoiceMockColors.secondary,
-                  foregroundColor: VoiceMockColors.surface,
+                  backgroundColor: VoiceMockColors.primary,
+                  foregroundColor: VoiceMockColors.background,
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(VoiceMockRadius.md),

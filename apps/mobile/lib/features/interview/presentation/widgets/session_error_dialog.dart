@@ -18,6 +18,8 @@ class SessionErrorDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: VoiceMockColors.surface,
+      surfaceTintColor: Colors.transparent,
       title: Text(
         "Couldn't Start Session",
         style: VoiceMockTypography.h3,
@@ -54,7 +56,7 @@ class SessionErrorDialog extends StatelessWidget {
             onPressed: onRetry,
             style: FilledButton.styleFrom(
               backgroundColor: VoiceMockColors.primary,
-              foregroundColor: VoiceMockColors.surface,
+              foregroundColor: VoiceMockColors.background,
             ),
             child: const Text('Try Again'),
           ),

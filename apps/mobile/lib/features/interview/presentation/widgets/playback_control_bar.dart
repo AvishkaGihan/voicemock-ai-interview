@@ -28,8 +28,9 @@ class PlaybackControlBar extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(VoiceMockSpacing.sm),
       decoration: BoxDecoration(
-        color: VoiceMockColors.secondary.withValues(alpha: 0.1),
+        color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+        border: Border.all(color: VoiceMockColors.surfaceBorder),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -50,17 +51,17 @@ class PlaybackControlBar extends StatelessWidget {
                       ), // slightly smaller padding for 24px icon feel
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        color: VoiceMockColors.secondary,
+                        color: VoiceMockColors.primary,
                       ),
                     )
                   : IconButton.filled(
                       // Using filled but with custom colors to match
                       // "filledTonal" look
                       style: IconButton.styleFrom(
-                        backgroundColor: VoiceMockColors.secondary.withValues(
-                          alpha: 0.2,
+                        backgroundColor: VoiceMockColors.primary.withValues(
+                          alpha: 0.15,
                         ),
-                        foregroundColor: VoiceMockColors.secondary,
+                        foregroundColor: VoiceMockColors.primary,
                       ),
                       onPressed: isPaused ? onResume : onPause,
                       tooltip: isPaused

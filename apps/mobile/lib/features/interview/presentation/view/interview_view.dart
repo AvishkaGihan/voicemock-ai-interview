@@ -76,6 +76,7 @@ class _InterviewViewState extends State<InterviewView>
       appBar: AppBar(
         backgroundColor: VoiceMockColors.background,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: true,
         title: GestureDetector(
           onTap: _onTitleTap,

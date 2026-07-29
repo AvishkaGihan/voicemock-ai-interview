@@ -39,8 +39,10 @@ class App extends StatelessWidget {
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
+          brightness: Brightness.dark,
           colorScheme: ColorScheme.fromSeed(
             seedColor: VoiceMockColors.primary,
+            brightness: Brightness.dark,
             surface: VoiceMockColors.surface,
           ),
           scaffoldBackgroundColor: VoiceMockColors.background,
@@ -48,41 +50,71 @@ class App extends StatelessWidget {
             backgroundColor: VoiceMockColors.background,
             foregroundColor: VoiceMockColors.textPrimary,
             elevation: 0,
+            surfaceTintColor: Colors.transparent,
           ),
           cardTheme: CardThemeData(
             elevation: 0,
+            color: VoiceMockColors.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+              side: const BorderSide(color: VoiceMockColors.surfaceBorder),
             ),
           ),
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
+              backgroundColor: VoiceMockColors.primary,
+              foregroundColor: VoiceMockColors.background,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                borderRadius: BorderRadius.circular(VoiceMockRadius.full),
               ),
             ),
           ),
           outlinedButtonTheme: OutlinedButtonThemeData(
             style: OutlinedButton.styleFrom(
+              foregroundColor: VoiceMockColors.textPrimary,
+              side: const BorderSide(color: VoiceMockColors.surfaceBorder),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                borderRadius: BorderRadius.circular(VoiceMockRadius.full),
               ),
             ),
           ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
+              foregroundColor: VoiceMockColors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(VoiceMockRadius.md),
               ),
             ),
           ),
           dividerTheme: const DividerThemeData(
-            color: VoiceMockColors.primaryContainer,
+            color: VoiceMockColors.surfaceBorder,
             space: VoiceMockSpacing.lg,
             thickness: 1,
           ),
           progressIndicatorTheme: const ProgressIndicatorThemeData(
             color: VoiceMockColors.primary,
+          ),
+          dialogTheme: DialogThemeData(
+            backgroundColor: VoiceMockColors.surface,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+              side: const BorderSide(color: VoiceMockColors.surfaceBorder),
+            ),
+          ),
+          bottomSheetTheme: const BottomSheetThemeData(
+            backgroundColor: VoiceMockColors.surface,
+            surfaceTintColor: Colors.transparent,
+          ),
+          snackBarTheme: SnackBarThemeData(
+            backgroundColor: VoiceMockColors.surfaceElevated,
+            contentTextStyle: VoiceMockTypography.small.copyWith(
+              color: VoiceMockColors.textPrimary,
+            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+            ),
           ),
           useMaterial3: true,
         ),

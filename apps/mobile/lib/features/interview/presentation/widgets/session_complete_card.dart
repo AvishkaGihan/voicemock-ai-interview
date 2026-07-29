@@ -30,13 +30,7 @@ class SessionCompleteCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
-        boxShadow: [
-          BoxShadow(
-            color: VoiceMockColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: VoiceMockColors.surfaceBorder),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
@@ -48,14 +42,14 @@ class SessionCompleteCard extends StatelessWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      VoiceMockColors.primary,
-                      VoiceMockColors.secondary,
+                      VoiceMockColors.primary.withValues(alpha: 0.15),
+                      VoiceMockColors.surface,
                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
                 child: Column(
@@ -63,29 +57,30 @@ class SessionCompleteCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: VoiceMockColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color:
+                              VoiceMockColors.primary.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
                       ),
                       child: const Icon(
-                        Icons.emoji_events_outlined,
+                        Icons.check_rounded,
                         size: 48,
-                        color: Colors.white,
+                        color: VoiceMockColors.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Session Complete',
-                      style: VoiceMockTypography.h2.copyWith(
-                        color: Colors.white,
-                      ),
+                      'Interview Complete',
+                      style: VoiceMockTypography.h2,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Great job! You completed all $totalQuestions questions.',
-                      style: VoiceMockTypography.body.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
+                      style: VoiceMockTypography.small,
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -113,7 +108,7 @@ class SessionCompleteCard extends StatelessWidget {
                                 (item) => _buildListItem(
                                   item,
                                   Icons.check_circle,
-                                  VoiceMockColors.success,
+                                  VoiceMockColors.primary,
                                 ),
                               )
                               .toList(),
@@ -128,7 +123,7 @@ class SessionCompleteCard extends StatelessWidget {
                                 (item) => _buildListItem(
                                   item,
                                   Icons.trending_up,
-                                  VoiceMockColors.primary,
+                                  VoiceMockColors.warning,
                                 ),
                               )
                               .toList(),
@@ -155,22 +150,52 @@ class SessionCompleteCard extends StatelessWidget {
 
                     const SizedBox(height: 32),
 
-                    // Actions
-                    SizedBox(
+                    // Actions — gradient CTA
+                    Container(
                       width: double.infinity,
-                      child: FilledButton(
-                        onPressed: onStartNew,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: VoiceMockColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              VoiceMockRadius.full,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          VoiceMockRadius.full,
+                        ),
+                        gradient: const LinearGradient(
+                          colors: [
+                            VoiceMockColors.gradientStart,
+                            VoiceMockColors.gradientEnd,
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: VoiceMockColors.primary.withValues(
+                              alpha: 0.3,
+                            ),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: onStartNew,
+                          borderRadius: BorderRadius.circular(
+                            VoiceMockRadius.full,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Practice Again',
+                                  style: VoiceMockTypography.body.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: VoiceMockColors.background,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        child: const Text('Start New Session'),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -181,7 +206,7 @@ class SessionCompleteCard extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: VoiceMockColors.textMuted,
                           side: const BorderSide(
-                            color: VoiceMockColors.textMuted,
+                            color: VoiceMockColors.surfaceBorder,
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -190,7 +215,7 @@ class SessionCompleteCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        child: const Text('Back to Home'),
+                        child: const Text('Review Questions'),
                       ),
                     ),
                   ],
@@ -232,10 +257,10 @@ class _SummarySection extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: VoiceMockColors.background,
+        color: VoiceMockColors.surfaceElevated,
         borderRadius: BorderRadius.circular(VoiceMockRadius.md),
         border: Border.all(
-          color: VoiceMockColors.textMuted.withValues(alpha: 0.1),
+          color: VoiceMockColors.surfaceBorder,
         ),
       ),
       child: Column(
@@ -243,7 +268,7 @@ class _SummarySection extends StatelessWidget {
         children: [
           Text(
             title.toUpperCase(),
-            style: VoiceMockTypography.label,
+            style: VoiceMockTypography.sectionLabel,
           ),
           const SizedBox(height: 12),
           child,

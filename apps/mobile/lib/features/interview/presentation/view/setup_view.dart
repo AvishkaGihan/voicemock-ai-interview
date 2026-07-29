@@ -13,7 +13,6 @@ import 'package:voicemock/features/interview/presentation/cubit/permission_state
 import 'package:voicemock/features/interview/presentation/cubit/session_cubit.dart';
 import 'package:voicemock/features/interview/presentation/cubit/session_state.dart';
 import 'package:voicemock/features/interview/presentation/view/permission_rationale_page.dart';
-import 'package:voicemock/features/interview/presentation/widgets/configuration_summary_card.dart';
 import 'package:voicemock/features/interview/presentation/widgets/connectivity_banner.dart';
 import 'package:voicemock/features/interview/presentation/widgets/difficulty_selector.dart';
 import 'package:voicemock/features/interview/presentation/widgets/disclosure_banner.dart';
@@ -141,41 +140,43 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
             appBar: AppBar(
               backgroundColor: VoiceMockColors.background,
               elevation: 0,
+              surfaceTintColor: Colors.transparent,
               title: Row(
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: VoiceMockColors.primaryContainer,
-                      borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-                      border: const Border(
-                        left: BorderSide(
-                          color: VoiceMockColors.primary,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.mic,
-                      color: VoiceMockColors.primary,
-                      size: 20,
+                  Text(
+                    'Voice',
+                    style: VoiceMockTypography.h2.copyWith(
+                      color: VoiceMockColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
-                  const SizedBox(width: VoiceMockSpacing.sm),
                   Text(
-                    'VoiceMock',
-                    style: VoiceMockTypography.h2,
+                    'Mock',
+                    style: VoiceMockTypography.h2.copyWith(
+                      color: VoiceMockColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
               ),
               centerTitle: false,
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined),
-                  color: VoiceMockColors.textMuted,
-                  tooltip: 'Settings',
-                  onPressed: () => context.push('/settings'),
+                Container(
+                  margin: const EdgeInsets.only(right: VoiceMockSpacing.sm),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: VoiceMockColors.surfaceBorder,
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.settings_outlined),
+                    color: VoiceMockColors.primary,
+                    tooltip: 'Settings',
+                    onPressed: () => context.push('/settings'),
+                  ),
                 ),
               ],
             ),
@@ -201,7 +202,9 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
                   ),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(VoiceMockSpacing.md),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: VoiceMockSpacing.md,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -220,8 +223,7 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
                             },
                           ),
 
-                          // Permission denied banner (shown when permission is
-                          // not granted)
+                          // Permission denied banner (hero microphone card)
                           BlocBuilder<PermissionCubit, PermissionState>(
                             builder: (context, permissionState) {
                               final shouldShowBanner =
@@ -240,7 +242,10 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
                                 child: PermissionDeniedBanner(
                                   status: permissionState.status,
                                   onEnableTap: () {
-                                    _handleEnableMic(context, permissionState);
+                                    _handleEnableMic(
+                                      context,
+                                      permissionState,
+                                    );
                                   },
                                   onDismissTap: () {
                                     setState(() {
@@ -252,55 +257,98 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
                             },
                           ),
 
-                          // Role selector
-                          RoleSelector(
-                            selectedRole: config.role,
-                            onRoleSelected: configCubit.updateRole,
+                          // ── INTERVIEW SETUP section card ──
+                          Container(
+                            width: double.infinity,
+                            decoration: VoiceMockColors.cardDecoration(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Section header
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    VoiceMockSpacing.md,
+                                    VoiceMockSpacing.md,
+                                    VoiceMockSpacing.md,
+                                    VoiceMockSpacing.xs,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '✦',
+                                        style: VoiceMockTypography.sectionLabel
+                                            .copyWith(fontSize: 14),
+                                      ),
+                                      const SizedBox(
+                                        width: VoiceMockSpacing.sm,
+                                      ),
+                                      Text(
+                                        'INTERVIEW SETUP',
+                                        style:
+                                            VoiceMockTypography.sectionLabel,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Role selector row
+                                RoleSelector(
+                                  selectedRole: config.role,
+                                  onRoleSelected: configCubit.updateRole,
+                                ),
+
+                                _sectionDivider(),
+
+                                // Interview type selector row
+                                TypeSelector(
+                                  selectedType: config.type,
+                                  onTypeSelected: configCubit.updateType,
+                                ),
+
+                                _sectionDivider(),
+
+                                // Difficulty selector row
+                                DifficultySelector(
+                                  selectedDifficulty: config.difficulty,
+                                  onDifficultySelected:
+                                      configCubit.updateDifficulty,
+                                ),
+
+                                _sectionDivider(),
+
+                                // Question count selector
+                                QuestionCountSelector(
+                                  questionCount: config.questionCount,
+                                  onQuestionCountChanged:
+                                      configCubit.updateQuestionCount,
+                                ),
+
+                                const SizedBox(height: VoiceMockSpacing.sm),
+                              ],
+                            ),
                           ),
+
                           const SizedBox(height: VoiceMockSpacing.lg),
 
-                          // Interview type selector
-                          TypeSelector(
-                            selectedType: config.type,
-                            onTypeSelected: configCubit.updateType,
-                          ),
-                          const SizedBox(height: VoiceMockSpacing.lg),
+                          // Disclosure banner
+                          if (!_disclosureAcknowledged)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: VoiceMockSpacing.lg,
+                              ),
+                              child: DisclosureBanner(
+                                onGotIt: _acknowledgeDisclosure,
+                                onLearnMore: () =>
+                                    DisclosureDetailSheet.show(context),
+                              ),
+                            ),
 
-                          // Difficulty selector
-                          DifficultySelector(
-                            selectedDifficulty: config.difficulty,
-                            onDifficultySelected: configCubit.updateDifficulty,
-                          ),
-                          const SizedBox(height: VoiceMockSpacing.lg),
-
-                          // Question count selector
-                          QuestionCountSelector(
-                            questionCount: config.questionCount,
-                            onQuestionCountChanged:
-                                configCubit.updateQuestionCount,
-                          ),
-                          const SizedBox(height: VoiceMockSpacing.xl),
-
-                          // Configuration summary
-                          ConfigurationSummaryCard(config: config),
+                          // Bottom spacing before button
+                          const SizedBox(height: VoiceMockSpacing.md),
                         ],
                       ),
                     ),
                   ),
-
-                  // Disclosure banner - shown above Start Interview button
-                  // when user has not yet acknowledged the disclosure.
-                  if (!_disclosureAcknowledged)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: VoiceMockSpacing.md,
-                        vertical: VoiceMockSpacing.sm,
-                      ),
-                      child: DisclosureBanner(
-                        onGotIt: _acknowledgeDisclosure,
-                        onLearnMore: () => DisclosureDetailSheet.show(context),
-                      ),
-                    ),
 
                   // Start Interview button - anchored at bottom
                   _StartInterviewButton(
@@ -313,6 +361,18 @@ class _SetupViewState extends State<SetupView> with WidgetsBindingObserver {
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Thin divider between selector rows inside the setup card.
+  Widget _sectionDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: VoiceMockSpacing.md),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: VoiceMockColors.surfaceBorder.withValues(alpha: 0.6),
       ),
     );
   }
@@ -349,10 +409,10 @@ class _StartInterviewButton extends StatelessWidget {
           end: Alignment.bottomCenter,
           colors: [
             VoiceMockColors.background.withValues(alpha: 0),
-            VoiceMockColors.background,
+            VoiceMockColors.background.withValues(alpha: 0.95),
             VoiceMockColors.background,
           ],
-          stops: const [0.0, 0.5, 1.0],
+          stops: const [0.0, 0.4, 1.0],
         ),
       ),
       child: BlocBuilder<ConnectivityCubit, ConnectivityState>(
@@ -362,59 +422,105 @@ class _StartInterviewButton extends StatelessWidget {
               final isLoading = sessionState is SessionLoading;
               final isOffline = connectivityState is ConnectivityOffline;
 
-              // Extract the button child
-              final Widget buttonChild = isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: VoiceMockColors.surface,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          isOffline
-                              ? l10n.noInternetConnection
-                              : l10n.startInterview,
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Gradient CTA button
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius:
+                          BorderRadius.circular(VoiceMockRadius.full),
+                      gradient: (isLoading || isOffline)
+                          ? null
+                          : const LinearGradient(
+                              colors: [
+                                VoiceMockColors.gradientStart,
+                                VoiceMockColors.gradientEnd,
+                              ],
+                            ),
+                      color: (isLoading || isOffline)
+                          ? VoiceMockColors.surfaceBorder
+                          : null,
+                      boxShadow: (isLoading || isOffline)
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: VoiceMockColors.primary
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: (isLoading || isOffline)
+                            ? null
+                            : () => _handleStartInterview(context),
+                        borderRadius:
+                            BorderRadius.circular(VoiceMockRadius.full),
+                        child: Container(
+                          height: 56,
+                          alignment: Alignment.center,
+                          child: DefaultTextStyle(
+                            style: VoiceMockTypography.body.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: VoiceMockColors.background,
+                            ),
+                            child: IconTheme(
+                              data: const IconThemeData(
+                                color: VoiceMockColors.background,
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: VoiceMockColors.surface,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          isOffline
+                                              ? l10n.noInternetConnection
+                                              : l10n.startInterview,
+                                        ),
+                                        if (!isOffline) ...[
+                                          const SizedBox(
+                                            width: VoiceMockSpacing.sm,
+                                          ),
+                                          const Icon(
+                                            Icons.arrow_forward_rounded,
+                                            size: 20,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                            ),
+                          ),
                         ),
-                        if (!isOffline) ...[
-                          const SizedBox(width: VoiceMockSpacing.sm),
-                          const Icon(Icons.arrow_forward_rounded, size: 20),
-                        ],
-                      ],
-                    );
-
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-                  boxShadow: [
-                    BoxShadow(
-                      color: VoiceMockColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: FilledButton(
-                  onPressed: (isLoading || isOffline)
-                      ? null
-                      : () => _handleStartInterview(context),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: VoiceMockColors.primary,
-                    foregroundColor: VoiceMockColors.surface,
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-                    ),
-                    textStyle: VoiceMockTypography.body.copyWith(
-                      fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  child: buttonChild,
-                ),
+
+                  const SizedBox(height: VoiceMockSpacing.sm),
+
+                  // Helper subtitle
+                  Text(
+                    'Review your settings and ensure microphone\n'
+                    'access is enabled before starting.',
+                    textAlign: TextAlign.center,
+                    style: VoiceMockTypography.micro.copyWith(
+                      color: VoiceMockColors.textMuted.withValues(alpha: 0.7),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               );
             },
           );

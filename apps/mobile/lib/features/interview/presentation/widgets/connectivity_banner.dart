@@ -14,23 +14,32 @@ class ConnectivityBanner extends StatelessWidget {
     final l10n = context.l10n;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: VoiceMockSpacing.md,
+        vertical: VoiceMockSpacing.md,
+      ),
       decoration: BoxDecoration(
-        color: VoiceMockColors.warning.withValues(alpha: 0.1),
-        border: Border(
-          bottom: BorderSide(
-            color: VoiceMockColors.warning.withValues(alpha: 0.3),
-          ),
+        color: VoiceMockColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+        border: Border.all(
+          color: VoiceMockColors.warning.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.wifi_off,
-            color: VoiceMockColors.warning,
-            size: 20,
+          Container(
+            padding: const EdgeInsets.all(VoiceMockSpacing.sm),
+            decoration: BoxDecoration(
+              color: VoiceMockColors.warning.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
+            ),
+            child: const Icon(
+              Icons.wifi_off_rounded,
+              color: VoiceMockColors.warning,
+              size: 18,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: VoiceMockSpacing.md),
           Expanded(
             child: Text(
               l10n.internetConnectionRequired,
@@ -46,7 +55,10 @@ class ConnectivityBanner extends StatelessWidget {
             },
             style: TextButton.styleFrom(
               foregroundColor: VoiceMockColors.warning,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: VoiceMockSpacing.md,
+                vertical: VoiceMockSpacing.sm,
+              ),
             ),
             child: Text(l10n.retry),
           ),

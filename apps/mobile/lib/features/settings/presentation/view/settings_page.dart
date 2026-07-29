@@ -159,7 +159,7 @@ class _SettingsPageState extends State<SettingsPage> {
               color: VoiceMockColors.surface,
               borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
               border: Border.all(
-                color: VoiceMockColors.primaryContainer,
+                color: VoiceMockColors.surfaceBorder,
               ),
               boxShadow: const [
                 BoxShadow(
@@ -176,9 +176,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 // Data & Privacy section header
                 // ──────────────────────────────────────────────
                 Container(
-                  color: VoiceMockColors.primaryContainer.withValues(
-                    alpha: 0.3,
-                  ),
+                  color: VoiceMockColors.surfaceElevated,
                   padding: const EdgeInsets.symmetric(
                     horizontal: VoiceMockSpacing.md,
                     vertical: VoiceMockSpacing.sm,
@@ -193,7 +191,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   leading: _buildTintedIcon(
                     icon: Icons.privacy_tip_outlined,
                     color: VoiceMockColors.secondary,
-                    backgroundColor: VoiceMockColors.primaryContainer,
+                    backgroundColor: VoiceMockColors.secondary.withValues(
+                      alpha: 0.1,
+                    ),
                   ),
                   title: Text(
                     l10n.disclosureSettingsTileTitle,
@@ -216,7 +216,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     leading: _buildTintedIcon(
                       icon: Icons.analytics_outlined,
                       color: VoiceMockColors.secondary,
-                      backgroundColor: VoiceMockColors.primaryContainer,
+                      backgroundColor: VoiceMockColors.secondary.withValues(
+                        alpha: 0.1,
+                      ),
                     ),
                     title: Text(
                       'Diagnostics',

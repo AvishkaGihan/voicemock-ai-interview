@@ -191,7 +191,7 @@ class _SessionIdCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-        border: Border.all(color: VoiceMockColors.primaryContainer, width: 2),
+        border: Border.all(color: VoiceMockColors.surfaceBorder, width: 2),
         boxShadow: const [
           BoxShadow(
             color: VoiceMockColors.accentGlow,

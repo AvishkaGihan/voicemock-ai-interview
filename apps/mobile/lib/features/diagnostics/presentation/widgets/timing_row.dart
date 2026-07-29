@@ -23,12 +23,12 @@ class TimingRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: VoiceMockColors.background,
+      color: VoiceMockColors.surfaceElevated,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-        side: BorderSide(
-          color: VoiceMockColors.textMuted.withValues(alpha: 0.2),
+        side: const BorderSide(
+          color: VoiceMockColors.surfaceBorder,
         ),
       ),
       child: Padding(
@@ -151,10 +151,10 @@ class _TimingChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: VoiceMockColors.surface,
+        color: VoiceMockColors.background,
         borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
         border: Border.all(
-          color: VoiceMockColors.textMuted.withValues(alpha: 0.2),
+          color: VoiceMockColors.surfaceBorder,
         ),
       ),
       child: Text(

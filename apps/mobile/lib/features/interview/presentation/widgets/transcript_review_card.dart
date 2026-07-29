@@ -34,7 +34,7 @@ class TranscriptReviewCard extends StatelessWidget {
         color: VoiceMockColors.surface,
         borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
         border: Border.all(
-          color: VoiceMockColors.primaryContainer,
+          color: VoiceMockColors.surfaceBorder,
         ),
         boxShadow: const [
           BoxShadow(
@@ -117,7 +117,7 @@ class TranscriptReviewCard extends StatelessWidget {
               onPressed: onAccept,
               style: FilledButton.styleFrom(
                 backgroundColor: VoiceMockColors.primary,
-                foregroundColor: VoiceMockColors.surface,
+                foregroundColor: VoiceMockColors.background,
               ),
               child: const Text('Accept & Continue'),
             ),

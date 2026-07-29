@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 
-/// Segmented control for selecting difficulty level.
+/// Inline selector for difficulty level.
+///
+/// Displays label on top and a 3-way full-width segmented control underneath.
 class DifficultySelector extends StatelessWidget {
   const DifficultySelector({
     required this.selectedDifficulty,
@@ -15,76 +17,109 @@ class DifficultySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Difficulty Level',
-          style: VoiceMockTypography.label,
-        ),
-        const SizedBox(height: VoiceMockSpacing.sm),
-        Container(
-          decoration: BoxDecoration(
-            color: VoiceMockColors.surface,
-            borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-            border: const Border(
-              left: BorderSide(color: VoiceMockColors.primary, width: 3),
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: VoiceMockColors.accentGlow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
+    return Padding(
+      padding: const EdgeInsets.all(VoiceMockSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.bar_chart_rounded,
+                color: VoiceMockColors.textMuted,
+                size: 20,
+              ),
+              const SizedBox(width: VoiceMockSpacing.sm),
+              Text(
+                'Difficulty',
+                style: VoiceMockTypography.body.copyWith(
+                  color: VoiceMockColors.textMuted,
+                ),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(VoiceMockSpacing.xs),
-            child: Row(
-              children: DifficultyLevel.values.map((difficulty) {
-                final isSelected = difficulty == selectedDifficulty;
-                return Expanded(
+          const SizedBox(height: VoiceMockSpacing.sm),
+          Row(
+            children: DifficultyLevel.values.map((difficulty) {
+              final isSelected = difficulty == selectedDifficulty;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: difficulty == DifficultyLevel.values.last
+                        ? 0
+                        : VoiceMockSpacing.sm,
+                  ),
                   child: GestureDetector(
                     onTap: () => onDifficultySelected(difficulty),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
                       padding: const EdgeInsets.symmetric(
-                        vertical: VoiceMockSpacing.sm + 4,
+                        vertical: VoiceMockSpacing.sm + 2,
                       ),
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isSelected ? null : Colors.transparent,
-                        gradient: isSelected
-                            ? const LinearGradient(
-                                colors: [
-                                  VoiceMockColors.primary,
-                                  VoiceMockColors.secondary,
-                                ],
-                              )
-                            : null,
-                        borderRadius: BorderRadius.circular(
-                          VoiceMockRadius.full,
+                        color: isSelected
+                            ? VoiceMockColors.primary.withValues(alpha: 0.12)
+                            : VoiceMockColors.surfaceElevated,
+                        borderRadius:
+                            BorderRadius.circular(VoiceMockRadius.full),
+                        border: Border.all(
+                          color: isSelected
+                              ? VoiceMockColors.primary
+                              : VoiceMockColors.surfaceBorder,
                         ),
                       ),
-                      child: Text(
-                        difficulty.displayName,
-                        textAlign: TextAlign.center,
-                        style: VoiceMockTypography.body.copyWith(
-                          color: isSelected
-                              ? VoiceMockColors.surface
-                              : VoiceMockColors.textMuted,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? VoiceMockColors.primary
+                                    : VoiceMockColors.textMuted,
+                                width: 2,
+                              ),
+                            ),
+                            child: isSelected
+                                ? Center(
+                                    child: Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: VoiceMockColors.primary,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            difficulty.displayName,
+                            style: VoiceMockTypography.small.copyWith(
+                              color: isSelected
+                                  ? VoiceMockColors.primary
+                                  : VoiceMockColors.textMuted,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
+                ),
+              );
+            }).toList(),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

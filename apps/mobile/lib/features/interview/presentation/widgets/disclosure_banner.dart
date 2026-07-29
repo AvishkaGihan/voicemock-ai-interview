@@ -28,72 +28,108 @@ class DisclosureBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Card(
-      elevation: 0,
-      color: VoiceMockColors.secondary.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
-        side: BorderSide(
+    return Container(
+      decoration: BoxDecoration(
+        color: VoiceMockColors.surfaceCard,
+        borderRadius: BorderRadius.circular(VoiceMockRadius.xl),
+        border: Border.all(
           color: VoiceMockColors.secondary.withValues(alpha: 0.25),
         ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(VoiceMockSpacing.md),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header row: icon + banner text
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.info_outline_rounded,
-                  color: VoiceMockColors.secondary,
-                  size: 20,
-                ),
-                const SizedBox(width: VoiceMockSpacing.sm),
-                Expanded(
-                  child: Text(
+            // Lock icon in tinted container
+            Container(
+              padding: const EdgeInsets.all(VoiceMockSpacing.sm + 2),
+              decoration: BoxDecoration(
+                color: VoiceMockColors.secondary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: VoiceMockColors.secondary,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: VoiceMockSpacing.md),
+
+            // Text + actions column
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    'AI Data Privacy',
+                    style: VoiceMockTypography.h3.copyWith(
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: VoiceMockSpacing.xs),
+
+                  // Body text
+                  Text(
                     l10n.disclosureBannerText,
                     style: VoiceMockTypography.small.copyWith(
-                      color: VoiceMockColors.textPrimary,
+                      height: 1.4,
                     ),
                   ),
-                ),
-              ],
-            ),
 
-            const SizedBox(height: VoiceMockSpacing.sm),
+                  const SizedBox(height: VoiceMockSpacing.md),
 
-            // Action row: "Learn more" (left) + "Got it" (right)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: onLearnMore,
-                  style: TextButton.styleFrom(
-                    foregroundColor: VoiceMockColors.secondary,
-                    textStyle: VoiceMockTypography.small.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
+                  // Actions: Learn more + Got it
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: onLearnMore,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              l10n.disclosureBannerLearnMore,
+                              style: VoiceMockTypography.small.copyWith(
+                                color: VoiceMockColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: VoiceMockColors.primary,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: VoiceMockSpacing.lg),
+                      OutlinedButton(
+                        onPressed: onGotIt,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: VoiceMockColors.textPrimary,
+                          side: const BorderSide(
+                            color: VoiceMockColors.surfaceBorder,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              VoiceMockRadius.full,
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: VoiceMockSpacing.lg,
+                            vertical: VoiceMockSpacing.sm,
+                          ),
+                        ),
+                        child: Text(l10n.disclosureBannerGotIt),
+                      ),
+                    ],
                   ),
-                  child: Text(l10n.disclosureBannerLearnMore),
-                ),
-                const SizedBox(width: VoiceMockSpacing.sm),
-                TextButton(
-                  onPressed: onGotIt,
-                  style: TextButton.styleFrom(
-                    foregroundColor: VoiceMockColors.textMuted,
-                    textStyle: VoiceMockTypography.small,
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text(l10n.disclosureBannerGotIt),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
