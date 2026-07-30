@@ -31,6 +31,10 @@ abstract final class VoiceMockColors {
   static const Color surfaceCard = Color(0xFF111820); // Sectioned card fill
   static const Color glowPrimary = Color(0x3300E676); // 20% primary glow
 
+  // Summary / Settings Redesign Tokens
+  /// Subtle track background for the radial score gauge arc.
+  static const Color scoreGaugeTrack = Color(0xFF1E2A38);
+
   /// Standard glassmorphic card decoration used across setup widgets.
   static BoxDecoration cardDecoration({
     Color? borderColor,
@@ -143,6 +147,22 @@ abstract final class VoiceMockTypography {
     fontWeight: FontWeight.w700,
     letterSpacing: 1.2,
     color: VoiceMockColors.primary,
+  );
+
+  /// Large score number in summary gauge (e.g. "4.2").
+  static final TextStyle scoreDisplay = GoogleFonts.inter(
+    fontSize: 30,
+    height: 1,
+    fontWeight: FontWeight.w700,
+    color: VoiceMockColors.primary,
+  );
+
+  /// Qualitative score label (e.g. "Strong Performance").
+  static final TextStyle scoreLabel = GoogleFonts.inter(
+    fontSize: 16,
+    height: 22 / 16,
+    fontWeight: FontWeight.w600,
+    color: VoiceMockColors.textPrimary,
   );
 }
 

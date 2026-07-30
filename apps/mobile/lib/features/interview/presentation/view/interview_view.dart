@@ -433,6 +433,7 @@ class _InterviewViewState extends State<InterviewView>
         :final lastTranscript,
         :final lastResponseText,
         :final sessionSummary,
+        :final sessionStartTime,
       ) =>
         Column(
           children: [
@@ -442,6 +443,7 @@ class _InterviewViewState extends State<InterviewView>
               lastTranscript: lastTranscript,
               lastResponseText: lastResponseText,
               sessionSummary: sessionSummary,
+              sessionStartTime: sessionStartTime,
               onBackToHome: () => Navigator.pop(context),
               onStartNew: () {
                 Navigator.pop(context);

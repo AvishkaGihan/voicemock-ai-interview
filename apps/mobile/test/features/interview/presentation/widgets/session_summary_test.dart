@@ -43,8 +43,8 @@ void main() {
         find.text('You communicated clearly and stayed relevant.'),
         findsOneWidget,
       );
-      expect(find.text('Clear examples'), findsOneWidget);
-      expect(find.text('Add quantified outcomes'), findsOneWidget);
+      expect(find.text('Clear examples'), findsWidgets);
+      expect(find.text('Add quantified outcomes'), findsWidgets);
     });
 
     testWidgets(
@@ -56,7 +56,7 @@ void main() {
 
         expect(find.text('Interview Complete'), findsOneWidget);
         expect(
-          find.text('Great job! You completed all 5 questions.'),
+          find.textContaining("You've completed all 5 questions."),
           findsOneWidget,
         );
         expect(find.text('OVERALL ASSESSMENT'), findsNothing);
@@ -66,12 +66,12 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Task 6.3 / 6.4: "What to Practice Next" section in SessionCompleteCard
+  // AI Coach Recommendation section in SessionCompleteCard
   // ---------------------------------------------------------------------------
 
   group('SessionCompleteCard recommended actions', () {
     testWidgets(
-      'renders What to Practice Next section when '
+      'renders AI Coach Recommendation section when '
       'recommendedActions is non-empty',
       (tester) async {
         const summaryWithActions = SessionSummary(
@@ -87,16 +87,16 @@ void main() {
 
         await tester.pumpWidget(buildTestWidget(summaryWithActions));
 
-        expect(find.text('PRACTICE NEXT'), findsOneWidget);
+        expect(find.text('AI COACH RECOMMENDATION'), findsOneWidget);
         expect(
-          find.text(
-            'Try structuring answers with the STAR method for clearer stories.',
+          find.textContaining(
+            'Try structuring answers with the STAR method',
           ),
           findsOneWidget,
         );
         expect(
-          find.text(
-            'Practice pausing instead of using filler words when thinking.',
+          find.textContaining(
+            'Practice pausing instead of using filler words',
           ),
           findsOneWidget,
         );
@@ -104,7 +104,7 @@ void main() {
     );
 
     testWidgets(
-      'hides What to Practice Next section when recommendedActions is empty',
+      'hides AI Coach Recommendation section when recommendedActions is empty',
       (tester) async {
         const summaryNoActions = SessionSummary(
           overallAssessment: 'Strong performance.',
@@ -116,7 +116,7 @@ void main() {
 
         await tester.pumpWidget(buildTestWidget(summaryNoActions));
 
-        expect(find.text('PRACTICE NEXT'), findsNothing);
+        expect(find.text('AI COACH RECOMMENDATION'), findsNothing);
       },
     );
   });

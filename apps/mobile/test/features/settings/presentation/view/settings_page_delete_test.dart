@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/settings/presentation/view/settings_page.dart';
+import 'package:voicemock/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:voicemock/l10n/l10n.dart';
 
 class MockSessionRepository extends Mock implements SessionRepository {}
@@ -46,14 +47,20 @@ void main() {
     repository = MockSessionRepository();
   });
 
-  testWidgets('shows Delete Session Data tile', (tester) async {
+  testWidgets('shows Delete All Interview Data tile', (tester) async {
     when(repository.getStoredSession).thenAnswer((_) async => storedSession);
 
     await pumpSettings(tester);
 
-    expect(find.text('Delete Session Data'), findsOneWidget);
+    final finder = find.text('Delete All Interview Data');
+    await tester.scrollUntilVisible(finder, 500);
+
+    expect(finder, findsOneWidget);
     expect(
-      find.text('Remove transcripts, feedback, and summary'),
+      find.text(
+        'Permanently delete your interview history, generated transcripts, '
+        'AI feedback logs, and post-interview evaluation summaries.',
+      ),
       findsOneWidget,
     );
   });
@@ -62,7 +69,10 @@ void main() {
     when(repository.getStoredSession).thenAnswer((_) async => storedSession);
 
     await pumpSettings(tester);
-    await tester.tap(find.text('Delete Session Data'));
+
+    final finder = find.text('Delete All Interview Data');
+    await tester.scrollUntilVisible(finder, 500);
+    await tester.tap(finder);
     await tester.pumpAndSettle();
 
     expect(find.text('Delete Session Data?'), findsOneWidget);
@@ -77,7 +87,10 @@ void main() {
     ).thenAnswer((_) async => const Right(true));
 
     await pumpSettings(tester);
-    await tester.tap(find.text('Delete Session Data'));
+
+    final finder = find.text('Delete All Interview Data');
+    await tester.scrollUntilVisible(finder, 500);
+    await tester.tap(finder);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Delete'));
@@ -85,10 +98,10 @@ void main() {
 
     expect(find.text('Session data deleted.'), findsOneWidget);
 
-    final listTile = tester.widget<ListTile>(
-      find.widgetWithText(ListTile, 'Delete Session Data'),
+    final settingsTile = tester.widget<SettingsTile>(
+      find.widgetWithText(SettingsTile, 'Delete All Interview Data'),
     );
-    expect(listTile.enabled, isFalse);
+    expect(settingsTile.enabled, isFalse);
   });
 
   testWidgets('failed deletion shows retry snackbar action', (tester) async {
@@ -104,7 +117,10 @@ void main() {
     );
 
     await pumpSettings(tester);
-    await tester.tap(find.text('Delete Session Data'));
+
+    final finder = find.text('Delete All Interview Data');
+    await tester.scrollUntilVisible(finder, 500);
+    await tester.tap(finder);
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Delete'));

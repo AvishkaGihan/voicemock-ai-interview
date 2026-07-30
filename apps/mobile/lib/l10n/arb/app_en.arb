@@ -87,5 +87,105 @@
     "disclosureSettingsTileSubtitle": "How your audio and transcripts are handled",
     "@disclosureSettingsTileSubtitle": {
         "description": "Subtitle shown under the tile in Settings"
+    },
+    "summaryCompleted": "Completed",
+    "@summaryCompleted": {
+        "description": "Label under the completed count stat"
+    },
+    "summarySessionTime": "Session time",
+    "@summarySessionTime": {
+        "description": "Label under the session time stat"
+    },
+    "summaryPerformance": "Performance",
+    "@summaryPerformance": {
+        "description": "Label under the performance score stat"
+    },
+    "summaryStrengthsSubtitle": "What you did well",
+    "@summaryStrengthsSubtitle": {
+        "description": "Subtitle under the strengths section header"
+    },
+    "summaryAreasSubtitle": "Where you can become stronger",
+    "@summaryAreasSubtitle": {
+        "description": "Subtitle under the areas to improve section header"
+    },
+    "summaryCoachRecommendation": "AI COACH RECOMMENDATION",
+    "@summaryCoachRecommendation": {
+        "description": "Section label for the AI coach recommendation"
+    },
+    "summaryPracticeAgain": "Practice Again",
+    "@summaryPracticeAgain": {
+        "description": "Label for the practice again CTA button"
+    },
+    "summaryBackToHome": "Back to Home",
+    "@summaryBackToHome": {
+        "description": "Label for the back to home button"
+    },
+    "summarySavedToHistory": "Saved to your history",
+    "@summarySavedToHistory": {
+        "description": "Footer text below the action buttons"
+    },
+    "settingsAccountPreferences": "ACCOUNT & PREFERENCES",
+    "@settingsAccountPreferences": {
+        "description": "Section header for account and preferences settings"
+    },
+    "settingsProfile": "Profile",
+    "@settingsProfile": {
+        "description": "Title for the profile settings tile"
+    },
+    "settingsProfileSubtitle": "Manage your account details",
+    "@settingsProfileSubtitle": {
+        "description": "Subtitle for the profile settings tile"
+    },
+    "settingsInterviewPreferences": "Interview Preferences",
+    "@settingsInterviewPreferences": {
+        "description": "Title for the interview preferences tile"
+    },
+    "settingsInterviewPreferencesSubtitle": "Manage your default interview setup",
+    "@settingsInterviewPreferencesSubtitle": {
+        "description": "Subtitle for the interview preferences tile"
+    },
+    "settingsPrivacyData": "PRIVACY & DATA",
+    "@settingsPrivacyData": {
+        "description": "Section header for privacy and data settings"
+    },
+    "settingsPrivacyProcessingTitle": "Privacy & Data Processing",
+    "@settingsPrivacyProcessingTitle": {
+        "description": "Title for privacy processing card"
+    },
+    "settingsPrivacyProcessingSubtitle": "Learn how VoiceMock processes your voice recordings, transcripts, AI-generated feedback, and interview data.",
+    "@settingsPrivacyProcessingSubtitle": {
+        "description": "Subtitle for privacy processing card"
+    },
+    "settingsAudioNotStored": "Audio recordings are not stored after processing.",
+    "@settingsAudioNotStored": {
+        "description": "Reassurance chip text about audio data"
+    },
+    "settingsInterviewData": "INTERVIEW DATA",
+    "@settingsInterviewData": {
+        "description": "Section header for interview data management"
+    },
+    "settingsInterviewHistory": "Interview History",
+    "@settingsInterviewHistory": {
+        "description": "Title for interview history tile"
+    },
+    "settingsInterviewHistorySubtitle": "Manage your saved interview sessions, transcripts, feedback, and performance summaries.",
+    "@settingsInterviewHistorySubtitle": {
+        "description": "Subtitle for interview history tile"
+    },
+    "settingsDeleteAllData": "Delete All Interview Data",
+    "@settingsDeleteAllData": {
+        "description": "Title for delete all data tile"
+    },
+    "settingsDeleteAllDataSubtitle": "Permanently delete your interview history, generated transcripts, AI feedback logs, and post-interview evaluation summaries.",
+    "@settingsDeleteAllDataSubtitle": {
+        "description": "Subtitle for delete all data tile"
+    },
+    "settingsPrivacyFooter": "Your privacy and trust are our highest priorities.",
+    "@settingsPrivacyFooter": {
+        "description": "Privacy footer text at the bottom of settings"
+    },
+    "settingsPrivacyPolicyLink": "Learn more about our privacy policy",
+    "@settingsPrivacyPolicyLink": {
+        "description": "Privacy policy link text"
     }
 }

@@ -8,12 +8,16 @@ import 'package:voicemock/features/interview/domain/domain.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/widgets/disclosure_detail_sheet.dart';
 import 'package:voicemock/features/settings/presentation/widgets/delete_session_dialog.dart';
+import 'package:voicemock/features/settings/presentation/widgets/settings_data_pipeline.dart';
+import 'package:voicemock/features/settings/presentation/widgets/settings_section_card.dart';
+import 'package:voicemock/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:voicemock/l10n/l10n.dart';
 
-/// Minimal settings page for MVP.
+/// Redesigned settings page with clearly sectioned groups.
 ///
-/// Contains a "Data & Privacy" section exposing the processing disclosure.
-/// Additional settings sections are added as future epics require them.
+/// Organized into: Account & Preferences, Privacy & Data, Interview Data.
+/// Consistent with the Setup/Interview visual language using section labels,
+/// glassmorphic cards, and tinted icons.
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -113,27 +117,40 @@ class _SettingsPageState extends State<SettingsPage> {
     } on Exception {
       interviewCubit = null;
     }
+
     return Scaffold(
       backgroundColor: VoiceMockColors.background,
       appBar: AppBar(
         backgroundColor: VoiceMockColors.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: VoiceMockColors.textPrimary,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: VoiceMockSpacing.sm),
+          child: Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: VoiceMockColors.surfaceBorder),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 16),
+                color: VoiceMockColors.textPrimary,
+                onPressed: () => context.pop(),
+                padding: EdgeInsets.zero,
+              ),
+            ),
           ),
-          onPressed: () => context.pop(),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: VoiceMockSpacing.md),
         children: [
-          // Custom Header
+          // ── Header ──
           Padding(
             padding: const EdgeInsets.only(
-              top: VoiceMockSpacing.lg,
+              top: VoiceMockSpacing.sm,
               bottom: VoiceMockSpacing.xl,
             ),
             child: Column(
@@ -141,160 +158,274 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Text(
                   'Settings',
-                  style: VoiceMockTypography.h2,
+                  style: VoiceMockTypography.h1,
                 ),
                 const SizedBox(height: VoiceMockSpacing.xs),
                 Text(
-                  'Manage your account and preferences.',
+                  'Manage your account and preferences',
                   style: VoiceMockTypography.small,
                 ),
               ],
             ),
           ),
 
-          // Settings Group Card
-          Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: VoiceMockColors.surface,
-              borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
-              border: Border.all(
-                color: VoiceMockColors.surfaceBorder,
+          // ── 1. Account & Preferences Section ──
+          SettingsSectionCard(
+            label: l10n.settingsAccountPreferences,
+            children: [
+              SettingsTile(
+                icon: Icons.person_outline_rounded,
+                title: l10n.settingsProfile,
+                subtitle: l10n.settingsProfileSubtitle,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Profile settings coming soon'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
               ),
-              boxShadow: const [
-                BoxShadow(
-                  color: VoiceMockColors.accentGlow,
-                  blurRadius: 16,
-                  offset: Offset(0, 4),
-                ),
-              ],
+              SettingsTile(
+                icon: Icons.tune_rounded,
+                title: l10n.settingsInterviewPreferences,
+                subtitle: l10n.settingsInterviewPreferencesSubtitle,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Interview preferences coming soon'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: VoiceMockSpacing.xl),
+
+          // ── 2. Privacy & Data Section ──
+          SettingsSectionCard(
+            label: l10n.settingsPrivacyData,
+            children: [
+              // Privacy & Data Processing tile
+              SettingsTile(
+                icon: Icons.shield_outlined,
+                title: l10n.settingsPrivacyProcessingTitle,
+                subtitle: l10n.settingsPrivacyProcessingSubtitle,
+                iconColor: VoiceMockColors.secondary,
+                onTap: () => DisclosureDetailSheet.show(context),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: VoiceMockSpacing.md),
+
+          // Data pipeline visualization
+          Container(
+            padding: const EdgeInsets.only(
+              top: VoiceMockSpacing.xs,
+              bottom: VoiceMockSpacing.md,
             ),
+            decoration: VoiceMockColors.cardDecoration(),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ──────────────────────────────────────────────
-                // Data & Privacy section header
-                // ──────────────────────────────────────────────
-                Container(
-                  color: VoiceMockColors.surfaceElevated,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: VoiceMockSpacing.md,
-                    vertical: VoiceMockSpacing.sm,
+                // Sub-header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    VoiceMockSpacing.md,
+                    VoiceMockSpacing.md,
+                    VoiceMockSpacing.md,
+                    0,
                   ),
                   child: Text(
-                    l10n.disclosureSettingsSectionTitle,
-                    style: VoiceMockTypography.label,
-                  ),
-                ),
-                ListTile(
-                  tileColor: VoiceMockColors.surface,
-                  leading: _buildTintedIcon(
-                    icon: Icons.privacy_tip_outlined,
-                    color: VoiceMockColors.secondary,
-                    backgroundColor: VoiceMockColors.secondary.withValues(
-                      alpha: 0.1,
+                    'How your data is processed',
+                    style: VoiceMockTypography.sectionLabel.copyWith(
+                      fontSize: 11,
                     ),
                   ),
-                  title: Text(
-                    l10n.disclosureSettingsTileTitle,
-                    style: VoiceMockTypography.body,
-                  ),
-                  subtitle: Text(
-                    l10n.disclosureSettingsTileSubtitle,
-                    style: VoiceMockTypography.small,
-                  ),
-                  trailing: const Icon(
-                    Icons.chevron_right_rounded,
-                    color: VoiceMockColors.textMuted,
-                  ),
-                  onTap: () => DisclosureDetailSheet.show(context),
                 ),
-                const Divider(height: 1),
-                if (interviewCubit != null) ...[
-                  ListTile(
-                    tileColor: VoiceMockColors.surface,
-                    leading: _buildTintedIcon(
-                      icon: Icons.analytics_outlined,
-                      color: VoiceMockColors.secondary,
-                      backgroundColor: VoiceMockColors.secondary.withValues(
-                        alpha: 0.1,
+
+                // Pipeline steps
+                const SettingsDataPipeline(),
+
+                // Explanatory text
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: VoiceMockSpacing.md,
+                  ),
+                  child: Text(
+                    'VoiceMock uses third-party AI services to process audio '
+                    'and generate transcripts, interview questions, and '
+                    'performance feedback.',
+                    style: VoiceMockTypography.micro.copyWith(
+                      color: VoiceMockColors.textMuted.withValues(alpha: 0.7),
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: VoiceMockSpacing.md),
+
+                // Reassurance chip
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: VoiceMockSpacing.md,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: VoiceMockSpacing.md,
+                      vertical: VoiceMockSpacing.sm + 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: VoiceMockColors.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                      border: Border.all(
+                        color: VoiceMockColors.primary.withValues(alpha: 0.15),
                       ),
                     ),
-                    title: Text(
-                      'Diagnostics',
-                      style: VoiceMockTypography.body,
-                    ),
-                    subtitle: Text(
-                      'View timing metrics & error info',
-                      style: VoiceMockTypography.small,
-                    ),
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: VoiceMockColors.textMuted,
-                    ),
-                    onTap: () => context.push(
-                      '/diagnostics',
-                      extra: interviewCubit,
-                    ),
-                  ),
-                  const Divider(height: 1),
-                ],
-                ListTile(
-                  tileColor: VoiceMockColors.surface,
-                  enabled: _storedSession != null && !_isDeleting,
-                  leading: _buildTintedIcon(
-                    icon: Icons.delete_outline,
-                    color: VoiceMockColors.error,
-                    backgroundColor: VoiceMockColors.error.withValues(
-                      alpha: 0.1,
-                    ),
-                  ),
-                  title: Text(
-                    'Delete Session Data',
-                    style: VoiceMockTypography.body.copyWith(
-                      color: VoiceMockColors.error,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Remove transcripts, feedback, and summary',
-                    style: VoiceMockTypography.small,
-                  ),
-                  trailing: _isDeleting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(
-                          Icons.chevron_right_rounded,
-                          color: VoiceMockColors.textMuted,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 16,
+                          color: VoiceMockColors.primary.withValues(
+                            alpha: 0.8,
+                          ),
                         ),
-                  onTap: _onDeleteTap,
+                        const SizedBox(width: VoiceMockSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            l10n.settingsAudioNotStored,
+                            style: VoiceMockTypography.small.copyWith(
+                              color: VoiceMockColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
+
           const SizedBox(height: VoiceMockSpacing.xl),
+
+          // ── 3. Interview Data Section ──
+          SettingsSectionCard(
+            label: l10n.settingsInterviewData,
+            children: [
+              // Interview History tile
+              SettingsTile(
+                icon: Icons.history_rounded,
+                title: l10n.settingsInterviewHistory,
+                subtitle: l10n.settingsInterviewHistorySubtitle,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Interview history coming soon'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+
+              // Diagnostics tile (if available)
+              if (interviewCubit != null)
+                SettingsTile(
+                  icon: Icons.analytics_outlined,
+                  title: 'Diagnostics',
+                  subtitle: 'View timing metrics & error info',
+                  iconColor: VoiceMockColors.secondary,
+                  onTap: () => context.push(
+                    '/diagnostics',
+                    extra: interviewCubit,
+                  ),
+                ),
+
+              // Delete all data tile
+              SettingsTile(
+                icon: Icons.delete_outline_rounded,
+                title: l10n.settingsDeleteAllData,
+                subtitle: l10n.settingsDeleteAllDataSubtitle,
+                iconColor: VoiceMockColors.error,
+                titleColor: VoiceMockColors.error,
+                enabled: _storedSession != null && !_isDeleting,
+                trailing: _isDeleting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
+                onTap: _onDeleteTap,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: VoiceMockSpacing.xl),
+
+          // ── 4. Privacy Footer ──
+          _buildPrivacyFooter(l10n),
+
+          const SizedBox(height: VoiceMockSpacing.xxl),
         ],
       ),
     );
   }
 
-  Widget _buildTintedIcon({
-    required IconData icon,
-    required Color color,
-    required Color backgroundColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        icon,
-        color: color,
-        size: 20,
+  Widget _buildPrivacyFooter(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: VoiceMockSpacing.md),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_outline_rounded,
+                size: 14,
+                color: VoiceMockColors.textMuted.withValues(alpha: 0.6),
+              ),
+              const SizedBox(width: VoiceMockSpacing.sm),
+              Flexible(
+                child: Text(
+                  l10n.settingsPrivacyFooter,
+                  style: VoiceMockTypography.micro.copyWith(
+                    color: VoiceMockColors.textMuted.withValues(alpha: 0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: VoiceMockSpacing.sm),
+          GestureDetector(
+            onTap: () => DisclosureDetailSheet.show(context),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.settingsPrivacyPolicyLink,
+                  style: VoiceMockTypography.micro.copyWith(
+                    color: VoiceMockColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 14,
+                  color: VoiceMockColors.primary.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

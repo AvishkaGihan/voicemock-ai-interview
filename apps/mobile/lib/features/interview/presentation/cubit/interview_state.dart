@@ -267,12 +267,16 @@ class InterviewSessionComplete extends InterviewState {
     required this.lastTranscript,
     this.lastResponseText,
     this.sessionSummary,
+    this.sessionStartTime,
   });
 
   final int totalQuestions;
   final String lastTranscript;
   final String? lastResponseText;
   final SessionSummary? sessionSummary;
+
+  /// When the interview session began, used to compute elapsed time.
+  final DateTime? sessionStartTime;
 
   @override
   InterviewStage get stage => InterviewStage.sessionComplete;
@@ -283,6 +287,7 @@ class InterviewSessionComplete extends InterviewState {
     lastTranscript,
     lastResponseText,
     sessionSummary,
+    sessionStartTime,
   ];
 }
 

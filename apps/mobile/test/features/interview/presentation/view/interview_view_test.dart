@@ -481,7 +481,7 @@ void main() {
 
         expect(find.text('Interview Complete'), findsOneWidget);
         expect(
-          find.text('Great job! You completed all 5 questions.'),
+          find.textContaining("You've completed all 5 questions."),
           findsOneWidget,
         );
         expect(find.text('Back to Home'), findsOneWidget);

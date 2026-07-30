@@ -69,7 +69,10 @@ void main() {
     await tester.pumpWidget(createApp(interviewCubit: cubit));
     await tester.pumpAndSettle();
 
-    expect(find.text('Diagnostics'), findsOneWidget);
+    final finder = find.text('Diagnostics');
+    await tester.scrollUntilVisible(finder, 500);
+
+    expect(finder, findsOneWidget);
     expect(find.text('View timing metrics & error info'), findsOneWidget);
   });
 
@@ -89,7 +92,10 @@ void main() {
     await tester.pumpWidget(createApp(interviewCubit: cubit));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Diagnostics'));
+    final finder = find.text('Diagnostics');
+    await tester.scrollUntilVisible(finder, 500);
+
+    await tester.tap(finder);
     await tester.pumpAndSettle();
 
     expect(find.text('Diagnostics destination'), findsOneWidget);

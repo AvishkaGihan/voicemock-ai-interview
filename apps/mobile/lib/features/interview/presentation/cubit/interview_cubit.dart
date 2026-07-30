@@ -82,6 +82,9 @@ class InterviewCubit extends Cubit<InterviewState> {
   String _lastResponseText = '';
   bool _isReplaying = false;
 
+  /// Timestamp of when this interview session started.
+  final DateTime _sessionStartTime = DateTime.now();
+
   /// Session diagnostics for timing and error tracking.
   late SessionDiagnostics _diagnostics;
 
@@ -264,6 +267,7 @@ class InterviewCubit extends Cubit<InterviewState> {
           lastTranscript: current.transcript,
           lastResponseText: current.assistantText,
           sessionSummary: current.sessionSummary,
+          sessionStartTime: _sessionStartTime,
         ),
       );
       _logTransition('Session complete');
