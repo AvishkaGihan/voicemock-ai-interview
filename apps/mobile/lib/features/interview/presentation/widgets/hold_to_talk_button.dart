@@ -30,20 +30,20 @@ class HoldToTalkButton extends StatelessWidget {
       button: true,
       enabled: isEnabled,
       label: _getAccessibilityLabel(),
-      child: GestureDetector(
-        onLongPressStart: isEnabled
+      child: Listener(
+        onPointerDown: isEnabled
             ? (_) {
                 unawaited(HapticFeedback.lightImpact());
                 onPressStart();
               }
             : null,
-        onLongPressEnd: isEnabled
+        onPointerUp: isEnabled
             ? (_) {
                 unawaited(HapticFeedback.mediumImpact());
                 onPressEnd();
               }
             : null,
-        onLongPressCancel: isEnabled ? onPressEnd : null,
+        onPointerCancel: isEnabled ? (_) => onPressEnd() : null,
         child: Container(
           width: 80,
           height: 80,

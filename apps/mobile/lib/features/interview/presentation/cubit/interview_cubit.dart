@@ -82,6 +82,10 @@ class InterviewCubit extends Cubit<InterviewState> {
   String _lastResponseText = '';
   bool _isReplaying = false;
 
+  /// Flags to synchronize async recording start/stop and prevent race conditions.
+  bool _isStartingRecording = false;
+  bool _stopRequestedWhileStarting = false;
+
   /// Timestamp of when this interview session started.
   final DateTime _sessionStartTime = DateTime.now();
 
@@ -106,16 +110,20 @@ class InterviewCubit extends Cubit<InterviewState> {
   /// If permission is not granted, emits an error state.
   Future<void> startRecording() async {
     final current = state;
-    if (current is! InterviewReady) {
+    if (current is! InterviewReady || _isStartingRecording) {
       _logInvalidTransition('startRecording', current);
       return;
     }
+
+    _isStartingRecording = true;
+    _stopRequestedWhileStarting = false;
 
     try {
       // Check microphone permission before recording
       final permissionStatus = await _permissionService
           .checkMicrophonePermission();
       if (permissionStatus != MicrophonePermissionStatus.granted) {
+        _isStartingRecording = false;
         handleError(
           const RecordingFailure(
             message: 'Microphone permission is required to record audio',
@@ -124,7 +132,38 @@ class InterviewCubit extends Cubit<InterviewState> {
         return;
       }
 
+      // Check if release/stop was requested while permission check was in-flight
+      if (_stopRequestedWhileStarting) {
+        _isStartingRecording = false;
+        _stopRequestedWhileStarting = false;
+        return;
+      }
+
       await _recordingService.startRecording();
+      _isStartingRecording = false;
+
+      // Check if release/stop was requested while startRecording was in-flight
+      if (_stopRequestedWhileStarting) {
+        _stopRequestedWhileStarting = false;
+        final audioPath = await _recordingService.stopRecording();
+        if (audioPath != null && audioPath.isNotEmpty) {
+          emit(
+            InterviewUploading(
+              questionNumber: current.questionNumber,
+              totalQuestions: current.totalQuestions,
+              questionText: current.questionText,
+              audioPath: audioPath,
+              startTime: DateTime.now(),
+            ),
+          );
+          _logTransition('Uploading');
+          unawaited(submitTurn());
+        } else {
+          handleError(const RecordingFailure(message: 'No audio recorded'));
+        }
+        return;
+      }
+
       emit(
         InterviewRecording(
           questionNumber: current.questionNumber,
@@ -136,6 +175,8 @@ class InterviewCubit extends Cubit<InterviewState> {
       _logTransition('Recording');
       _startMaxDurationTimer();
     } on Object catch (e) {
+      _isStartingRecording = false;
+      _stopRequestedWhileStarting = false;
       handleError(
         RecordingFailure(message: 'Failed to start recording: $e'),
       );
@@ -144,8 +185,20 @@ class InterviewCubit extends Cubit<InterviewState> {
 
   /// Stop recording - only valid from Recording state.
   Future<void> stopRecording() async {
+    if (_isStartingRecording) {
+      _stopRequestedWhileStarting = true;
+      return;
+    }
+
     final current = state;
     if (current is! InterviewRecording) {
+      // Safety fallback: if audio recorder is active in
+      // recording service, stop it
+      try {
+        if (await _recordingService.isRecording) {
+          await _recordingService.stopRecording();
+        }
+      } on Object catch (_) {}
       _logInvalidTransition('stopRecording', current);
       return;
     }

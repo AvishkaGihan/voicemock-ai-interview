@@ -124,20 +124,24 @@ class _RecordingZoneState extends State<RecordingZone>
           const SizedBox(height: VoiceMockSpacing.md),
 
           // Mic area with rings
-          GestureDetector(
-            onLongPressStart: widget.isEnabled
+          Listener(
+            onPointerDown: widget.isEnabled
                 ? (_) {
                     unawaited(HapticFeedback.lightImpact());
                     widget.onPressStart();
                   }
                 : null,
-            onLongPressEnd: widget.isEnabled
+            onPointerUp: widget.isEnabled
                 ? (_) {
                     unawaited(HapticFeedback.mediumImpact());
                     widget.onPressEnd();
                   }
                 : null,
-            onLongPressCancel: widget.isEnabled ? widget.onPressEnd : null,
+            onPointerCancel: widget.isEnabled
+                ? (_) {
+                    widget.onPressEnd();
+                  }
+                : null,
             child: SizedBox(
               width: 160,
               height: 160,
