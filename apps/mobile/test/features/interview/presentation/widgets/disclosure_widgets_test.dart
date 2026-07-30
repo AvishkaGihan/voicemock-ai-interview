@@ -177,7 +177,7 @@ void main() {
       expect(find.text(_kBannerText), findsOneWidget);
       expect(find.text(_kBannerGotIt), findsOneWidget);
       expect(find.text(_kBannerLearnMore), findsOneWidget);
-      expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
     });
 
     // 8.2 — banner is hidden when acknowledged (parent controls visibility)

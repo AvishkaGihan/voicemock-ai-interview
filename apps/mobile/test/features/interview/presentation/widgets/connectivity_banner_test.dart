@@ -43,11 +43,11 @@ void main() {
         connectivityCubit: mockConnectivityCubit,
       );
 
-      final iconFinder = find.byIcon(Icons.wifi_off);
+      final iconFinder = find.byIcon(Icons.wifi_off_rounded);
       expect(iconFinder, findsOneWidget);
 
       final icon = tester.widget<Icon>(iconFinder);
-      expect(icon.size, equals(20));
+      expect(icon.size, equals(18));
     });
 
     testWidgets('displays Retry button', (tester) async {
@@ -88,7 +88,7 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
       expect(
         decoration.color,
-        equals(VoiceMockColors.warning.withValues(alpha: 0.1)),
+        equals(VoiceMockColors.warning.withValues(alpha: 0.08)),
       );
 
       final border = decoration.border! as Border;
@@ -124,7 +124,7 @@ void main() {
 
       expect(
         container.padding,
-        equals(const EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+        equals(const EdgeInsets.all(16)),
       );
     });
   });

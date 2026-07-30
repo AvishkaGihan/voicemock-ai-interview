@@ -226,17 +226,17 @@ void main() {
       );
 
       // Check for role selector card
-      expect(find.text('Target Role'), findsOneWidget);
+      expect(find.text('Job Role'), findsOneWidget);
       // Software Engineer appears in selector and summary
       expect(find.text('Software Engineer'), findsWidgets);
 
       // Check for type selector
-      expect(find.text('Interview Type'), findsOneWidget);
+      expect(find.text('Interview Focus'), findsOneWidget);
       expect(find.text('Behavioral'), findsWidgets);
       expect(find.text('Technical'), findsOneWidget);
 
       // Check for difficulty selector
-      expect(find.text('Difficulty Level'), findsOneWidget);
+      expect(find.text('Difficulty'), findsOneWidget);
       expect(find.text('Easy'), findsOneWidget);
       expect(find.text('Medium'), findsWidgets);
       expect(find.text('Hard'), findsOneWidget);
@@ -244,8 +244,8 @@ void main() {
       // Check for question count selector
       expect(find.text('Number of Questions'), findsOneWidget);
 
-      // Check for summary card
-      expect(find.text('Interview Summary'), findsOneWidget);
+      // Check for summary card header
+      expect(find.text('INTERVIEW SETUP'), findsOneWidget);
 
       // Check for Start Interview button
       expect(find.text('Start Interview'), findsOneWidget);
@@ -278,7 +278,8 @@ void main() {
       expect(find.text('Product Manager'), findsWidgets);
       expect(find.text('Technical'), findsWidgets);
       expect(find.text('Hard'), findsWidgets);
-      expect(find.text('8 questions'), findsOneWidget);
+      expect(find.text('8'), findsWidgets);
+      expect(find.text('Questions'), findsWidgets);
     });
 
     testWidgets('calls updateType when type selector is tapped', (
@@ -415,8 +416,10 @@ void main() {
         sessionCubit: mockSessionCubit,
       );
 
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
-      expect(button.onPressed, isNotNull);
+      final inkWell = tester.widget<InkWell>(
+        find.widgetWithText(InkWell, 'Start Interview'),
+      );
+      expect(inkWell.onTap, isNotNull);
     });
 
     testWidgets('calls updateRole when role is selected', (tester) async {
@@ -472,11 +475,11 @@ void main() {
         );
 
         expect(
-          find.text('Microphone access is required for voice practice'),
+          find.text('Your microphone is required for voice practice.'),
           findsOneWidget,
         );
-        expect(find.text('Enable Microphone'), findsOneWidget);
-        expect(find.text('Not now'), findsOneWidget);
+        expect(find.text('Enable microphone'), findsOneWidget);
+        expect(find.text('Decline for now'), findsOneWidget);
       },
     );
 
@@ -529,7 +532,7 @@ void main() {
         );
 
         expect(
-          find.text('Microphone access is required for voice practice'),
+          find.text('Your microphone is required for voice practice.'),
           findsNothing,
         );
       },
@@ -610,10 +613,10 @@ void main() {
         connectivityCubit: mockConnectivityCubit,
       );
 
-      final button = tester.widget<FilledButton>(
-        find.byType(FilledButton),
+      final inkWell = tester.widget<InkWell>(
+        find.widgetWithText(InkWell, 'No Internet Connection'),
       );
-      expect(button.onPressed, isNull);
+      expect(inkWell.onTap, isNull);
       expect(find.text('No Internet Connection'), findsOneWidget);
     });
 
@@ -638,10 +641,10 @@ void main() {
         connectivityCubit: mockConnectivityCubit,
       );
 
-      final button = tester.widget<FilledButton>(
-        find.byType(FilledButton),
+      final inkWell = tester.widget<InkWell>(
+        find.widgetWithText(InkWell, 'Start Interview'),
       );
-      expect(button.onPressed, isNotNull);
+      expect(inkWell.onTap, isNotNull);
       expect(find.text('Start Interview'), findsOneWidget);
     });
 

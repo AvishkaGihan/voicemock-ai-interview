@@ -5,9 +5,10 @@ import 'package:voicemock/core/theme/voicemock_theme.dart';
 
 /// Large circular button for push-to-talk recording.
 ///
-/// Implements hold-to-talk interaction pattern with visual feedback,
-/// recording timer, and accessibility support.
-class HoldToTalkButton extends StatefulWidget {
+/// Simplified gesture handler — the primary visual recording experience
+/// is now handled by `RecordingZone`. This widget remains as a compact
+/// fallback and for backward compatibility.
+class HoldToTalkButton extends StatelessWidget {
   const HoldToTalkButton({
     required this.isEnabled,
     required this.isRecording,
@@ -24,217 +25,88 @@ class HoldToTalkButton extends StatefulWidget {
   final Duration? recordingDuration;
 
   @override
-  State<HoldToTalkButton> createState() => _HoldToTalkButtonState();
-}
-
-class _HoldToTalkButtonState extends State<HoldToTalkButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scaleAnimation;
-  late final Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 1, end: 1.4).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart),
-    );
-
-    _opacityAnimation = Tween<double>(begin: 0.6, end: 0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutQuart),
-    );
-
-    _updateAnimationState();
-  }
-
-  @override
-  void didUpdateWidget(HoldToTalkButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isRecording != oldWidget.isRecording ||
-        widget.isEnabled != oldWidget.isEnabled) {
-      _updateAnimationState();
-    }
-  }
-
-  void _updateAnimationState() {
-    if (widget.isRecording) {
-      unawaited(_controller.repeat());
-    } else if (widget.isEnabled) {
-      // Gentle breathe when idle
-      unawaited(
-        _controller.repeat(
-          reverse: true,
-          period: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      _controller
-        ..stop()
-        ..reset();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      enabled: widget.isEnabled,
+      enabled: isEnabled,
       label: _getAccessibilityLabel(),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Pulsing Ring
-          if (widget.isEnabled)
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                // Different animation for recording vs idle
-                if (widget.isRecording) {
-                  return Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: VoiceMockColors.primary.withValues(
-                          alpha: _opacityAnimation.value,
-                        ),
-                      ),
-                    ),
-                  );
-                } else {
-                  final scale = 1.0 + (_controller.value * 0.05);
-                  return Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: VoiceMockColors.primary.withValues(alpha: 0.08),
-                      ),
-                    ),
-                  );
-                }
-              },
+      child: GestureDetector(
+        onLongPressStart: isEnabled
+            ? (_) {
+                unawaited(HapticFeedback.lightImpact());
+                onPressStart();
+              }
+            : null,
+        onLongPressEnd: isEnabled
+            ? (_) {
+                unawaited(HapticFeedback.mediumImpact());
+                onPressEnd();
+              }
+            : null,
+        onLongPressCancel: isEnabled ? onPressEnd : null,
+        child: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isRecording
+                ? VoiceMockColors.primary.withValues(alpha: 0.12)
+                : (isEnabled
+                    ? VoiceMockColors.surfaceCard
+                    : VoiceMockColors.surfaceElevated),
+            border: Border.all(
+              color: isRecording
+                  ? VoiceMockColors.primary
+                  : (isEnabled
+                      ? VoiceMockColors.primary.withValues(alpha: 0.3)
+                      : VoiceMockColors.surfaceBorder),
+              width: isRecording ? 3 : 2,
             ),
-
-          // Main Button
-          GestureDetector(
-            onLongPressStart: widget.isEnabled
-                ? (_) {
-                    unawaited(HapticFeedback.lightImpact());
-                    widget.onPressStart();
-                  }
-                : null,
-            onLongPressEnd: widget.isEnabled
-                ? (_) {
-                    unawaited(HapticFeedback.mediumImpact());
-                    widget.onPressEnd();
-                  }
-                : null,
-            onLongPressCancel: widget.isEnabled ? widget.onPressEnd : null,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _getBackgroundColor(context),
-                border: Border.all(
-                  color: widget.isRecording
-                      ? VoiceMockColors.primary
-                      : (widget.isEnabled
-                          ? VoiceMockColors.primary.withValues(alpha: 0.3)
-                          : VoiceMockColors.surfaceBorder),
-                  width: widget.isRecording ? 4 : 2,
-                ),
-                boxShadow: widget.isEnabled
-                    ? [
-                        BoxShadow(
-                          color:
-                              VoiceMockColors.primary.withValues(alpha: 0.15),
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.mic,
-                    size: 48,
-                    color: _getIconColor(context),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _getLabel(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: _getIconColor(context),
+            boxShadow: isEnabled
+                ? [
+                    BoxShadow(
+                      color: VoiceMockColors.primary.withValues(alpha: 0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (widget.isRecording &&
-                      widget.recordingDuration != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatDuration(widget.recordingDuration!),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: VoiceMockColors.primary,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+                  ]
+                : null,
           ),
-        ],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.mic,
+                size: 32,
+                color: _getIconColor(),
+              ),
+              if (isRecording && recordingDuration != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  _formatDuration(recordingDuration!),
+                  style: VoiceMockTypography.micro.copyWith(
+                    color: VoiceMockColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  String _getLabel() {
-    if (widget.isRecording) return 'Release to send';
-    if (!widget.isEnabled) return 'Waiting...';
-    return 'Hold to talk';
-  }
-
   String _getAccessibilityLabel() {
-    if (widget.isRecording) return 'Recording. Release to send.';
-    if (!widget.isEnabled) return 'Disabled while coach is speaking.';
+    if (isRecording) return 'Recording. Release to send.';
+    if (!isEnabled) return 'Disabled while coach is speaking.';
     return 'Hold to record answer';
   }
 
-  Color _getBackgroundColor(BuildContext context) {
-    if (widget.isRecording) {
-      return VoiceMockColors.primary.withValues(alpha: 0.15);
-    }
-    if (!widget.isEnabled) {
-      return VoiceMockColors.surfaceElevated;
-    }
-    return VoiceMockColors.surface;
-  }
-
-  Color _getIconColor(BuildContext context) {
-    if (widget.isRecording) return VoiceMockColors.primary;
-    if (!widget.isEnabled) return VoiceMockColors.textMuted;
+  Color _getIconColor() {
+    if (isRecording) return VoiceMockColors.primary;
+    if (!isEnabled) return VoiceMockColors.textMuted;
     return VoiceMockColors.primary;
   }
 

@@ -41,7 +41,7 @@ class ErrorRecoverySheet extends StatelessWidget {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(VoiceMockSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -52,10 +52,13 @@ class ErrorRecoverySheet extends StatelessWidget {
               decoration: BoxDecoration(
                 color: VoiceMockColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: VoiceMockColors.error.withValues(alpha: 0.2),
+                ),
               ),
               child: Icon(
                 stageIcon,
-                size: 48,
+                size: 40,
                 color: VoiceMockColors.error.withValues(alpha: 0.8),
               ),
             ),
@@ -63,7 +66,7 @@ class ErrorRecoverySheet extends StatelessWidget {
 
             // Stage-specific header
             Text(
-              stageTitle,
+              '✦ $stageTitle',
               style: VoiceMockTypography.h2,
               textAlign: TextAlign.center,
             ),
@@ -95,9 +98,8 @@ class ErrorRecoverySheet extends StatelessWidget {
                 },
                 child: Container(
                   padding: const EdgeInsets.all(VoiceMockSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: VoiceMockColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(VoiceMockRadius.sm),
+                  decoration: VoiceMockColors.cardDecoration(
+                    radius: VoiceMockRadius.sm,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -105,7 +107,7 @@ class ErrorRecoverySheet extends StatelessWidget {
                     children: [
                       const Icon(
                         Icons.copy,
-                        size: 16,
+                        size: 14,
                         color: VoiceMockColors.textMuted,
                       ),
                       const SizedBox(width: VoiceMockSpacing.sm),
@@ -115,6 +117,7 @@ class ErrorRecoverySheet extends StatelessWidget {
                           style: VoiceMockTypography.small.copyWith(
                             fontFamily: 'monospace',
                             color: VoiceMockColors.textMuted,
+                            fontSize: 12,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -127,10 +130,17 @@ class ErrorRecoverySheet extends StatelessWidget {
             ],
 
             // Action buttons
-            if (showPrimaryAction)
+            if (showPrimaryAction) ...[
+              // Gradient CTA for retry
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                  borderRadius: BorderRadius.circular(VoiceMockRadius.full),
+                  gradient: const LinearGradient(
+                    colors: [
+                      VoiceMockColors.gradientStart,
+                      VoiceMockColors.gradientEnd,
+                    ],
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: VoiceMockColors.primary.withValues(alpha: 0.3),
@@ -139,28 +149,47 @@ class ErrorRecoverySheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: FilledButton(
-                  onPressed: onRetry,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: VoiceMockColors.primary,
-                    foregroundColor: VoiceMockColors.background,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onRetry,
+                    borderRadius: BorderRadius.circular(VoiceMockRadius.full),
+                    child: Container(
+                      height: 52,
+                      alignment: Alignment.center,
+                      child: Text(
+                        primaryActionLabel,
+                        style: VoiceMockTypography.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: VoiceMockColors.background,
+                        ),
+                      ),
+                    ),
                   ),
-                  child: Text(primaryActionLabel),
                 ),
               ),
-            if (showPrimaryAction) const SizedBox(height: VoiceMockSpacing.sm),
+              const SizedBox(height: VoiceMockSpacing.sm),
+            ],
 
             if (!isContentRefused && shouldShowReRecord && onReRecord != null)
-              OutlinedButton(
-                onPressed: onReRecord,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: VoiceMockColors.primary,
-                  side: const BorderSide(color: VoiceMockColors.primary),
+              ...[
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: onReRecord,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: VoiceMockColors.primary,
+                      side: const BorderSide(color: VoiceMockColors.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(VoiceMockRadius.full),
+                      ),
+                    ),
+                    child: const Text('Re-record'),
+                  ),
                 ),
-                child: const Text('Re-record'),
-              ),
-            if (!isContentRefused && shouldShowReRecord && onReRecord != null)
-              const SizedBox(height: VoiceMockSpacing.sm),
+                const SizedBox(height: VoiceMockSpacing.sm),
+              ],
 
             if (onCancel != null)
               TextButton(
@@ -201,6 +230,11 @@ class ErrorRecoverySheet extends StatelessWidget {
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: VoiceMockColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(VoiceMockRadius.xl),
+        ),
+      ),
       builder: (sheetContext) => ErrorRecoverySheet(
         failure: failure,
         failedStage: failedStage,

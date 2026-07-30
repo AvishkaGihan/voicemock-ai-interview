@@ -69,7 +69,7 @@ void main() {
       await tester.pumpWidget(createSubject());
 
       // Find title
-      final titleFinder = find.text('Interview');
+      final titleFinder = find.text('INTERVIEW');
       expect(titleFinder, findsOneWidget);
 
       // Tap once

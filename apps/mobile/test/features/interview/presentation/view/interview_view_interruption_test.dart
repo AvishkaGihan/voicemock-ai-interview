@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/interview_view.dart';
+import 'package:voicemock/features/interview/presentation/widgets/widgets.dart';
 
 class MockInterviewCubit extends MockCubit<InterviewState>
     implements InterviewCubit {}
@@ -129,8 +130,9 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pump(const Duration(seconds: 1));
 
-        // Verify hold-to-talk button is still available
-        expect(find.text('Hold to talk'), findsOneWidget);
+        // Verify recording zone is still available
+        expect(find.byType(RecordingZone), findsOneWidget);
+        expect(find.text('Ready'), findsOneWidget);
 
         // SnackBar shown explaining interruption
         await tester.pump();

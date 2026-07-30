@@ -41,6 +41,27 @@ abstract final class VoiceMockColors {
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderColor ?? surfaceBorder),
       );
+
+  /// Elevated card decoration with subtle primary glow.
+  ///
+  /// Used for prominent cards (question card, feedback card) that need
+  /// visual lift above standard cards.
+  static BoxDecoration cardDecorationElevated({
+    Color? borderColor,
+    double radius = VoiceMockRadius.lg,
+  }) =>
+      BoxDecoration(
+        color: surfaceCard,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: borderColor ?? surfaceBorder),
+        boxShadow: [
+          BoxShadow(
+            color: primary.withValues(alpha: 0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      );
 }
 
 /// Spacing constants based on 8dp grid.
@@ -72,6 +93,15 @@ abstract final class VoiceMockTypography {
   static final TextStyle h3 = GoogleFonts.inter(
     fontSize: 18,
     height: 24 / 18,
+    fontWeight: FontWeight.w600,
+    color: VoiceMockColors.textPrimary,
+  );
+
+  /// Sub-section header — between h3 and body.
+  /// Used for secondary headings in interview screen sections.
+  static final TextStyle h4 = GoogleFonts.inter(
+    fontSize: 15,
+    height: 20 / 15,
     fontWeight: FontWeight.w600,
     color: VoiceMockColors.textPrimary,
   );

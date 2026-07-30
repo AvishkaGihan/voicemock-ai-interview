@@ -33,12 +33,12 @@ void main() {
       await tester.pumpWidget(buildTestWidget(summary));
 
       expect(find.text('OVERALL ASSESSMENT'), findsOneWidget);
-      expect(find.text('STRENGTHS'), findsOneWidget);
-      expect(find.text('IMPROVEMENTS'), findsOneWidget);
+      expect(find.text('YOUR STRENGTHS'), findsOneWidget);
+      expect(find.text('AREAS TO IMPROVE'), findsOneWidget);
       expect(
         find.text('AVERAGE SCORES'),
         findsNothing,
-      ); // Average scores section removed or renamed? Need to check code.
+      );
       expect(
         find.text('You communicated clearly and stayed relevant.'),
         findsOneWidget,
@@ -54,13 +54,13 @@ void main() {
       ) async {
         await tester.pumpWidget(buildTestWidget(null));
 
-        expect(find.text('Session Complete'), findsOneWidget);
+        expect(find.text('Interview Complete'), findsOneWidget);
         expect(
           find.text('Great job! You completed all 5 questions.'),
           findsOneWidget,
         );
-        expect(find.text('Overall assessment'), findsNothing);
-        expect(find.text('Strengths'), findsNothing);
+        expect(find.text('OVERALL ASSESSMENT'), findsNothing);
+        expect(find.text('YOUR STRENGTHS'), findsNothing);
       },
     );
   });

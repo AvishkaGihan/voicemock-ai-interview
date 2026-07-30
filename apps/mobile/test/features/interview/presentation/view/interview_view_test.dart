@@ -7,8 +7,7 @@ import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/features/interview/presentation/cubit/cubit.dart';
 import 'package:voicemock/features/interview/presentation/view/'
     'interview_view.dart';
-import 'package:voicemock/features/interview/presentation/widgets/hold_to_talk_button.dart';
-import 'package:voicemock/features/interview/presentation/widgets/transcript_review_card.dart';
+import 'package:voicemock/features/interview/presentation/widgets/widgets.dart';
 
 class MockInterviewCubit extends MockCubit<InterviewState>
     implements InterviewCubit {}
@@ -54,7 +53,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Hold to talk'), findsOneWidget);
+      expect(find.byType(RecordingZone), findsOneWidget);
+      expect(find.text('Ready'), findsOneWidget);
     });
 
     testWidgets('shows stepper during Uploading state', (tester) async {
@@ -125,7 +125,7 @@ void main() {
         ),
       );
 
-      expect(find.text('YOU SAID'), findsOneWidget);
+      expect(find.text('YOUR RESPONSE'), findsOneWidget);
       expect(
         find.text('I faced a bug in production and fixed it quickly'),
         findsOneWidget,
@@ -133,7 +133,7 @@ void main() {
       expect(find.text('Thinking'), findsOneWidget);
     });
 
-    testWidgets('Hold-to-Talk button is disabled during Speaking', (
+    testWidgets('Hold-to-Talk button is hidden during Speaking', (
       tester,
     ) async {
       when(() => mockCubit.state).thenReturn(
@@ -156,7 +156,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Waiting...'), findsOneWidget);
+      expect(find.byType(RecordingZone), findsNothing);
     });
 
     testWidgets('shows Turn Card with question', (tester) async {
@@ -177,7 +177,7 @@ void main() {
         ),
       );
 
-      expect(find.text('2/5'), findsOneWidget);
+      expect(find.text('Question 2 of 5'), findsOneWidget);
       expect(find.text('What motivates you?'), findsOneWidget);
     });
 
@@ -204,14 +204,15 @@ void main() {
           ),
         );
 
-        final button = find.byType(HoldToTalkButton);
-        expect(button, findsOneWidget);
+        final zone = find.byType(RecordingZone);
+        expect(zone, findsOneWidget);
 
-        // Simulate long press (calls both start and end)
-        await tester.longPress(button);
-        await tester.pump(const Duration(seconds: 1));
+        final gesture = await tester.startGesture(tester.getCenter(zone));
+        await tester.pump(const Duration(milliseconds: 600));
 
         verify(() => mockCubit.startRecording()).called(1);
+        await gesture.up();
+        await tester.pump();
       });
 
       testWidgets('onPressEnd triggers cubit.stopRecording', (tester) async {
@@ -235,14 +236,14 @@ void main() {
           ),
         );
 
-        final button = find.byType(HoldToTalkButton);
-        expect(button, findsOneWidget);
+        final zone = find.byType(RecordingZone);
+        expect(zone, findsOneWidget);
 
-        // Simulate long-press (start and end)
-        await tester.longPress(button);
+        final gesture = await tester.startGesture(tester.getCenter(zone));
+        await tester.pump(const Duration(milliseconds: 600));
+        await gesture.up();
         await tester.pump();
 
-        // Both called because long press triggers start and end
         verify(() => mockCubit.stopRecording()).called(1);
       });
 
@@ -270,8 +271,8 @@ void main() {
           ),
         );
 
-        // Verify Release to send text is displayed (indicates recording)
-        expect(find.text('Release to send'), findsOneWidget);
+        // Verify Listening... text is displayed (indicates recording)
+        expect(find.text('Listening…'), findsOneWidget);
 
         // Note: Actual duration text format depends on HoldToTalkButton
         // implementation which uses recordingDuration parameter to format
@@ -303,14 +304,14 @@ void main() {
         );
 
         expect(find.byType(TranscriptReviewCard), findsOneWidget);
-        expect(find.text('WHAT WE HEARD:'), findsOneWidget);
+        expect(find.text('WHAT WE HEARD'), findsOneWidget);
         expect(
           find.text('My greatest strength is problem solving'),
           findsOneWidget,
         );
       });
 
-      testWidgets('Hold-to-Talk button disabled during transcript review', (
+      testWidgets('RecordingZone hidden during transcript review', (
         tester,
       ) async {
         when(() => mockCubit.state).thenReturn(
@@ -332,7 +333,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Waiting...'), findsOneWidget);
+        expect(find.byType(RecordingZone), findsNothing);
       });
 
       testWidgets('Accept button calls cubit.acceptTranscript()', (
@@ -358,10 +359,7 @@ void main() {
           ),
         );
 
-        final acceptButton = find.widgetWithText(
-          FilledButton,
-          'Accept & Continue',
-        );
+        final acceptButton = find.text('Accept & Continue');
         await tester.tap(acceptButton);
         await tester.pump();
 
@@ -389,23 +387,25 @@ void main() {
           ),
         );
 
-        final reRecordButton = find.widgetWithText(TextButton, 'Re-record');
+        final reRecordButton = find.widgetWithText(OutlinedButton, 'Re-record');
         await tester.tap(reRecordButton);
         await tester.pump();
 
         verify(() => mockCubit.reRecord()).called(1);
       });
 
-      testWidgets('Voice Pipeline Stepper shows Review stage', (tester) async {
-        when(() => mockCubit.state).thenReturn(
-          const InterviewTranscriptReview(
-            questionNumber: 1,
-            totalQuestions: 5,
-            questionText: 'Question 1',
-            transcript: 'Answer',
-            audioPath: '/path/audio.m4a',
-          ),
-        );
+      testWidgets(
+        'Voice Pipeline Stepper shows Thinking stage during InterviewThinking',
+        (tester) async {
+          when(() => mockCubit.state).thenReturn(
+            InterviewThinking(
+              questionNumber: 1,
+              totalQuestions: 5,
+              questionText: 'Question 1',
+              transcript: 'Answer',
+              startTime: DateTime.now(),
+            ),
+          );
 
         await tester.pumpWidget(
           MaterialApp(
@@ -416,10 +416,9 @@ void main() {
           ),
         );
 
-        expect(find.text('Review'), findsOneWidget);
+        expect(find.text('Thinking'), findsOneWidget);
         expect(find.text('Upload'), findsOneWidget);
         expect(find.text('Transcribe'), findsOneWidget);
-        expect(find.text('Thinking'), findsOneWidget);
         expect(find.text('Speaking'), findsOneWidget);
       });
 
@@ -480,13 +479,13 @@ void main() {
           ),
         );
 
-        expect(find.text('Session Complete'), findsOneWidget);
+        expect(find.text('Interview Complete'), findsOneWidget);
         expect(
           find.text('Great job! You completed all 5 questions.'),
           findsOneWidget,
         );
         expect(find.text('Back to Home'), findsOneWidget);
-        expect(find.text('Start New Session'), findsOneWidget);
+        expect(find.text('Practice Again'), findsOneWidget);
       });
 
       testWidgets('hides Hold-to-Talk button during SessionComplete', (

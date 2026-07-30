@@ -55,10 +55,10 @@ void main() {
         ),
       );
 
-      expect(find.text('TOP TIP'), findsOneWidget);
+      expect(find.text('AI EVALUATION'), findsOneWidget);
       expect(find.textContaining('clear thesis'), findsOneWidget);
       expect(find.textContaining('Clarity'), findsOneWidget);
-      expect(find.textContaining('4/5'), findsOneWidget);
+      expect(find.textContaining('4'), findsOneWidget);
       expect(find.textContaining('Relevance'), findsOneWidget);
     });
 
@@ -76,7 +76,7 @@ void main() {
         ),
       );
 
-      expect(find.text('TOP TIP'), findsNothing);
+      expect(find.text('AI EVALUATION'), findsNothing);
     });
   });
 

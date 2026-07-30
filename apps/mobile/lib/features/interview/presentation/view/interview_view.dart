@@ -12,6 +12,8 @@ import 'package:voicemock/features/interview/presentation/widgets/widgets.dart';
 /// Main interview view displaying the interview UI.
 ///
 /// Uses BlocBuilder to reactively update UI based on InterviewState.
+/// Restructured into sectioned zones: enhanced app bar, scrollable body
+/// with purpose-built section widgets, and contextual bottom action bar.
 class InterviewView extends StatefulWidget {
   const InterviewView({super.key});
 
@@ -73,34 +75,7 @@ class _InterviewViewState extends State<InterviewView>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VoiceMockColors.background,
-      appBar: AppBar(
-        backgroundColor: VoiceMockColors.background,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        centerTitle: true,
-        title: GestureDetector(
-          onTap: _onTitleTap,
-          child: Text('Interview', style: VoiceMockTypography.h3),
-        ),
-        actions: [
-          // Diagnostics button (debug mode or unlocked via triple-tap)
-          if (_showDiagnostics)
-            IconButton(
-              icon: const Icon(Icons.analytics_outlined),
-              tooltip: 'Diagnostics',
-              color: VoiceMockColors.textPrimary,
-              onPressed: () => context.push(
-                '/diagnostics',
-                extra: context.read<InterviewCubit>(),
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            color: VoiceMockColors.textPrimary,
-            onPressed: () => _showEndSessionDialog(context),
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context),
       body: BlocListener<InterviewCubit, InterviewState>(
         listener: (context, state) {
           // Show interruption feedback when recording was interrupted
@@ -149,24 +124,21 @@ class _InterviewViewState extends State<InterviewView>
             return SafeArea(
               child: Column(
                 children: [
-                  // Voice Pipeline Stepper (shown during processing)
-                  VoicePipelineStepper(
-                    currentStage: state.stage,
-                  ),
+                  // ── Progress Bar ──
+                  _buildProgressBar(state),
 
-                  // Turn Card (question, transcript, response)
+                  // ── Scrollable Body ──
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildTurnCard(context, state),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: VoiceMockSpacing.md,
+                      ),
+                      child: _buildBody(context, state),
                     ),
                   ),
 
-                  // Hold-to-Talk Button (anchored at bottom)
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: _buildHoldToTalkButton(context, state),
-                  ),
+                  // ── Bottom Action Bar ──
+                  _buildBottomBar(context, state),
                 ],
               ),
             );
@@ -176,76 +148,208 @@ class _InterviewViewState extends State<InterviewView>
     );
   }
 
-  Widget _buildTurnCard(BuildContext context, InterviewState state) {
-    // For error state, show the previous state's turn card behind the modal
+  /// Enhanced app bar with question progress.
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: VoiceMockColors.background,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: VoiceMockSpacing.sm),
+        child: Center(
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: VoiceMockColors.surfaceBorder),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, size: 16),
+              color: VoiceMockColors.textPrimary,
+              onPressed: () => _showEndSessionDialog(context),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+      ),
+      centerTitle: true,
+      title: BlocBuilder<InterviewCubit, InterviewState>(
+        builder: (context, state) {
+          final (questionNumber, totalQuestions) =
+              _getQuestionProgress(state);
+          return GestureDetector(
+            onTap: _onTitleTap,
+            child: Column(
+              children: [
+                Text(
+                  'INTERVIEW',
+                  style: VoiceMockTypography.label.copyWith(
+                    color: VoiceMockColors.textPrimary,
+                    letterSpacing: 2,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (questionNumber > 0)
+                  Text(
+                    'Question $questionNumber of $totalQuestions',
+                    style: VoiceMockTypography.micro.copyWith(
+                      color: VoiceMockColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+      actions: [
+        // Diagnostics button (debug mode or unlocked via triple-tap)
+        if (_showDiagnostics)
+          IconButton(
+            icon: const Icon(Icons.analytics_outlined, size: 20),
+            tooltip: 'Diagnostics',
+            color: VoiceMockColors.textMuted,
+            onPressed: () => context.push(
+              '/diagnostics',
+              extra: context.read<InterviewCubit>(),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.only(right: VoiceMockSpacing.sm),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: VoiceMockColors.surfaceBorder),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              color: VoiceMockColors.textPrimary,
+              onPressed: () => _showEndSessionDialog(context),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Progress bar below the app bar.
+  Widget _buildProgressBar(InterviewState state) {
+    final (questionNumber, totalQuestions) = _getQuestionProgress(state);
+    if (questionNumber == 0) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: VoiceMockSpacing.md,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(VoiceMockRadius.full),
+        child: LinearProgressIndicator(
+          value: questionNumber / totalQuestions,
+          backgroundColor: VoiceMockColors.surfaceBorder,
+          color: VoiceMockColors.primary,
+          minHeight: 3,
+        ),
+      ),
+    );
+  }
+
+  /// Builds the scrollable body content based on the current state.
+  Widget _buildBody(BuildContext context, InterviewState state) {
+    // For error state, show the previous state's body behind the modal
     if (state is InterviewError) {
-      return _buildTurnCard(context, state.previousState);
+      return _buildBody(context, state.previousState);
     }
 
     return switch (state) {
       InterviewIdle() => const Center(
-        child: Text('Initializing interview...'),
+        child: Padding(
+          padding: EdgeInsets.all(VoiceMockSpacing.xxl),
+          child: Text('Initializing interview...'),
+        ),
       ),
+
       InterviewReady(
-        :final questionNumber,
-        :final totalQuestions,
         :final questionText,
         :final previousTranscript,
         :final coachingFeedback,
         :final lastTtsAudioUrl,
       ) =>
-        TurnCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
-          transcript: previousTranscript,
-          coachingFeedback: coachingFeedback,
-          onReplay: lastTtsAudioUrl.isNotEmpty
-              ? () async {
-                  final replayStarted = await context
-                      .read<InterviewCubit>()
-                      .replayLastResponse();
-                  if (!replayStarted && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Response audio expired'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                }
-              : null,
+        Column(
+          children: [
+            const SizedBox(height: VoiceMockSpacing.md),
+            // Question Card
+            TurnCard(
+              questionNumber: 0, // not used anymore for display
+              totalQuestions: 0,
+              questionText: questionText,
+              transcript: previousTranscript,
+              coachingFeedback: coachingFeedback,
+              isListening: true,
+              onReplay: lastTtsAudioUrl.isNotEmpty
+                  ? () async {
+                      final replayStarted = await context
+                          .read<InterviewCubit>()
+                          .replayLastResponse();
+                      if (!replayStarted && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Response audio expired'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  : null,
+            ),
+            const SizedBox(height: VoiceMockSpacing.md),
+          ],
         ),
+
       InterviewRecording(
-        :final questionNumber,
-        :final totalQuestions,
         :final questionText,
       ) =>
-        TurnCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
+        Column(
+          children: [
+            const SizedBox(height: VoiceMockSpacing.md),
+            QuestionHeaderCard(
+              questionText: questionText,
+              isRecording: true,
+            ),
+            const SizedBox(height: VoiceMockSpacing.md),
+          ],
         ),
+
       InterviewUploading(
-        :final questionNumber,
-        :final totalQuestions,
         :final questionText,
       ) =>
-        TurnCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
+        Column(
+          children: [
+            const SizedBox(height: VoiceMockSpacing.md),
+            QuestionHeaderCard(questionText: questionText),
+            const SizedBox(height: VoiceMockSpacing.md),
+            VoicePipelineStepper(currentStage: state.stage),
+            const SizedBox(height: VoiceMockSpacing.md),
+          ],
         ),
+
       InterviewTranscribing(
-        :final questionNumber,
-        :final totalQuestions,
         :final questionText,
       ) =>
-        TurnCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
+        Column(
+          children: [
+            const SizedBox(height: VoiceMockSpacing.md),
+            QuestionHeaderCard(questionText: questionText),
+            const SizedBox(height: VoiceMockSpacing.md),
+            VoicePipelineStepper(currentStage: state.stage),
+            const SizedBox(height: VoiceMockSpacing.md),
+          ],
         ),
+
       InterviewTranscriptReview(
         :final questionNumber,
         :final totalQuestions,
@@ -253,32 +357,45 @@ class _InterviewViewState extends State<InterviewView>
         :final transcript,
         :final isLowConfidence,
       ) =>
-        TranscriptReviewCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
-          transcript: transcript,
-          isLowConfidence: isLowConfidence,
-          onAccept: () => context.read<InterviewCubit>().acceptTranscript(),
-          onReRecord: () => context.read<InterviewCubit>().reRecord(),
+        Column(
+          children: [
+            const SizedBox(height: VoiceMockSpacing.md),
+            TranscriptReviewCard(
+              questionNumber: questionNumber,
+              totalQuestions: totalQuestions,
+              questionText: questionText,
+              transcript: transcript,
+              isLowConfidence: isLowConfidence,
+              onAccept: () =>
+                  context.read<InterviewCubit>().acceptTranscript(),
+              onReRecord: () => context.read<InterviewCubit>().reRecord(),
+            ),
+            const SizedBox(height: VoiceMockSpacing.md),
+          ],
         ),
+
       InterviewThinking(
-        :final questionNumber,
-        :final totalQuestions,
         :final questionText,
         :final transcript,
         :final coachingFeedback,
       ) =>
-        TurnCard(
-          questionNumber: questionNumber,
-          totalQuestions: totalQuestions,
-          questionText: questionText,
-          transcript: transcript,
-          coachingFeedback: coachingFeedback,
+        Column(
+          children: [
+            const SizedBox(height: VoiceMockSpacing.md),
+            TurnCard(
+              questionNumber: 0,
+              totalQuestions: 0,
+              questionText: questionText,
+              transcript: transcript,
+              coachingFeedback: coachingFeedback,
+            ),
+            const SizedBox(height: VoiceMockSpacing.md),
+            VoicePipelineStepper(currentStage: state.stage),
+            const SizedBox(height: VoiceMockSpacing.md),
+          ],
         ),
+
       InterviewSpeaking(
-        :final questionNumber,
-        :final totalQuestions,
         :final questionText,
         :final transcript,
         :final responseText,
@@ -287,92 +404,197 @@ class _InterviewViewState extends State<InterviewView>
       ) =>
         Column(
           children: [
+            const SizedBox(height: VoiceMockSpacing.md),
             TurnCard(
-              questionNumber: questionNumber,
-              totalQuestions: totalQuestions,
+              questionNumber: 0,
+              totalQuestions: 0,
               questionText: questionText,
               transcript: transcript,
               responseText: responseText,
               coachingFeedback: coachingFeedback,
             ),
+            const SizedBox(height: VoiceMockSpacing.md),
             PlaybackControlBar(
               isPaused: isPaused,
               isBuffering: state.isBuffering,
-              onPause: () => context.read<InterviewCubit>().pausePlayback(),
-              onResume: () => context.read<InterviewCubit>().resumePlayback(),
-              onStop: () => context.read<InterviewCubit>().stopPlayback(),
+              onPause: () =>
+                  context.read<InterviewCubit>().pausePlayback(),
+              onResume: () =>
+                  context.read<InterviewCubit>().resumePlayback(),
+              onStop: () =>
+                  context.read<InterviewCubit>().stopPlayback(),
             ),
+            const SizedBox(height: VoiceMockSpacing.md),
           ],
         ),
+
       InterviewSessionComplete(
         :final totalQuestions,
         :final lastTranscript,
         :final lastResponseText,
         :final sessionSummary,
       ) =>
-        SessionCompleteCard(
-          totalQuestions: totalQuestions,
-          lastTranscript: lastTranscript,
-          lastResponseText: lastResponseText,
-          sessionSummary: sessionSummary,
-          onBackToHome: () => Navigator.pop(context),
-          onStartNew: () {
-            // Navigate to home then to setup (or directly to setup)
-            Navigator.pop(context);
-          },
+        Column(
+          children: [
+            const SizedBox(height: VoiceMockSpacing.md),
+            SessionCompleteCard(
+              totalQuestions: totalQuestions,
+              lastTranscript: lastTranscript,
+              lastResponseText: lastResponseText,
+              sessionSummary: sessionSummary,
+              onBackToHome: () => Navigator.pop(context),
+              onStartNew: () {
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: VoiceMockSpacing.md),
+          ],
         ),
+
       // InterviewError is handled by BlocListener showing modal bottom sheet
       InterviewError() => const SizedBox.shrink(),
     };
   }
 
-  Widget _buildHoldToTalkButton(BuildContext context, InterviewState state) {
+  /// Bottom action bar — contextual actions anchored at screen bottom.
+  Widget _buildBottomBar(BuildContext context, InterviewState state) {
     final cubit = context.read<InterviewCubit>();
-    final isEnabled = state is InterviewReady || state is InterviewRecording;
 
-    // Hide button during session complete
-    if (state is InterviewSessionComplete) {
+    // Hide bottom bar for states that have their own actions or don't need them
+    if (state is InterviewSessionComplete ||
+        state is InterviewTranscriptReview ||
+        state is InterviewSpeaking ||
+        state is InterviewIdle) {
       return const SizedBox.shrink();
     }
 
-    if (state is InterviewRecording) {
-      return _RecordingTimer(
-        startTime: state.recordingStartTime,
-        builder: (context, duration) {
-          return HoldToTalkButton(
-            isEnabled: isEnabled,
-            isRecording: true,
-            recordingDuration: duration,
-            onPressStart: cubit.startRecording,
-            onPressEnd: cubit.stopRecording,
-          );
-        },
-      );
+    // For error state, show based on previous state
+    if (state is InterviewError) {
+      return const SizedBox.shrink();
     }
 
-    return HoldToTalkButton(
-      isEnabled: isEnabled,
-      isRecording: false,
-      onPressStart: cubit.startRecording,
-      onPressEnd: cubit.stopRecording,
+    final isRecording = state is InterviewRecording;
+    final isReady = state is InterviewReady;
+
+    // Only show recording zone for ready/recording states
+    if (!isReady && !isRecording) {
+      return const SizedBox.shrink();
+    }
+
+    // Recording zone as bottom action
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        VoiceMockSpacing.md,
+        VoiceMockSpacing.sm,
+        VoiceMockSpacing.md,
+        VoiceMockSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            VoiceMockColors.background.withValues(alpha: 0),
+            VoiceMockColors.background.withValues(alpha: 0.9),
+            VoiceMockColors.background,
+          ],
+          stops: const [0.0, 0.3, 1.0],
+        ),
+      ),
+      child: state is InterviewRecording
+          ? _RecordingTimer(
+              startTime: state.recordingStartTime,
+              builder: (context, duration) {
+                return RecordingZone(
+                  isEnabled: true,
+                  isRecording: true,
+                  recordingDuration: duration,
+                  onPressStart: cubit.startRecording,
+                  onPressEnd: cubit.stopRecording,
+                );
+              },
+            )
+          : RecordingZone(
+              isEnabled: isReady,
+              isRecording: false,
+              onPressStart: cubit.startRecording,
+              onPressEnd: cubit.stopRecording,
+            ),
     );
+  }
+
+  /// Extract question number and total from any state.
+  (int, int) _getQuestionProgress(InterviewState state) {
+    return switch (state) {
+      InterviewIdle() => (0, 0),
+      InterviewReady(
+        :final questionNumber,
+        :final totalQuestions,
+      ) =>
+        (questionNumber, totalQuestions),
+      InterviewRecording(
+        :final questionNumber,
+        :final totalQuestions,
+      ) =>
+        (questionNumber, totalQuestions),
+      InterviewUploading(
+        :final questionNumber,
+        :final totalQuestions,
+      ) =>
+        (questionNumber, totalQuestions),
+      InterviewTranscribing(
+        :final questionNumber,
+        :final totalQuestions,
+      ) =>
+        (questionNumber, totalQuestions),
+      InterviewTranscriptReview(
+        :final questionNumber,
+        :final totalQuestions,
+      ) =>
+        (questionNumber, totalQuestions),
+      InterviewThinking(
+        :final questionNumber,
+        :final totalQuestions,
+      ) =>
+        (questionNumber, totalQuestions),
+      InterviewSpeaking(
+        :final questionNumber,
+        :final totalQuestions,
+      ) =>
+        (questionNumber, totalQuestions),
+      InterviewSessionComplete(:final totalQuestions) =>
+        (totalQuestions, totalQuestions),
+      InterviewError(:final previousState) =>
+        _getQuestionProgress(previousState),
+    };
   }
 
   Future<void> _showEndSessionDialog(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('End session?'),
-        content: const Text(
+        backgroundColor: VoiceMockColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
+        ),
+        title: Text('End session?', style: VoiceMockTypography.h3),
+        content: Text(
           'Are you sure you want to end this interview session?',
+          style: VoiceMockTypography.body,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(
+              foregroundColor: VoiceMockColors.textMuted,
+            ),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: VoiceMockColors.error,
+            ),
             child: const Text('End'),
           ),
         ],

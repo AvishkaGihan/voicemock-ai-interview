@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:voicemock/core/models/models.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
+import 'package:voicemock/features/interview/presentation/widgets/coaching_score_grid.dart';
+import 'package:voicemock/features/interview/presentation/widgets/question_header_card.dart';
+import 'package:voicemock/features/interview/presentation/widgets/replay_audio_card.dart';
+import 'package:voicemock/features/interview/presentation/widgets/transcript_display_card.dart';
 
 /// Card displaying the current interview turn information.
 ///
-/// Shows question, user transcript, and coach response
-/// with clear visual hierarchy.
+/// Composes purpose-built section widgets for question, transcript,
+/// coaching feedback, and replay — providing a sectioned layout.
 class TurnCard extends StatelessWidget {
   const TurnCard({
     required this.questionNumber,
@@ -16,6 +20,8 @@ class TurnCard extends StatelessWidget {
     this.responseText,
     this.coachingFeedback,
     this.onReplay,
+    this.isListening = false,
+    this.isRecording = false,
   });
 
   final int questionNumber;
@@ -25,215 +31,87 @@ class TurnCard extends StatelessWidget {
   final String? responseText;
   final CoachingFeedback? coachingFeedback;
   final VoidCallback? onReplay;
+  final bool isListening;
+  final bool isRecording;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VoiceMockColors.surface,
-        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
-        border: Border.all(color: VoiceMockColors.surfaceBorder),
-        boxShadow: [
-          BoxShadow(
-            color: VoiceMockColors.primary.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Progress Bar & Question Count
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(VoiceMockRadius.full),
-                    child: LinearProgressIndicator(
-                      value: questionNumber / totalQuestions,
-                      backgroundColor: VoiceMockColors.surfaceBorder,
-                      color: VoiceMockColors.primary,
-                      minHeight: 4,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: VoiceMockSpacing.sm),
-                Text(
-                  '$questionNumber/$totalQuestions',
-                  style: VoiceMockTypography.micro.copyWith(
-                    color: VoiceMockColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: VoiceMockSpacing.lg),
-
-            // Question text
-            Text(
-              questionText,
-              style: VoiceMockTypography.h3,
-            ),
-
-            // Transcript section
-            if (transcript != null) ...[
-              const SizedBox(height: VoiceMockSpacing.lg),
-              const _SectionPill(
-                label: 'You said',
-                color: VoiceMockColors.secondary,
-              ),
-              const SizedBox(height: VoiceMockSpacing.sm),
-              Text(
-                transcript!,
-                style: VoiceMockTypography.body,
-              ),
-            ],
-
-            // Response section
-            if (responseText != null) ...[
-              const SizedBox(height: VoiceMockSpacing.lg),
-              const _SectionPill(
-                label: 'Coach says',
-                color: VoiceMockColors.textMuted,
-              ),
-              const SizedBox(height: VoiceMockSpacing.sm),
-              Text(
-                responseText!,
-                style: VoiceMockTypography.body,
-              ),
-            ],
-
-            if (coachingFeedback != null) ...[
-              const SizedBox(height: VoiceMockSpacing.lg),
-              const _SectionPill(
-                label: 'Top Tip',
-                color: VoiceMockColors.warning,
-              ),
-              const SizedBox(height: VoiceMockSpacing.sm),
-              Text(
-                coachingFeedback!.summaryTip,
-                style: VoiceMockTypography.body.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: VoiceMockSpacing.md),
-              ...coachingFeedback!.dimensions.map(
-                (dimension) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(right: 8, top: 2),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: VoiceMockColors.primary.withValues(
-                            alpha: 0.1,
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            VoiceMockRadius.sm,
-                          ),
-                        ),
-                        child: Text(
-                          '${dimension.score}/5',
-                          style: VoiceMockTypography.micro.copyWith(
-                            color: VoiceMockColors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dimension.label,
-                              style: VoiceMockTypography.body.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                            Text(
-                              dimension.tip,
-                              style: VoiceMockTypography.small,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
-            if (onReplay != null) ...[
-              const SizedBox(height: 24),
-              Semantics(
-                label: 'Replay last response',
-                button: true,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: onReplay,
-                    icon: const Icon(Icons.replay),
-                    label: const Text('Replay response'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(
-                        color: VoiceMockColors.surfaceBorder,
-                      ),
-                      foregroundColor: VoiceMockColors.textMuted,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Question Card ──
+        QuestionHeaderCard(
+          questionText: questionText,
+          isListening: isListening,
+          isRecording: isRecording,
         ),
-      ),
+
+        // ── Transcript Section ──
+        if (transcript != null) ...[
+          const SizedBox(height: VoiceMockSpacing.md),
+          TranscriptDisplayCard(transcript: transcript!),
+        ],
+
+        // ── Coach Response Section ──
+        if (responseText != null) ...[
+          const SizedBox(height: VoiceMockSpacing.md),
+          _CoachResponseCard(responseText: responseText!),
+        ],
+
+        // ── Coaching Feedback Grid ──
+        if (coachingFeedback != null) ...[
+          const SizedBox(height: VoiceMockSpacing.md),
+          CoachingScoreGrid(feedback: coachingFeedback!),
+        ],
+
+        // ── Replay Audio Card ──
+        if (onReplay != null) ...[
+          const SizedBox(height: VoiceMockSpacing.md),
+          ReplayAudioCard(onReplay: onReplay!),
+        ],
+      ],
     );
   }
 }
 
-class _SectionPill extends StatelessWidget {
-  const _SectionPill({
-    required this.label,
-    required this.color,
-  });
+/// Card displaying the coach's response text.
+class _CoachResponseCard extends StatelessWidget {
+  const _CoachResponseCard({required this.responseText});
 
-  final String label;
-  final Color color;
+  final String responseText;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: VoiceMockSpacing.sm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(VoiceMockRadius.full),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: VoiceMockTypography.micro.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
-          fontSize: 10,
-        ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(VoiceMockSpacing.md),
+      decoration: VoiceMockColors.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(
+                '✦',
+                style: VoiceMockTypography.sectionLabel.copyWith(fontSize: 14),
+              ),
+              const SizedBox(width: VoiceMockSpacing.sm),
+              Text(
+                'COACH SAYS',
+                style: VoiceMockTypography.sectionLabel.copyWith(
+                  color: VoiceMockColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: VoiceMockSpacing.sm),
+          Text(
+            responseText,
+            style: VoiceMockTypography.body,
+          ),
+        ],
       ),
     );
   }

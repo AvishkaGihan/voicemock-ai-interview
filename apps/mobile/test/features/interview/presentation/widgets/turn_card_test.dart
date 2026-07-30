@@ -18,7 +18,7 @@ void main() {
         ),
       );
 
-      expect(find.text('2/5'), findsOneWidget);
+      expect(find.text('AI INTERVIEWER'), findsOneWidget);
       expect(find.text('What is your greatest strength?'), findsOneWidget);
     });
 
@@ -36,7 +36,7 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('YOU SAID'), findsOneWidget);
+      expect(find.textContaining('YOUR RESPONSE'), findsOneWidget);
       expect(find.text('I am a software engineer...'), findsOneWidget);
     });
 
@@ -75,7 +75,7 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('You said'), findsNothing);
+      expect(find.textContaining('YOUR RESPONSE'), findsNothing);
     });
 
     testWidgets('does not show response section when null', (tester) async {
@@ -92,7 +92,7 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Coach says'), findsNothing);
+      expect(find.textContaining('COACH SAYS'), findsNothing);
     });
 
     testWidgets('shows Replay button when onReplay is provided', (
@@ -112,7 +112,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Replay response'), findsOneWidget);
+      expect(find.text('Replay your answer'), findsOneWidget);
     });
 
     testWidgets('hides Replay button when onReplay is null', (tester) async {
@@ -129,7 +129,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Replay response'), findsNothing);
+      expect(find.text('Replay your answer'), findsNothing);
     });
 
     testWidgets('renders coaching feedback summary and dimensions', (
@@ -167,10 +167,10 @@ void main() {
         ),
       );
 
-      expect(find.text('TOP TIP'), findsOneWidget);
+      expect(find.text('AI EVALUATION'), findsOneWidget);
       expect(find.textContaining('clear thesis'), findsOneWidget);
       expect(find.textContaining('Clarity'), findsOneWidget);
-      expect(find.textContaining('4/5'), findsOneWidget);
+      expect(find.textContaining('4'), findsOneWidget);
       expect(find.textContaining('Structure'), findsOneWidget);
     });
 
@@ -190,7 +190,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Top Tip'), findsNothing);
+      expect(find.text('AI EVALUATION'), findsNothing);
     });
   });
 }

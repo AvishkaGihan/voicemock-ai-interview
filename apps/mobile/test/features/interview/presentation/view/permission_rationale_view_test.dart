@@ -144,8 +144,8 @@ void main() {
 
         await tester.pumpPermissionRationaleView(mockCubit);
 
-        final button = tester.widget<FilledButton>(find.byType(FilledButton));
-        expect(button.onPressed, isNull);
+        final inkWell = tester.widget<InkWell>(find.byType(InkWell).first);
+        expect(inkWell.onTap, isNull);
       },
     );
 

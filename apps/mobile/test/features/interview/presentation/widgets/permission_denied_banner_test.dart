@@ -19,12 +19,12 @@ void main() {
       );
 
       expect(
-        find.text('Microphone access is required for voice practice'),
+        find.text('Your microphone is required for voice practice.'),
         findsOneWidget,
       );
     });
 
-    testWidgets('renders mic off icon', (tester) async {
+    testWidgets('renders mic icon', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -37,11 +37,11 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.mic_off_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
     });
 
     testWidgets(
-      'shows Enable Microphone button when status is denied',
+      'shows Enable microphone button when status is denied',
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
@@ -55,7 +55,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Enable Microphone'), findsOneWidget);
+        expect(find.text('Enable microphone'), findsOneWidget);
         expect(find.text('Open Settings'), findsNothing);
       },
     );
@@ -76,11 +76,11 @@ void main() {
         );
 
         expect(find.text('Open Settings'), findsOneWidget);
-        expect(find.text('Enable Microphone'), findsNothing);
+        expect(find.text('Enable microphone'), findsNothing);
       },
     );
 
-    testWidgets('renders Not now button', (tester) async {
+    testWidgets('renders Decline for now button', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -93,10 +93,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Not now'), findsOneWidget);
+      expect(find.text('Decline for now'), findsOneWidget);
     });
 
-    testWidgets('calls onEnableTap when Enable Microphone is tapped', (
+    testWidgets('calls onEnableTap when Enable microphone is tapped', (
       tester,
     ) async {
       var enableTapped = false;
@@ -113,7 +113,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Enable Microphone'));
+      await tester.tap(find.text('Enable microphone'));
       await tester.pump();
 
       expect(enableTapped, isTrue);
@@ -142,7 +142,9 @@ void main() {
       expect(enableTapped, isTrue);
     });
 
-    testWidgets('calls onDismissTap when Not now is tapped', (tester) async {
+    testWidgets('calls onDismissTap when Decline for now is tapped', (
+      tester,
+    ) async {
       var dismissTapped = false;
 
       await tester.pumpWidget(
@@ -157,7 +159,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Not now'));
+      await tester.tap(find.text('Decline for now'));
       await tester.pump();
 
       expect(dismissTapped, isTrue);

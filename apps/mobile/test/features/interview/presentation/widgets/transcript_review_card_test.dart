@@ -24,7 +24,7 @@ void main() {
       );
     });
 
-    testWidgets('displays question header with correct number and text', (
+    testWidgets('displays question header with correct text', (
       tester,
     ) async {
       await tester.pumpApp(
@@ -38,14 +38,14 @@ void main() {
         ),
       );
 
-      expect(find.text('QUESTION 3 OF 10'), findsOneWidget);
+      expect(find.text('AI INTERVIEWER'), findsOneWidget);
       expect(
         find.text('Tell me about a challenging project'),
         findsOneWidget,
       );
     });
 
-    testWidgets('shows "What we heard:" label', (tester) async {
+    testWidgets('shows "WHAT WE HEARD" label', (tester) async {
       await tester.pumpApp(
         TranscriptReviewCard(
           questionNumber: 1,
@@ -57,7 +57,7 @@ void main() {
         ),
       );
 
-      expect(find.text('WHAT WE HEARD:'), findsOneWidget);
+      expect(find.text('WHAT WE HEARD'), findsOneWidget);
     });
 
     testWidgets('Accept & Continue button is visible and calls onAccept', (
@@ -78,10 +78,7 @@ void main() {
         ),
       );
 
-      final acceptButton = find.widgetWithText(
-        FilledButton,
-        'Accept & Continue',
-      );
+      final acceptButton = find.text('Accept & Continue');
       expect(acceptButton, findsOneWidget);
 
       await tester.tap(acceptButton);
@@ -108,7 +105,7 @@ void main() {
         ),
       );
 
-      final reRecordButton = find.widgetWithText(TextButton, 'Re-record');
+      final reRecordButton = find.widgetWithText(OutlinedButton, 'Re-record');
       expect(reRecordButton, findsOneWidget);
 
       await tester.tap(reRecordButton);
@@ -193,12 +190,9 @@ void main() {
         ),
       );
 
-      final acceptButton = find.widgetWithText(
-        FilledButton,
-        'Accept & Continue',
-      );
+      final acceptButton = find.text('Accept & Continue');
       final reRecordButton = find.widgetWithText(
-        TextButton,
+        OutlinedButton,
         'Re-record',
       );
 

@@ -44,7 +44,7 @@ void main() {
         ),
       );
 
-      final retryButton = find.widgetWithText(FilledButton, 'Retry');
+      final retryButton = find.widgetWithText(InkWell, 'Retry');
       expect(retryButton, findsOneWidget);
 
       await tester.tap(retryButton);
@@ -117,7 +117,7 @@ void main() {
         ),
       );
 
-      expect(find.widgetWithText(FilledButton, 'Retry'), findsNothing);
+      expect(find.widgetWithText(InkWell, 'Retry'), findsNothing);
     });
 
     testWidgets('shows stage-specific icon for upload error', (tester) async {
@@ -142,7 +142,7 @@ void main() {
 
       // Verify upload-specific icon (Icons.cloud_off)
       expect(find.byIcon(Icons.cloud_off), findsOneWidget);
-      expect(find.text('Upload failed'), findsOneWidget);
+      expect(find.text('✦ Upload failed'), findsOneWidget);
     });
 
     testWidgets('shows stage-specific icon for STT error', (tester) async {
@@ -167,7 +167,7 @@ void main() {
 
       // Verify STT-specific icon (Icons.mic_off)
       expect(find.byIcon(Icons.mic_off), findsOneWidget);
-      expect(find.text('Transcription failed'), findsOneWidget);
+      expect(find.text('✦ Transcription failed'), findsOneWidget);
     });
 
     testWidgets('shows stage-specific icon for LLM error', (tester) async {
@@ -192,7 +192,7 @@ void main() {
 
       // Verify LLM-specific icon (Icons.psychology_alt)
       expect(find.byIcon(Icons.psychology_alt), findsOneWidget);
-      expect(find.text('Processing failed'), findsOneWidget);
+      expect(find.text('✦ Processing failed'), findsOneWidget);
     });
 
     testWidgets('request ID can be tapped to copy', (tester) async {
@@ -368,7 +368,7 @@ void main() {
         ),
       );
 
-      expect(find.widgetWithText(FilledButton, 'Try Again'), findsOneWidget);
+      expect(find.widgetWithText(InkWell, 'Try Again'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'End Session'), findsOneWidget);
       expect(find.widgetWithText(OutlinedButton, 'Re-record'), findsNothing);
     },

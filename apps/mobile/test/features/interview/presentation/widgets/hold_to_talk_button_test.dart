@@ -22,7 +22,7 @@ void main() {
 
       expect(find.byType(HoldToTalkButton), findsOneWidget);
       expect(find.byIcon(Icons.mic), findsOneWidget);
-      expect(find.text('Hold to talk'), findsOneWidget);
+      expect(find.bySemanticsLabel('Hold to record answer'), findsOneWidget);
     });
 
     testWidgets('shows "Release to send" when recording', (tester) async {
@@ -39,8 +39,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Release to send'), findsOneWidget);
-      expect(find.text('Hold to talk'), findsNothing);
+      expect(
+        find.bySemanticsLabel('Recording. Release to send.'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('Hold to record answer'), findsNothing);
     });
 
     testWidgets('shows "Waiting..." when disabled', (tester) async {
@@ -57,7 +60,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Waiting...'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Disabled while coach is speaking.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows recording duration when provided', (tester) async {

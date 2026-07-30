@@ -1,3 +1,4 @@
+export 'coaching_score_grid.dart';
 export 'connectivity_banner.dart';
 export 'difficulty_selector.dart';
 export 'disclosure_banner.dart';
@@ -7,9 +8,13 @@ export 'hold_to_talk_button.dart';
 export 'permission_denied_banner.dart';
 export 'playback_control_bar.dart';
 export 'question_count_selector.dart';
+export 'question_header_card.dart';
+export 'recording_zone.dart';
+export 'replay_audio_card.dart';
 export 'role_selector.dart';
 export 'session_complete_card.dart';
 export 'session_error_dialog.dart';
+export 'transcript_display_card.dart';
 export 'transcript_review_card.dart';
 export 'turn_card.dart';
 export 'type_selector.dart';

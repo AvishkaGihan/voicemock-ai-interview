@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:voicemock/core/theme/voicemock_theme.dart';
 import 'package:voicemock/features/interview/domain/domain.dart';
 
+/// Visual pipeline stepper showing processing stages.
+///
+/// Displays steps (Upload → Transcribe → Review → Thinking → Speaking)
+/// with animated indicators and connecting lines.
 class VoicePipelineStepper extends StatefulWidget {
   const VoicePipelineStepper({
     required this.currentStage,
@@ -81,13 +85,11 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        vertical: VoiceMockSpacing.md,
+        vertical: VoiceMockSpacing.sm,
         horizontal: VoiceMockSpacing.sm,
       ),
-      decoration: BoxDecoration(
-        color: VoiceMockColors.surface,
-        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
-        border: Border.all(color: VoiceMockColors.surfaceBorder),
+      decoration: VoiceMockColors.cardDecoration(
+        radius: VoiceMockRadius.md,
       ),
       child: Row(
         children: [
@@ -96,7 +98,7 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
               child: _buildStep(context, steps[i]),
             ),
             if (i < steps.length - 1)
-              _buildConnector(context, steps[i], steps[i + 1]),
+              _buildConnector(context, steps[i]),
           ],
         ],
       ),
@@ -126,17 +128,25 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
             return Opacity(
               opacity: isActive ? _fadeAnimation.value : 1.0,
               child: Container(
-                padding: const EdgeInsets.all(8),
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(VoiceMockRadius.full),
                   color: isActive
-                      ? VoiceMockColors.primary.withValues(alpha: 0.1)
-                      : Colors.transparent,
+                      ? VoiceMockColors.primary.withValues(alpha: 0.12)
+                      : (isCompleted
+                          ? VoiceMockColors.primary.withValues(alpha: 0.08)
+                          : Colors.transparent),
+                  border: Border.all(
+                    color: isActive || isCompleted
+                        ? VoiceMockColors.primary.withValues(alpha: 0.3)
+                        : VoiceMockColors.surfaceBorder,
+                  ),
                 ),
                 child: Icon(
                   isCompleted ? Icons.check_circle : config.icon,
                   color: iconColor,
-                  size: 20,
+                  size: 16,
                 ),
               ),
             );
@@ -154,7 +164,7 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
             fontWeight: isActive || isCompleted
                 ? FontWeight.w600
                 : FontWeight.w400,
-            fontSize: 10,
+            fontSize: 9,
           ),
           textAlign: TextAlign.center,
           maxLines: 1,
@@ -167,33 +177,44 @@ class _VoicePipelineStepperState extends State<VoicePipelineStepper>
   Widget _buildConnector(
     BuildContext context,
     _StepConfig current,
-    _StepConfig next,
   ) {
     final isCompleted = widget.currentStage.index > current.stage.index;
     final isActive = widget.currentStage == current.stage;
 
-    return Expanded(
-      child: Container(
-        height: 2,
-        decoration: BoxDecoration(
-          gradient: isCompleted
-              ? const LinearGradient(
-                  colors: [VoiceMockColors.primary, VoiceMockColors.primary],
-                )
-              : (isActive
-                    ? const LinearGradient(
-                        colors: [
-                          VoiceMockColors.primary,
-                          VoiceMockColors.surfaceBorder,
-                        ],
-                      )
-                    : const LinearGradient(
-                        colors: [
-                          VoiceMockColors.surfaceBorder,
-                          VoiceMockColors.surfaceBorder,
-                        ],
-                      )),
-        ),
+    return SizedBox(
+      width: 16,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Container(
+            height: 2,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(1),
+              gradient: isCompleted
+                  ? const LinearGradient(
+                      colors: [
+                        VoiceMockColors.primary,
+                        VoiceMockColors.primary,
+                      ],
+                    )
+                  : (isActive
+                        ? LinearGradient(
+                            colors: [
+                              VoiceMockColors.primary,
+                              VoiceMockColors.primary.withValues(
+                                alpha: _fadeAnimation.value * 0.3,
+                              ),
+                            ],
+                          )
+                        : const LinearGradient(
+                            colors: [
+                              VoiceMockColors.surfaceBorder,
+                              VoiceMockColors.surfaceBorder,
+                            ],
+                          )),
+            ),
+          );
+        },
       ),
     );
   }

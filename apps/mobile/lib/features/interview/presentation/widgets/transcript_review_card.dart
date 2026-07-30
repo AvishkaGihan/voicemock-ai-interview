@@ -27,116 +27,161 @@ class TranscriptReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(VoiceMockSpacing.md),
-      padding: const EdgeInsets.all(VoiceMockSpacing.md),
-      decoration: BoxDecoration(
-        color: VoiceMockColors.surface,
-        borderRadius: BorderRadius.circular(VoiceMockRadius.lg),
-        border: Border.all(
-          color: VoiceMockColors.surfaceBorder,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: VoiceMockColors.accentGlow,
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.stretch, // Make children full width
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Question header (same pattern as TurnCard)
-          Text(
-            'Question $questionNumber of $totalQuestions'.toUpperCase(),
-            style: VoiceMockTypography.label.copyWith(
-              color: VoiceMockColors.primary,
-            ),
-          ),
-          const SizedBox(height: VoiceMockSpacing.sm),
-
-          // Question text
-          Text(
-            questionText,
-            style: VoiceMockTypography.h3,
-          ),
-          const SizedBox(height: VoiceMockSpacing.md),
-
-          // Transcript section label
-          Text(
-            'What we heard:'.toUpperCase(),
-            style: VoiceMockTypography.label.copyWith(
-              color: VoiceMockColors.secondary,
-            ),
-          ),
-          const SizedBox(height: VoiceMockSpacing.sm),
-
-          // Transcript text in distinct container
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(VoiceMockSpacing.sm),
-            decoration: BoxDecoration(
-              color: VoiceMockColors.background,
-              borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-            ),
-            child: Text(
-              transcript,
-              style: VoiceMockTypography.body,
-            ),
-          ),
-
-          // Low-confidence hint (conditional, neutral styling)
-          if (isLowConfidence) ...[
-            const SizedBox(height: VoiceMockSpacing.sm),
-            Text(
-              "If this isn't right, re-record.",
-              style: VoiceMockTypography.small.copyWith(
-                color: VoiceMockColors.textMuted,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Question section
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(VoiceMockSpacing.md),
+          decoration: VoiceMockColors.cardDecorationElevated(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    '✦',
+                    style: VoiceMockTypography.sectionLabel
+                        .copyWith(fontSize: 14),
+                  ),
+                  const SizedBox(width: VoiceMockSpacing.sm),
+                  Text(
+                    'AI INTERVIEWER',
+                    style: VoiceMockTypography.sectionLabel,
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: VoiceMockSpacing.sm),
+              Text(questionText, style: VoiceMockTypography.h3),
+            ],
+          ),
+        ),
 
-          const SizedBox(height: VoiceMockSpacing.lg),
+        const SizedBox(height: VoiceMockSpacing.md),
 
-          // Primary Action (Accept)
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(VoiceMockRadius.md),
-              boxShadow: [
-                BoxShadow(
-                  color: VoiceMockColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+        // Transcript section
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(VoiceMockSpacing.md),
+          decoration: VoiceMockColors.cardDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    '✦',
+                    style: VoiceMockTypography.sectionLabel
+                        .copyWith(fontSize: 14),
+                  ),
+                  const SizedBox(width: VoiceMockSpacing.sm),
+                  Text(
+                    'WHAT WE HEARD',
+                    style: VoiceMockTypography.sectionLabel.copyWith(
+                      color: VoiceMockColors.secondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: VoiceMockSpacing.md),
+
+              // Transcript text in distinct container
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(VoiceMockSpacing.sm),
+                decoration: BoxDecoration(
+                  color: VoiceMockColors.background,
+                  borderRadius: BorderRadius.circular(VoiceMockRadius.md),
+                ),
+                child: Text(
+                  transcript,
+                  style: VoiceMockTypography.body,
+                ),
+              ),
+
+              // Low-confidence hint
+              if (isLowConfidence) ...[
+                const SizedBox(height: VoiceMockSpacing.sm),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: VoiceMockColors.warning.withValues(alpha: 0.7),
+                    ),
+                    const SizedBox(width: VoiceMockSpacing.xs),
+                    Text(
+                      "If this isn't right, re-record.",
+                      style: VoiceMockTypography.small.copyWith(
+                        color: VoiceMockColors.textMuted,
+                      ),
+                    ),
+                  ],
                 ),
               ],
+            ],
+          ),
+        ),
+
+        const SizedBox(height: VoiceMockSpacing.lg),
+
+        // Primary Action (Accept)
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(VoiceMockRadius.full),
+            gradient: const LinearGradient(
+              colors: [
+                VoiceMockColors.gradientStart,
+                VoiceMockColors.gradientEnd,
+              ],
             ),
-            child: FilledButton(
-              onPressed: onAccept,
-              style: FilledButton.styleFrom(
-                backgroundColor: VoiceMockColors.primary,
-                foregroundColor: VoiceMockColors.background,
+            boxShadow: [
+              BoxShadow(
+                color: VoiceMockColors.primary.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
-              child: const Text('Accept & Continue'),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onAccept,
+              borderRadius: BorderRadius.circular(VoiceMockRadius.full),
+              child: Container(
+                height: 52,
+                alignment: Alignment.center,
+                child: Text(
+                  'Accept & Continue',
+                  style: VoiceMockTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: VoiceMockColors.background,
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: VoiceMockSpacing.sm),
+        ),
+        const SizedBox(height: VoiceMockSpacing.sm),
 
-          // Secondary Action (Re-record)
-          TextButton(
+        // Secondary Action (Re-record)
+        SizedBox(
+          height: 48,
+          child: OutlinedButton(
             onPressed: onReRecord,
-            style: TextButton.styleFrom(
+            style: OutlinedButton.styleFrom(
               foregroundColor: VoiceMockColors.textMuted,
-              textStyle: VoiceMockTypography.body.copyWith(
-                fontWeight: FontWeight.w600,
+              side: const BorderSide(color: VoiceMockColors.surfaceBorder),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(VoiceMockRadius.full),
               ),
             ),
             child: const Text('Re-record'),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
