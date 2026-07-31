@@ -58,9 +58,9 @@ At the end of a 5-question session, you receive a detailed coaching summary cove
 |:---:|:---:|:---:|
 | ![Setup screen](./docs/assets/screenshots/setup.jpeg) | ![Interview screen](./docs/assets/screenshots/interview.jpeg) | ![Summary screen](./docs/assets/screenshots/summary.jpeg) |
 
-| Recording State | Error Recovery | Diagnostics |
-|:---:|:---:|:---:|
-| ![Recording](./docs/assets/screenshots/recording.jpeg) | ![Error](./docs/assets/screenshots/error.jpeg) | ![Diagnostics](./docs/assets/screenshots/diagnostics.jpeg) |
+| Recording State | Error Recovery | Diagnostics | Settings Screen |
+|:---:|:---:|:---:|:---:|
+| ![Recording](./docs/assets/screenshots/recording.jpeg) | ![Error](./docs/assets/screenshots/error.jpeg) | ![Diagnostics](./docs/assets/screenshots/diagnostics.jpeg) | ![Settings](./docs/assets/screenshots/settings.jpeg) |
 
 ---
 
